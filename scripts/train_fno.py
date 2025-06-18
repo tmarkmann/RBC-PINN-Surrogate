@@ -36,6 +36,7 @@ def main(config: DictConfig):
         EarlyStopping(
             monitor="val/loss",
             mode="min",
+            patience=3,
         ),
         SequenceExamplesCallback(),
         MetricsCallback(name="metrics", key_groundtruth="y", key_prediction="y_hat"),
@@ -56,7 +57,7 @@ def main(config: DictConfig):
     trainer.fit(model, dm)
 
     # rollout on test set
-    #trainer.test(model, datamodule=dm, ckpt_path="best")
+    # trainer.test(model, datamodule=dm, ckpt_path="best")
 
 
 if __name__ == "__main__":
