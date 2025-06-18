@@ -18,9 +18,9 @@ def main():
 
     # dataset params
     dir = "data/2D"
-    split = "val"
+    split = "test"
     parallel_envs = 5
-    total_epsiodes = 10
+    total_epsiodes = 20
     base_seed = 42
 
     # Set up environment

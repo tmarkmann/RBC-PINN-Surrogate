@@ -45,7 +45,6 @@ class RBCDataset(Dataset[Tensor]):
                 ep = torch.permute(ep, (1, 0, 2, 3))
                 # store episode data
                 self.episodes[episode] = ep
-                
 
     def set_data_properties(self, file):
         # sets general data dimensions properties that are true for all episodes
@@ -85,7 +84,7 @@ class RBCDataset(Dataset[Tensor]):
         assert self.start_time < self.end_time, (
             f"Start time {self.start_time} must be less than end time {self.end_time}"
         )
-        assert self.nr_episodes < self.episodes, (
+        assert self.nr_episodes <= self.episodes, (
             f"Number of episodes {self.nr_episodes} exceeds available episodes {self.episodes}"
         )
 
@@ -106,8 +105,7 @@ class RBCDataset(Dataset[Tensor]):
         end_idx_target = end_idx_input + self.length_target
 
         # extract input and target sequences
-        x = episode_data[:, start_idx:end_idx_input:self.stride_steps]
-        y = episode_data[:, end_idx_input:end_idx_target:self.stride_steps]
+        x = episode_data[:, start_idx : end_idx_input : self.stride_steps]
+        y = episode_data[:, end_idx_input : end_idx_target : self.stride_steps]
 
         return x, y
-        

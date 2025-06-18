@@ -1,0 +1,38 @@
+defaults:
+  - paths: default
+  - hydra: default
+  - _self_
+
+data:
+  ra: 10000
+  batch_size: 64
+  start_time: 200
+  end_time: 400
+  length_input: 8
+  length_target: 8
+  shift_time: 4
+  stride_time: 1
+  nr_episodes_train: 100
+  nr_episodes_val: 10
+  nr_episodes_test: 20
+  # Data efficiency settings
+  num_workers: 0
+  pin_memory: False
+  persistent_workers: False
+
+model:
+  n_modes_width: 16
+  n_modes_height: 16
+  n_modes_depth: 16
+  hidden_channels: 16
+  in_channels: 3
+  out_channels: 3
+  lifting_channels: 16
+  projection_channels: 16
+  n_layers: 2
+
+algo:
+  lr: 1e-3
+  epochs: 5
+
+task_name: fno3d

@@ -226,3 +226,4 @@ pyrightconfig.json
 logs/
 data/2D
 data/2D_old
+.vscode/
