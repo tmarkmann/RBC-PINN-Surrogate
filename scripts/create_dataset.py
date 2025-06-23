@@ -4,23 +4,20 @@ import rbc_gym  # noqa: F401
 import gymnasium as gym
 from tqdm import tqdm
 import h5py
+import argparse
 
 
-def main():
+def create_dataset(ra=10000, split="train", total_epsiodes=50, parallel_envs=5):
     # env params
-    ra = 10000
     shape = (64, 96)
-    dt = 1.0
-    length = 400
+    dt = 0.5
+    length = 500
     segments = 12
     limit = 0.75
     steps = int(length // dt)
 
     # dataset params
     dir = "data/2D"
-    split = "test"
-    parallel_envs = 5
-    total_epsiodes = 20
     base_seed = 42
 
     # Set up environment
@@ -114,4 +111,10 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser(description="Create RBC dataset")
+    parser.add_argument("--ra", type=int, default=10000, help="Rayleigh number")
+    args = parser.parse_args()
+
+    create_dataset(ra=args.ra, split="train", total_epsiodes=50, parallel_envs=10)
+    create_dataset(ra=args.ra, split="test", total_epsiodes=20, parallel_envs=10)
+    create_dataset(ra=args.ra, split="val", total_epsiodes=10, parallel_envs=10)
