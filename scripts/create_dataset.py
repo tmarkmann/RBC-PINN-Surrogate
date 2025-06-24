@@ -4,7 +4,7 @@ import rbc_gym  # noqa: F401
 import gymnasium as gym
 from tqdm import tqdm
 import h5py
-import argparse
+import multiprocessing as mp
 
 
 def create_dataset(ra=10000, split="train", total_epsiodes=50, parallel_envs=5):
@@ -110,11 +110,44 @@ def create_dataset(ra=10000, split="train", total_epsiodes=50, parallel_envs=5):
     file.close()
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Create RBC dataset")
-    parser.add_argument("--ra", type=int, default=10000, help="Rayleigh number")
-    args = parser.parse_args()
+def main() -> None:
+    """Run a small vectorized rollout to sanity-check the environment."""
+    env = gym.make_vec(
+        "rbc_gym/RayleighBenardConvection2D-v0",
+        num_envs=6,
+        vectorization_mode="async",
+        vector_kwargs={
+            "copy": True,
+            "daemon": True,
+        },
+        render_mode="human",
+    )
 
-    create_dataset(ra=args.ra, split="train", total_epsiodes=50, parallel_envs=10)
-    create_dataset(ra=args.ra, split="test", total_epsiodes=20, parallel_envs=10)
-    create_dataset(ra=args.ra, split="val", total_epsiodes=10, parallel_envs=10)
+    obs, info = env.reset()
+    print(f"Observation shape: {obs.shape}")
+    for _ in tqdm(range(100)):
+        action = env.action_space.sample()
+        observation, reward, terminated, truncated, info = env.step(action)
+        env.render()
+        if truncated.any():
+            break
+
+    env.close()
+
+
+if __name__ == "__main__":
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Create dataset for RBC environment.")
+    parser.add_argument(
+        "--ra",
+        type=int,
+        default=10000,
+        help="Rayleigh number for the simulation.",
+    )
+
+    mp.set_start_method("spawn", force=True)
+    ra = parser.parse_args().ra
+    create_dataset(ra=ra, split="train", total_epsiodes=50, parallel_envs=5)
+    create_dataset(ra=ra, split="test", total_epsiodes=20, parallel_envs=5)
+    create_dataset(ra=ra, split="val", total_epsiodes=10, parallel_envs=5)
