@@ -7,7 +7,6 @@ from torchmetrics import MeanSquaredError
 from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError, NormalizedSumError
 
 
-
 class MetricsCallback(Callback):
     def __init__(self, name: str, key_groundtruth: str, key_prediction: str):
         self.name = name

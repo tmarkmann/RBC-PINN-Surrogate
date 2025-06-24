@@ -56,8 +56,8 @@ class SequenceMetricsCallback(Callback):
     ) -> None:
         for metric in self.sequence_metrics:
             metric.update(
-                outputs[self.key_prediction].cpu(),
-                outputs[self.key_groundtruth].cpu(),
+                outputs[self.key_prediction].detach().cpu(),
+                outputs[self.key_groundtruth].detach().cpu(),
                 batch_idx,
             )
 

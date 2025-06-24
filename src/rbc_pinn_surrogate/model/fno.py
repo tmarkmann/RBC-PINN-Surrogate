@@ -1,4 +1,4 @@
-from typing import Dict, List
+from typing import Dict
 import torch
 from torch import Tensor
 import lightning as L
@@ -81,3 +81,8 @@ class FNO3DModule(L.LightningModule):
             lr=self.hparams.lr,
         )
         return {"optimizer": optimizer}
+
+    def load_state_dict(self, state_dict, strict: bool = True):
+        # Remove metadat from neuralop library TODO check if useful
+        state_dict.pop("_metadata", None)
+        return super().load_state_dict(state_dict, strict)

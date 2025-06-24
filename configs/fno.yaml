@@ -4,15 +4,15 @@ defaults:
   - _self_
 
 data:
-  ra: 10000
+  ra: 100000
   batch_size: 64
-  start_time: 5
-  end_time: 60
+  start_time: 200
+  end_time: 400
   length_input: 8
   length_target: 8
   shift_time: 4
-  stride_time: 1
-  nr_episodes_train: 100
+  stride_time: 0.5
+  nr_episodes_train: 50
   nr_episodes_val: 10
   nr_episodes_test: 20
   # Data efficiency settings
@@ -33,6 +33,6 @@ model:
 
 algo:
   lr: 1e-3
-  epochs: 200
+  epochs: 300
 
 task_name: fno3d

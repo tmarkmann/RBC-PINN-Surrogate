@@ -9,7 +9,11 @@ from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig
 from rbc_pinn_surrogate.data import RBCDatamodule
 from rbc_pinn_surrogate.model import FNO3DModule
-from rbc_pinn_surrogate.callbacks import SequenceExamplesCallback, MetricsCallback
+from rbc_pinn_surrogate.callbacks import (
+    SequenceMetricsCallback,
+    SequenceExamplesCallback,
+    MetricsCallback,
+)
 
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="fno")
@@ -36,10 +40,19 @@ def main(config: DictConfig):
         EarlyStopping(
             monitor="val/loss",
             mode="min",
-            patience=3,
+            patience=7,
         ),
         SequenceExamplesCallback(),
-        MetricsCallback(name="metrics", key_groundtruth="y", key_prediction="y_hat"),
+        SequenceMetricsCallback(
+            name="sequence",
+            key_groundtruth="y",
+            key_prediction="y_hat",
+        ),
+        MetricsCallback(
+            name="metrics",
+            key_groundtruth="y",
+            key_prediction="y_hat",
+        ),
     ]
 
     # trainer
@@ -57,7 +70,7 @@ def main(config: DictConfig):
     trainer.fit(model, dm)
 
     # rollout on test set
-    # trainer.test(model, datamodule=dm, ckpt_path="best")
+    trainer.test(model, datamodule=dm, ckpt_path="best")
 
 
 if __name__ == "__main__":
