@@ -12,8 +12,7 @@ class RBCDataset(Dataset[Tensor]):
         start_time: int = 0,
         end_time: int = 100,
         nr_episodes: int = 50,
-        length_input: int = 8,
-        length_target: int = 8,
+        length: int = 8,
         shift_time: int = 1,
         stride_time: int = 1,
     ):
@@ -22,8 +21,7 @@ class RBCDataset(Dataset[Tensor]):
         self.start_time = start_time
         self.end_time = end_time
         self.nr_episodes = nr_episodes
-        self.length_input = length_input
-        self.length_target = length_target
+        self.length = length
         self.shift_time = shift_time
         self.stride_time = stride_time
 
@@ -74,7 +72,7 @@ class RBCDataset(Dataset[Tensor]):
 
         # number of sequence pairs per episode
         self.nr_pairs = (
-            self.steps - self.length_input - self.length_target + 1
+            self.steps - (2*self.length) + 1
         ) // self.shift_steps
 
     def check_validity(self):
@@ -101,8 +99,8 @@ class RBCDataset(Dataset[Tensor]):
 
         # calculate start and end indices for input and target sequences
         start_idx = pair_idx * self.shift_steps
-        end_idx_input = start_idx + self.length_input
-        end_idx_target = end_idx_input + self.length_target
+        end_idx_input = start_idx + self.length
+        end_idx_target = end_idx_input + self.length
 
         # extract input and target sequences
         x = episode_data[:, start_idx : end_idx_input : self.stride_steps]

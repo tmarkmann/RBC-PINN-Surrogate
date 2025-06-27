@@ -11,24 +11,26 @@ from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError, NormalizedSumE
 
 
 class SequenceMetric:
-    def __init__(self, metric):
+    def __init__(self, metric, dt):
         self.metric = metric
         self.name = f"{metric.__class__.__name__}"
         self.data = []
+        self.dt = dt
 
     def update(
         self, prediction: list[Tensor], groundtruth: list[Tensor], batch_idx: int
     ):
         for sample_idx in range(groundtruth.shape[0]):
-            for tau in range(groundtruth.shape[1]):
+            for tau in range(groundtruth.shape[2]):
                 self.data.append(
                     {
                         "idx": batch_idx * groundtruth.shape[0] + sample_idx,
                         "batch_idx": batch_idx,
                         "sample_idx": sample_idx,
-                        "tau": tau,
+                        "tau": tau * self.dt,
                         "value": self.metric(
-                            prediction[sample_idx][tau], groundtruth[sample_idx][tau]
+                            prediction[sample_idx, :, tau].reshape(-1),
+                            groundtruth[sample_idx, :, tau].reshape(-1),
                         ).item(),
                     }
                 )
@@ -38,16 +40,17 @@ class SequenceMetric:
 
 
 class SequenceMetricsCallback(Callback):
-    def __init__(self, name: str, key_groundtruth: str, key_prediction: str):
+    def __init__(self, name: str, key_groundtruth: str, key_prediction: str, dt: float):
         self.name = name
         self.key_groundtruth = key_groundtruth
         self.key_prediction = key_prediction
+        self.dt = dt
 
         # sequence metrics
         self.sequence_metrics = [
-            SequenceMetric(metric=NormalizedSumSquaredError()),
-            SequenceMetric(metric=NormalizedSumError()),
-            SequenceMetric(metric=MeanSquaredError()),
+            SequenceMetric(metric=NormalizedSumSquaredError(), dt=dt),
+            SequenceMetric(metric=NormalizedSumError(), dt=dt),
+            SequenceMetric(metric=MeanSquaredError(), dt=dt),
         ]
 
     # Testing callbacks

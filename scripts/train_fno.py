@@ -49,6 +49,7 @@ def main(config: DictConfig):
             name="sequence",
             key_groundtruth="y",
             key_prediction="y_hat",
+            dt=config.data.stride_time,
         ),
         MetricsCallback(
             name="metrics",
