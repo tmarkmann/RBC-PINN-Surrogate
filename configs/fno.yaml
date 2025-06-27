@@ -4,19 +4,19 @@ defaults:
   - _self_
 
 data:
-  ra: 100000
+  ra: 1000000
   batch_size: 64
   start_time: 200
   end_time: 400
-  length_input: 8
-  length_target: 8
+  length_input: 15
+  length_target: 15
   shift_time: 4
   stride_time: 0.5
   nr_episodes_train: 50
   nr_episodes_val: 10
   nr_episodes_test: 20
   # Data efficiency settings
-  num_workers: 4
+  num_workers: 2
   pin_memory: True
   persistent_workers: True
 
@@ -29,7 +29,7 @@ model:
   out_channels: 3
   lifting_channels: 16
   projection_channels: 16
-  n_layers: 2
+  n_layers: 4
 
 algo:
   lr: 1e-3

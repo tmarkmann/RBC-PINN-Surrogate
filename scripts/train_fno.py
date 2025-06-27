@@ -42,7 +42,9 @@ def main(config: DictConfig):
             mode="min",
             patience=7,
         ),
-        SequenceExamplesCallback(),
+        SequenceExamplesCallback(
+            train_freq=20,
+        ),
         SequenceMetricsCallback(
             name="sequence",
             key_groundtruth="y",
