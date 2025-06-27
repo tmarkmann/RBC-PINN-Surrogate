@@ -5,12 +5,12 @@ defaults:
 
 data:
   ra: 1000000
-  batch_size: 64
+  batch_size: 32
   start_time: 200
   end_time: 400
-  train_length: 15
+  train_length: 10
   test_length: 60
-  shift_time: 4
+  shift_time: 8
   stride_time: 0.5
   nr_episodes_train: 50
   nr_episodes_val: 10
@@ -33,6 +33,6 @@ model:
 
 algo:
   lr: 1e-3
-  epochs: 400
+  epochs: 1
 
 task_name: fno3d

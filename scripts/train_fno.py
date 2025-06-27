@@ -13,6 +13,7 @@ from rbc_pinn_surrogate.callbacks import (
     SequenceMetricsCallback,
     SequenceExamplesCallback,
     MetricsCallback,
+    ClearMemoryCallback,
 )
 
 
@@ -45,17 +46,18 @@ def main(config: DictConfig):
         SequenceExamplesCallback(
             train_freq=20,
         ),
+        MetricsCallback(
+            name="metrics",
+            key_groundtruth="y",
+            key_prediction="y_hat",
+        ),
         SequenceMetricsCallback(
             name="sequence",
             key_groundtruth="y",
             key_prediction="y_hat",
             dt=config.data.stride_time,
         ),
-        MetricsCallback(
-            name="metrics",
-            key_groundtruth="y",
-            key_prediction="y_hat",
-        ),
+        ClearMemoryCallback(),
     ]
 
     # trainer

@@ -41,7 +41,8 @@ class RBCDatamodule(L.LightningDataModule):
                 start_time=self.hparams.start_time,
                 end_time=self.hparams.end_time,
                 nr_episodes=self.hparams.nr_episodes_val,
-                length=self.hparams.train_length,
+                input_length=self.hparams.train_length,
+                target_length=self.hparams.train_length,
                 shift_time=self.hparams.shift_time,
                 stride_time=self.hparams.stride_time,
             )
@@ -50,7 +51,8 @@ class RBCDatamodule(L.LightningDataModule):
                 start_time=self.hparams.start_time,
                 end_time=self.hparams.end_time,
                 nr_episodes=self.hparams.nr_episodes_train,
-                length=self.hparams.train_length,
+                input_length=self.hparams.train_length,
+                target_length=self.hparams.train_length,
                 shift_time=self.hparams.shift_time,
                 stride_time=self.hparams.stride_time,
             )
@@ -61,7 +63,8 @@ class RBCDatamodule(L.LightningDataModule):
                 start_time=self.hparams.start_time,
                 end_time=self.hparams.end_time,
                 nr_episodes=self.hparams.nr_episodes_test,
-                length=self.hparams.test_length,
+                input_length=self.hparams.train_length,
+                target_length=self.hparams.test_length,
                 shift_time=self.hparams.shift_time,
                 stride_time=self.hparams.stride_time,
             )

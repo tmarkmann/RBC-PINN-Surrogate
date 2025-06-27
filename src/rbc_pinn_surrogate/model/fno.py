@@ -72,8 +72,34 @@ class FNO3DModule(L.LightningModule):
         return self.model_step(x, y, stage="val")
 
     def test_step(self, batch, batch_idx):
-        x, y = batch
-        return self.model_step(x, y, stage="test")
+        input, target = batch
+        input_length = input.shape[2]
+        target_length = target.shape[2]
+
+        # autoregressive model steps
+        length = 0
+        x = input
+        pred = torch.empty(
+            x.shape[0], x.shape[1], target_length, *x.shape[3:],
+            device=x.device, dtype=x.dtype
+        )
+ 
+        while length < target_length:
+            y = self.forward(x)
+            step = min(input_length, target_length - length)
+            pred[:, :, length : length + step] = y[:, :, :step]
+            x = y  
+            length += step
+
+        # Compute and log metrics
+        loss = self.loss(pred, target)
+        self.log("test/loss", loss, logger=True)
+
+        return {
+            "loss": loss,
+            "y": target,
+            "y_hat": pred,
+        }
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
