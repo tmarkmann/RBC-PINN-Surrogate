@@ -36,6 +36,7 @@ def create_dataset(ra=10000, split="train", total_epsiodes=50, parallel_envs=5):
         heater_duration=dt,
         heater_segments=segments,
         heater_limit=limit,
+        pressure=True,
     )
 
     # Set up h5 dataset
@@ -62,8 +63,8 @@ def create_dataset(ra=10000, split="train", total_epsiodes=50, parallel_envs=5):
         states = [
             file.create_dataset(
                 f"states{id}",
-                (steps, 3, shape[0], shape[1]),
-                chunks=(10, 3, shape[0], shape[1]),
+                (steps, 5, shape[0], shape[1]),
+                chunks=(10, 5, shape[0], shape[1]),
                 compression="gzip",
                 dtype=np.float32,
             )
