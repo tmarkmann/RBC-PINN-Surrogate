@@ -99,6 +99,9 @@ class RBCDataset(Dataset[Tensor]):
         # get the episode data
         episode_data = self.episodes[episode_idx]
 
+        # TODO current dataset has flipped vertical axis. future datasets should not have this.
+        episode_data = torch.flip(episode_data, dims=[2])
+
         # calculate start and end indices for input and target sequences
         start_idx = pair_idx * self.shift_steps
         end_idx_input = start_idx + self.input_length

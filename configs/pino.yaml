@@ -4,21 +4,21 @@ defaults:
   - _self_
 
 data:
-  ra: 1000000
-  batch_size: 32
+  ra: 10000
+  batch_size: 8
   start_time: 200
   end_time: 400
   train_length: 10
-  test_length: 60
+  test_length: 10
   shift_time: 8
   stride_time: 0.5
-  nr_episodes_train: 50
-  nr_episodes_val: 10
-  nr_episodes_test: 20
+  nr_episodes_train: 1
+  nr_episodes_val: 1
+  nr_episodes_test: 1
   # Data efficiency settings
-  num_workers: 2
-  pin_memory: True
-  persistent_workers: True
+  num_workers: 0
+  pin_memory: False
+  persistent_workers: False
 
 model:
   n_modes_width: 16
