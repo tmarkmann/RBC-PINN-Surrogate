@@ -11,29 +11,33 @@ class RBCDataset(Dataset[Tensor]):
         path: Path,
         start_time: int = 0,
         end_time: int = 100,
-        nr_episodes: int = 50,
+        nr_episodes: int = None,
         input_length: int = 8,
         target_length: int = 8,
         shift_time: int = 1,
         stride_time: int = 1,
+        pressure: bool = False,
     ):
         # parameters
         self.path = path
         self.start_time = start_time
         self.end_time = end_time
-        self.nr_episodes = nr_episodes
         self.input_length = input_length
         self.target_length = target_length
         self.shift_time = shift_time
         self.stride_time = stride_time
+        self.pressure = pressure
 
         # retrieve dataset parameters
-
         with h5py.File(path, "r") as file:
             self.set_data_properties(file)
+            if nr_episodes is not None:
+                self.nr_episodes = nr_episodes
+            else:
+                nr_episodes = self.nr_episodes
 
             # check validity of parameters
-            self.check_validity()
+            self.check_validity(nr_episodes)
 
             # get episode
             self.episodes = {}
@@ -54,7 +58,7 @@ class RBCDataset(Dataset[Tensor]):
 
         # set other properties
         parameters = dict(file.attrs.items())
-        self.episodes = int(parameters["episodes"])
+        self.nr_episodes = int(parameters["episodes"])
         self.episode_steps = int(parameters["steps"])
         self.shape = tuple(parameters["shape"])
         self.dt = float(parameters["dt"])
@@ -77,15 +81,15 @@ class RBCDataset(Dataset[Tensor]):
             self.steps - self.input_length - self.target_length + 1
         ) // self.shift_steps
 
-    def check_validity(self):
+    def check_validity(self, nr_episodes):
         assert self.end_time <= self.episode_length, (
             f"End time {self.end_time} exceeds episode length {self.episode_length}"
         )
         assert self.start_time < self.end_time, (
             f"Start time {self.start_time} must be less than end time {self.end_time}"
         )
-        assert self.nr_episodes <= self.episodes, (
-            f"Number of episodes {self.nr_episodes} exceeds available episodes {self.episodes}"
+        assert self.nr_episodes >= nr_episodes, (
+            f"Number of episodes {nr_episodes} exceeds available episodes {self.nr_episodes}"
         )
 
     def __len__(self) -> int:
@@ -99,8 +103,9 @@ class RBCDataset(Dataset[Tensor]):
         # get the episode data
         episode_data = self.episodes[episode_idx]
 
-        # TODO current dataset has flipped vertical axis. future datasets should not have this.
-        episode_data = torch.flip(episode_data, dims=[2])
+        # only include pressure channel if specified
+        if not self.pressure:
+            episode_data = episode_data[:3, :, :]
 
         # calculate start and end indices for input and target sequences
         start_idx = pair_idx * self.shift_steps

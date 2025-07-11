@@ -1,22 +1,20 @@
 import torch
+from torch import nn
 from torch.nn.functional import mse_loss
 
 
-class RBCEquationLoss:
-    pass
-
-
-class RBCInteriorLoss:
+class RBCEquationLoss(nn.Module):
     """expects data in the form [batch, channel, time, height, width]"""
 
     def __init__(self, domain_width, domain_height, time, kappa, nu):
+        super().__init__()
         self.domain_width = domain_width
         self.domain_height = domain_height
         self.time = time
         self.kappa = kappa  # thermal conductivity
         self.nu = nu  # kinematic viscosity
 
-    def __call__(self, pred):
+    def forward(self, pred):
         # discretization steps
         _, _, time_steps, height, width = pred.shape
         dt = self.time / time_steps
@@ -27,23 +25,16 @@ class RBCInteriorLoss:
         T = pred[:, 0].squeeze(1)
         u = pred[:, 1].squeeze(1)
         w = pred[:, 2].squeeze(1)
-        p = torch.zeros_like(u)  # TODO fix
 
-        print(f"u shape: {u.shape}")
-        self.plot_div(T[0, 1])
-
-        # derivatives x: time, y: height, z: width
-        # dTdt, dTdz, dTdx = central_diff_3d(T, h=[dt, dz, dx], fix_x_bnd=True, fix_y_bnd=True)
-        # dudt, dudz, dudx = central_diff_3d(u, h=[dt, dz, dx], fix_x_bnd=True, fix_y_bnd=True)
-        # dwdt, dwdz, dwdx = central_diff_3d(w, h=[dt, dz, dx], fix_x_bnd=True, fix_y_bnd=True)
+        # hydrostatic + non-hydrostatic pressure
+        p = pred[:, 3].squeeze(1) + pred[:, 4].squeeze(1)
 
         # equations
         l1 = self.loss_incompressible(u, w, dx, dz)
         l2 = self.loss_temperature(T, dt, u, dx, w, dz)
-        l3 = self.loss_momentum(u, w, p, T, dt, dx, dz)
+        l3, l4 = self.loss_momentum(u, w, p, T, dt, dx, dz)
 
-        print(f"l1: {l1}, l2: {l2}, l3: {l3}")
-        return l1 + l2 + l3
+        return l1 + l2 + l3 + l4
 
     def loss_incompressible(self, u, w, dx, dz):
         """
@@ -97,12 +88,17 @@ class RBCInteriorLoss:
         z_left = dwdt + u * dwdx + w * dwdz
         z_right = -dpdz + self.nu * (dwdxx + dwdzz) + T
 
-        return mse_loss(x_left, x_right) + mse_loss(z_left, z_right)
+        return mse_loss(x_left, x_right), mse_loss(z_left, z_right)
 
     def plot_div(self, div):
         import matplotlib.pyplot as plt
 
-        plt.imshow(div.cpu().detach().numpy(), cmap="hot", interpolation="nearest", origin="lower")
+        plt.imshow(
+            div.cpu().detach().numpy(),
+            cmap="hot",
+            interpolation="nearest",
+            origin="lower",
+        )
         plt.colorbar()
         plt.title("Divergence of velocity field")
         plt.show()

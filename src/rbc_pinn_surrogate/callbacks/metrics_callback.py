@@ -45,5 +45,4 @@ class MetricsCallback(Callback):
                     output[self.key_prediction].detach().cpu(),
                     output[self.key_groundtruth].detach().cpu(),
                 ),
-                on_epoch=True,
             )

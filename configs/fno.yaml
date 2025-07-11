@@ -6,27 +6,28 @@ defaults:
 data:
   ra: 1000000
   batch_size: 32
-  start_time: 200
+  start_time: 1
   end_time: 400
   train_length: 10
   test_length: 60
   shift_time: 8
   stride_time: 0.5
-  nr_episodes_train: 50
-  nr_episodes_val: 10
-  nr_episodes_test: 20
+  nr_episodes_train: null # this means all of them
+  nr_episodes_val: null
+  nr_episodes_test: null
   # Data efficiency settings
   num_workers: 2
   pin_memory: True
   persistent_workers: True
+  pressure: True
 
 model:
   n_modes_width: 16
   n_modes_height: 16
   n_modes_depth: 16
   hidden_channels: 32
-  in_channels: 3
-  out_channels: 3
+  in_channels: 5
+  out_channels: 5
   lifting_channels: 16
   projection_channels: 16
   n_layers: 4

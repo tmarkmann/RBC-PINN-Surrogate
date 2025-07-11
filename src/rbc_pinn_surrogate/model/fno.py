@@ -1,5 +1,6 @@
 from typing import Dict
 import torch
+from torch import nn
 from torch import Tensor
 import lightning as L
 import neuralop as no
@@ -18,6 +19,7 @@ class FNO3DModule(L.LightningModule):
         lifting_channels: int = 16,
         projection_channels: int = 16,
         n_layers: int = 2,
+        pino_loss: nn.Module = None,
     ):
         super().__init__()
         self.save_hyperparameters()
@@ -36,7 +38,8 @@ class FNO3DModule(L.LightningModule):
         )
 
         # Loss Function
-        self.loss = no.H1Loss(d=3)
+        self.data_loss = no.H1Loss(d=3)
+        self.eqn_loss = pino_loss
 
     def forward(self, x):
         return self.model(x)
@@ -44,17 +47,17 @@ class FNO3DModule(L.LightningModule):
     def model_step(self, x: Tensor, y: Tensor, stage: str) -> Dict[str, Tensor]:
         # Forward pass and compute loss
         pred = self.forward(x)
-        loss = self.loss(pred, y)
+        loss = self.data_loss(pred, y)
 
         # Log
-        self.log(
-            f"{stage}/loss",
-            loss,
-            on_step=False,
-            on_epoch=True,
-            prog_bar=True,
-            logger=True,
-        )
+        self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
+
+        # pino loss
+        if self.eqn_loss is not None:
+            pino_loss = self.eqn_loss(pred)
+            pino_baseline = self.eqn_loss(y)
+            self.log(f"{stage}/pino_loss", pino_loss, logger=True)
+            self.log(f"{stage}/pino_baseline", pino_baseline, logger=True)
 
         return {
             "loss": loss,
@@ -80,20 +83,30 @@ class FNO3DModule(L.LightningModule):
         length = 0
         x = input
         pred = torch.empty(
-            x.shape[0], x.shape[1], target_length, *x.shape[3:],
-            device=x.device, dtype=x.dtype
+            x.shape[0],
+            x.shape[1],
+            target_length,
+            *x.shape[3:],
+            device=x.device,
+            dtype=x.dtype,
         )
- 
+
         while length < target_length:
             y = self.forward(x)
             step = min(input_length, target_length - length)
             pred[:, :, length : length + step] = y[:, :, :step]
-            x = y  
+            x = y
             length += step
 
         # Compute and log metrics
-        loss = self.loss(pred, target)
+        loss = self.data_loss(pred, target)
         self.log("test/loss", loss, logger=True)
+
+        if self.eqn_loss is not None:
+            pino_loss = self.eqn_loss(pred)
+            pino_baseline = self.eqn_loss(target)
+            self.log("test/pino_loss", pino_loss, logger=True)
+            self.log("test/pino_baseline", pino_baseline, logger=True)
 
         return {
             "loss": loss,

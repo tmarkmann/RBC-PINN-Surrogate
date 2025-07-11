@@ -1,16 +1,18 @@
 # from neuralop library
 
 import torch
+
 """
 finite_diff.py implements utilities for computing derivatives via finite-difference method
 """
 
-#Set fix{x,y,z}_bnd if function is non-periodic in {x,y,z} direction
-#x: (*, s)
-#y: (*, s)
+
+# Set fix{x,y,z}_bnd if function is non-periodic in {x,y,z} direction
+# x: (*, s)
+# y: (*, s)
 def central_diff_1d(x, h, fix_x_bnd=False):
     """central_diff_1d computes the first spatial derivative
-    of x using central finite-difference 
+    of x using central finite-difference
 
     Parameters
     ----------
@@ -20,7 +22,7 @@ def central_diff_1d(x, h, fix_x_bnd=False):
     h : float
         discretization size of input x
     fix_x_bnd : bool, optional
-        whether to average boundary and second-outermost 
+        whether to average boundary and second-outermost
         derivative values, by default False
 
     Returns
@@ -28,19 +30,20 @@ def central_diff_1d(x, h, fix_x_bnd=False):
     dx
         output tensor of df(x)/dx at each point
     """
-    dx = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1))/(2.0*h)
+    dx = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1)) / (2.0 * h)
 
     if fix_x_bnd:
-        dx[...,0] = (x[...,1] - x[...,0])/h
-        dx[...,-1] = (x[...,-1] - x[...,-2])/h
-    
+        dx[..., 0] = (x[..., 1] - x[..., 0]) / h
+        dx[..., -1] = (x[..., -1] - x[..., -2]) / h
+
     return dx
 
-#x: (*, s1, s2)
-#y: (*, s1, s2)
+
+# x: (*, s1, s2)
+# y: (*, s1, s2)
 def central_diff_2d(x, h, fix_x_bnd=False, fix_y_bnd=False):
-    """central_diff_2d computes derivatives 
-    df(x,y)/dx and df(x,y)/dy for f(x,y) defined 
+    """central_diff_2d computes derivatives
+    df(x,y)/dx and df(x,y)/dy for f(x,y) defined
     on a regular 2d grid using finite-difference
 
     Parameters
@@ -63,24 +66,25 @@ def central_diff_2d(x, h, fix_x_bnd=False, fix_y_bnd=False):
     if isinstance(h, float):
         h = [h, h]
 
-    dx = (torch.roll(x, -1, dims=-2) - torch.roll(x, 1, dims=-2))/(2.0*h[0])
-    dy = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1))/(2.0*h[1])
+    dx = (torch.roll(x, -1, dims=-2) - torch.roll(x, 1, dims=-2)) / (2.0 * h[0])
+    dy = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1)) / (2.0 * h[1])
 
     if fix_x_bnd:
-        dx[...,0,:] = (x[...,1,:] - x[...,0,:])/h[0]
-        dx[...,-1,:] = (x[...,-1,:] - x[...,-2,:])/h[0]
-    
+        dx[..., 0, :] = (x[..., 1, :] - x[..., 0, :]) / h[0]
+        dx[..., -1, :] = (x[..., -1, :] - x[..., -2, :]) / h[0]
+
     if fix_y_bnd:
-        dy[...,:,0] = (x[...,:,1] - x[...,:,0])/h[1]
-        dy[...,:,-1] = (x[...,:,-1] - x[...,:,-2])/h[1]
-        
+        dy[..., :, 0] = (x[..., :, 1] - x[..., :, 0]) / h[1]
+        dy[..., :, -1] = (x[..., :, -1] - x[..., :, -2]) / h[1]
+
     return dx, dy
 
-#x: (*, s1, s2, s3)
-#y: (*, s1, s2, s3)
+
+# x: (*, s1, s2, s3)
+# y: (*, s1, s2, s3)
 def central_diff_3d(x, h, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
-    """central_diff_3d computes derivatives 
-    df(x,y,z)/dx and df(x,y,z)/dy for f(x,y,z) defined 
+    """central_diff_3d computes derivatives
+    df(x,y,z)/dx and df(x,y,z)/dy for f(x,y,z) defined
     on a regular 2d grid using finite-difference
 
     Parameters
@@ -106,27 +110,28 @@ def central_diff_3d(x, h, fix_x_bnd=False, fix_y_bnd=False, fix_z_bnd=False):
     if isinstance(h, float):
         h = [h, h, h]
 
-    dx = (torch.roll(x, -1, dims=-3) - torch.roll(x, 1, dims=-3))/(2.0*h[0])
-    dy = (torch.roll(x, -1, dims=-2) - torch.roll(x, 1, dims=-2))/(2.0*h[1])
-    dz = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1))/(2.0*h[2])
+    dx = (torch.roll(x, -1, dims=-3) - torch.roll(x, 1, dims=-3)) / (2.0 * h[0])
+    dy = (torch.roll(x, -1, dims=-2) - torch.roll(x, 1, dims=-2)) / (2.0 * h[1])
+    dz = (torch.roll(x, -1, dims=-1) - torch.roll(x, 1, dims=-1)) / (2.0 * h[2])
 
     if fix_x_bnd:
-        dx[...,0,:,:] = (x[...,1,:,:] - x[...,0,:,:])/h[0]
-        dx[...,-1,:,:] = (x[...,-1,:,:] - x[...,-2,:,:])/h[0]
-    
+        dx[..., 0, :, :] = (x[..., 1, :, :] - x[..., 0, :, :]) / h[0]
+        dx[..., -1, :, :] = (x[..., -1, :, :] - x[..., -2, :, :]) / h[0]
+
     if fix_y_bnd:
-        dy[...,:,0,:] = (x[...,:,1,:] - x[...,:,0,:])/h[1]
-        dy[...,:,-1,:] = (x[...,:,-1,:] - x[...,:,-2,:])/h[1]
-    
+        dy[..., :, 0, :] = (x[..., :, 1, :] - x[..., :, 0, :]) / h[1]
+        dy[..., :, -1, :] = (x[..., :, -1, :] - x[..., :, -2, :]) / h[1]
+
     if fix_z_bnd:
-        dz[...,:,:,0] = (x[...,:,:,1] - x[...,:,:,0])/h[2]
-        dz[...,:,:,-1] = (x[...,:,:,-1] - x[...,:,:,-2])/h[2]
-        
+        dz[..., :, :, 0] = (x[..., :, :, 1] - x[..., :, :, 0]) / h[2]
+        dz[..., :, :, -1] = (x[..., :, :, -1] - x[..., :, :, -2]) / h[2]
+
     return dx, dy, dz
 
 
-
-def get_non_uniform_fd_weights(points, num_neighbors=5, derivative_indices=[0], radius=None, regularize_lstsq=False):
+def get_non_uniform_fd_weights(
+    points, num_neighbors=5, derivative_indices=[0], radius=None, regularize_lstsq=False
+):
     """
     Compute finite difference weights for approximating the first order derivative
     on an unstructured grid of points
@@ -142,23 +147,23 @@ def get_non_uniform_fd_weights(points, num_neighbors=5, derivative_indices=[0], 
     regularize_lstsq : bool, whether to regularize the least squares system
                         Sometimes torch.linalg.lstsq(A, b).solution creates artifacts so can add regularizer
                         But regularizer can deteriorate performance when system is well-conditioned
-    
+
     Returns:
     --------
     indices : torch tensor of shape (N, k) for the indices of k nearest neighbors (including the point itself)
     fd_weights : torch tensor of weights of shape (N, len(derivative_indices), k)
-                fd_weights[i,j,m] contains the weights for the m-th nearest neighbor 
+                fd_weights[i,j,m] contains the weights for the m-th nearest neighbor
                                         in the j-th 1st order derivative for the i-th point
     """
 
     N = points.shape[0]
     d = points.shape[1]
-    k = min(max(num_neighbors, 3), N)  
+    k = min(max(num_neighbors, 3), N)
 
     # Get the indices of the k nearest neighbors (including the point itself)
     pairwise_distances = torch.cdist(points, points, p=2)
     distances, indices = torch.topk(pairwise_distances, k=k, dim=1, largest=False)
-    
+
     # Get mask for neighbors within cutoff radius (and always keep at least 3)
     if radius is None:
         radius_mask = torch.ones_like(distances, dtype=torch.bool)
@@ -167,29 +172,30 @@ def get_non_uniform_fd_weights(points, num_neighbors=5, derivative_indices=[0], 
         radius_mask[:, :3] = True
 
     # Initialize A to 1 since first row for each point and derivative is 1
-    A = torch.ones((N, d+1, k), dtype=points.dtype, device=points.device)
+    A = torch.ones((N, d + 1, k), dtype=points.dtype, device=points.device)
     # Compute coordinate differences
     for i in range(d):
-        A[:, i+1, :] = points[indices, i] - points[:, i].unsqueeze(1)
+        A[:, i + 1, :] = points[indices, i] - points[:, i].unsqueeze(1)
     # Repeat it for each derivative to be evaluated so it becomes of shape (N, len(derivative_indices), d+1, k)
     A = A.unsqueeze(1).expand(-1, len(derivative_indices), -1, -1)
 
     # Zero out columns for neighbors that are not within the radius
     A = A * radius_mask.unsqueeze(1).unsqueeze(2)
-    
+
     # Compute right hand side
-    b = torch.zeros((len(derivative_indices), d+1, 1), dtype=points.dtype, device=points.device)
+    b = torch.zeros(
+        (len(derivative_indices), d + 1, 1), dtype=points.dtype, device=points.device
+    )
     for i in range(len(derivative_indices)):
-        b[i, derivative_indices[i]+1] = 1
+        b[i, derivative_indices[i] + 1] = 1
     # Repeat so it becomes (N, len(derivative_indices), d+1, 1)
     b = b.unsqueeze(0).expand(N, -1, -1, -1)
 
-    # Solve least squares system Aw = b  
+    # Solve least squares system Aw = b
     #    sometimes torch.linalg.lstsq(A, b).solution creates artifacts so can add regularizer
     #    but regularizer can deteriorate performance when system is well-conditioned
 
     if regularize_lstsq:
-
         lambda_reg = 1e-6
         I_k = torch.eye(k, dtype=A.dtype, device=A.device).unsqueeze(0).unsqueeze(0)
 
@@ -197,16 +203,23 @@ def get_non_uniform_fd_weights(points, num_neighbors=5, derivative_indices=[0], 
         AT_b = torch.matmul(AT, b)
         AT_A = torch.matmul(AT, A) + lambda_reg * I_k
 
-        # Use Cholesky decomposition to accelerate torch.linalg.solve(AT_A, AT_b).squeeze(-1) 
-        fd_weights = torch.cholesky_solve(AT_b, torch.linalg.cholesky(AT_A)).squeeze(-1)  
+        # Use Cholesky decomposition to accelerate torch.linalg.solve(AT_A, AT_b).squeeze(-1)
+        fd_weights = torch.cholesky_solve(AT_b, torch.linalg.cholesky(AT_A)).squeeze(-1)
 
     else:
-        fd_weights = torch.linalg.lstsq(A, b).solution 
+        fd_weights = torch.linalg.lstsq(A, b).solution
 
     return indices, fd_weights.squeeze(-1)
 
 
-def non_uniform_fd(points, values, num_neighbors=5, derivative_indices=[0], radius=None, regularize_lstsq=False):
+def non_uniform_fd(
+    points,
+    values,
+    num_neighbors=5,
+    derivative_indices=[0],
+    radius=None,
+    regularize_lstsq=False,
+):
     """
     Compute finite difference approximation of the first order derivative on an unstructured grid of points
     Parameters:
@@ -221,20 +234,22 @@ def non_uniform_fd(points, values, num_neighbors=5, derivative_indices=[0], radi
     regularize_lstsq : bool, whether to regularize the least squares system
                         Sometimes torch.linalg.lstsq(A, b).solution creates artifacts so can add regularizer
                         But regularizer can deteriorate performance when system is well-conditioned
-    
+
     Returns:
     --------
     derivatives: tensor of shape (len(derivative_indices), N) of derivatives
             e.g. in 2D with derivative_indices=[0, 1], derivatives[0] is df(x,y)/dx and derivatives[1] is df(x,y)/dy
-    
+
     """
 
-    indices, fd_weights = get_non_uniform_fd_weights(points=points, 
-                                                    num_neighbors=num_neighbors, 
-                                                    derivative_indices=derivative_indices,
-                                                    radius=radius,
-                                                    regularize_lstsq=regularize_lstsq)
+    indices, fd_weights = get_non_uniform_fd_weights(
+        points=points,
+        num_neighbors=num_neighbors,
+        derivative_indices=derivative_indices,
+        radius=radius,
+        regularize_lstsq=regularize_lstsq,
+    )
 
-    derivatives = torch.einsum('nij,nj->in', fd_weights, values[indices])
+    derivatives = torch.einsum("nij,nj->in", fd_weights, values[indices])
 
     return derivatives

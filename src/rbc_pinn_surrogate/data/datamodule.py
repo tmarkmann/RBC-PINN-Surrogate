@@ -10,6 +10,7 @@ class RBCDatamodule(L.LightningDataModule):
         self,
         data_dir: str,
         ra: int = 1e4,
+        pressure: bool = False,
         batch_size: int = 64,
         num_workers: int = 0,
         pin_memory: bool = False,
@@ -20,9 +21,9 @@ class RBCDatamodule(L.LightningDataModule):
         test_length: int = 8,
         shift_time: int = 1,
         stride_time: int = 1,
-        nr_episodes_train: int = 15,
-        nr_episodes_val: int = 5,
-        nr_episodes_test: int = 5,
+        nr_episodes_train: int | None = None,
+        nr_episodes_val: int | None = None,
+        nr_episodes_test: int | None = None,
     ) -> None:
         super().__init__()
         # DataModule parameters
@@ -45,6 +46,7 @@ class RBCDatamodule(L.LightningDataModule):
                 target_length=self.hparams.train_length,
                 shift_time=self.hparams.shift_time,
                 stride_time=self.hparams.stride_time,
+                pressure=self.hparams.pressure,
             )
             self.datasets["train"] = RBCDataset(
                 self.hparams.data_dir + f"/train/ra{int(self.hparams.ra)}.h5",
@@ -55,6 +57,7 @@ class RBCDatamodule(L.LightningDataModule):
                 target_length=self.hparams.train_length,
                 shift_time=self.hparams.shift_time,
                 stride_time=self.hparams.stride_time,
+                pressure=self.hparams.pressure,
             )
         # Assign test dataset for use in dataloaders
         elif stage == "test":
@@ -67,6 +70,7 @@ class RBCDatamodule(L.LightningDataModule):
                 target_length=self.hparams.test_length,
                 shift_time=self.hparams.shift_time,
                 stride_time=self.hparams.stride_time,
+                pressure=self.hparams.pressure,
             )
         else:
             raise ValueError(f"Stage not implemented: {stage}")
