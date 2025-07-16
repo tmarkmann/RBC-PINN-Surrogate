@@ -9,7 +9,7 @@ from lightning.pytorch.callbacks import (
     RichProgressBar,
 )
 from lightning.pytorch.loggers import WandbLogger
-from rbc_pinn_surrogate.model import FNO3DModule
+from rbc_pinn_surrogate.model import PINOModule
 from rbc_pinn_surrogate.data import RBCDatamodule
 from rbc_pinn_surrogate.loss import RBCEquationLoss
 from rbc_pinn_surrogate.callbacks import (
@@ -17,10 +17,11 @@ from rbc_pinn_surrogate.callbacks import (
     SequenceExamplesCallback,
     MetricsCallback,
     ClearMemoryCallback,
+    FinetuneCallback,
 )
 
 
-@hydra.main(version_base="1.3", config_path="../configs", config_name="fno")
+@hydra.main(version_base="1.3", config_path="../configs", config_name="pino")
 def main(config: DictConfig):
     # data
     dm = RBCDatamodule(data_dir="data/datasets/2D", **config.data)
@@ -38,7 +39,7 @@ def main(config: DictConfig):
     )
 
     # model
-    model = FNO3DModule(lr=config.algo.lr, pino_loss=pino_loss, **config.model)
+    model = PINOModule(lr=config.algo.lr, pino_loss=pino_loss, **config.model)
 
     # logger
     logger = WandbLogger(
@@ -73,6 +74,12 @@ def main(config: DictConfig):
         ),
         ClearMemoryCallback(),
     ]
+    if config.algo.do_finetuning:
+        callbacks.append(
+            FinetuneCallback(
+                finetune_epoch=config.algo.epochs_finetuning,
+            )
+        )
 
     # trainer
     trainer = L.Trainer(

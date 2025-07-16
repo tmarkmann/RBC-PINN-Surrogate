@@ -4,6 +4,7 @@ from .metrics_callback import MetricsCallback
 from .memory_callback import MemoryCallback
 from .timer_callback import TimerCallback
 from .clear_memory import ClearMemoryCallback
+from .pino_finetuning import FinetuneCallback
 
 __all__ = [
     "SequenceExamplesCallback",
@@ -12,4 +13,5 @@ __all__ = [
     "MemoryCallback",
     "TimerCallback",
     "ClearMemoryCallback",
+    "FinetuneCallback"
 ]

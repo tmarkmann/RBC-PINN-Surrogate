@@ -1,11 +1,12 @@
 from typing import Dict
 import torch
+from torch import nn
 from torch import Tensor
 import lightning as L
 import neuralop as no
 
 
-class FNO3DModule(L.LightningModule):
+class PINOModule(L.LightningModule):
     def __init__(
         self,
         lr: float = 1e-3,
@@ -18,6 +19,12 @@ class FNO3DModule(L.LightningModule):
         lifting_channels: int = 16,
         projection_channels: int = 16,
         n_layers: int = 2,
+        data_loss: nn.Module = None,
+        data_weight: float = 1.0,
+        pino_loss: nn.Module = None,
+        pino_weight: float = 1.0,
+        operator: nn.Module = None,
+        operator_weight: float = 1.0,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["pino_loss", "operator"])
@@ -36,19 +43,47 @@ class FNO3DModule(L.LightningModule):
         )
 
         # Loss Function
-        self.loss = no.H1Loss(d=3)
+        if data_loss is None:
+            self.data_loss = no.H1Loss(d=3)
+        else:
+            self.data_loss = data_loss
+        self.eqn_loss = pino_loss
+        self.operator = operator
 
     def forward(self, x):
         return self.model(x)
+
+    def set_finetuning_phase(self, operator: nn.Module):
+        self.hparams.data_weight = 0.0
+        self.operator = operator
 
     def model_step(self, x: Tensor, y: Tensor, stage: str) -> Dict[str, Tensor]:
         # Forward pass and compute loss
         pred = self.forward(x)
 
         # data loss
-        loss = self.loss(pred, y)
-        self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
+        data_loss = self.data_loss(pred, y)
+        self.log(f"{stage}/data_loss", data_loss, prog_bar=True, logger=True)
+        loss = self.hparams.data_weight * data_loss
 
+        # pino loss
+        if self.eqn_loss is not None:
+            pino_loss = self.eqn_loss(pred)
+            pino_baseline = self.eqn_loss(y)
+            self.log(f"{stage}/pino_loss", pino_loss, logger=True)
+            self.log(f"{stage}/pino_baseline", pino_baseline, logger=True)
+
+            loss = loss + (self.hparams.pino_weight * pino_loss)
+
+        # operator loss
+        if self.operator is not None:
+            op_pred = self.operator.forward(x)
+            op_loss = self.data_loss(pred, op_pred)
+
+            self.log(f"{stage}/operator_loss", op_loss, logger=True)
+            loss = loss + (self.hparams.operator_weight * op_loss)
+
+        self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
         return {
             "loss": loss,
             "x": x,
@@ -89,8 +124,14 @@ class FNO3DModule(L.LightningModule):
             length += step
 
         # Compute and log metrics
-        loss = self.loss(pred, target)
-        self.log("test/loss", loss, logger=True)
+        loss = self.data_loss(pred, target)
+        self.log("test/data_loss", loss, logger=True)
+
+        if self.eqn_loss is not None:
+            pino_loss = self.eqn_loss(pred)
+            pino_baseline = self.eqn_loss(target)
+            self.log("test/pino_loss", pino_loss, logger=True)
+            self.log("test/pino_baseline", pino_baseline, logger=True)
 
         return {
             "loss": loss,

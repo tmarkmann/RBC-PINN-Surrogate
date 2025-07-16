@@ -1,0 +1,43 @@
+defaults:
+  - paths: default
+  - hydra: default
+  - _self_
+
+data:
+  ra: 10000
+  batch_size: 32
+  start_time: 1
+  end_time: 61
+  train_length: 15
+  test_length: 60
+  shift_time: 1
+  stride_time: 0.5
+  nr_episodes_train: null # this means all of them
+  nr_episodes_val: null
+  nr_episodes_test: null
+  # Data efficiency settings
+  num_workers: 2
+  pin_memory: True
+  persistent_workers: True
+  pressure: True
+
+model:
+  n_modes_width: 16
+  n_modes_height: 16
+  n_modes_depth: 16
+  hidden_channels: 32
+  in_channels: 5
+  out_channels: 5
+  lifting_channels: 16
+  projection_channels: 16
+  n_layers: 4
+  pino_weight: 200
+  data_weight: 1
+
+algo:
+  lr: 1e-3
+  epochs: 150
+  do_finetuning: False
+  epochs_finetuning: 100
+
+task_name: pino
