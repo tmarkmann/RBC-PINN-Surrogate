@@ -5,19 +5,19 @@ defaults:
 
 data:
   ra: 10000
-  batch_size: 32
+  batch_size: 64
   start_time: 1
   end_time: 61
-  train_length: 15
-  test_length: 60
+  train_length: 5
+  test_length: 20
   shift_time: 1
   stride_time: 0.5
-  nr_episodes_train: null # this means all of them
-  nr_episodes_val: null
-  nr_episodes_test: null
+  nr_episodes_train: 15 # this means all of them
+  nr_episodes_val: 5
+  nr_episodes_test: 10
   # Data efficiency settings
   num_workers: 2
-  pin_memory: True
+  pin_memory: False
   persistent_workers: True
   pressure: True
 
@@ -36,8 +36,8 @@ model:
 
 algo:
   lr: 1e-3
-  epochs: 150
-  do_finetuning: False
-  epochs_finetuning: 100
+  epochs: 10
+  do_finetuning: True
+  epochs_finetuning: 1
 
 task_name: pino

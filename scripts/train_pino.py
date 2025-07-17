@@ -53,26 +53,26 @@ def main(config: DictConfig):
     callbacks = [
         RichProgressBar(),
         RichModelSummary(),
-        EarlyStopping(
-            monitor="val/loss",
-            mode="min",
-            patience=7,
-        ),
-        SequenceExamplesCallback(
-            train_freq=20,
-        ),
-        MetricsCallback(
-            name="metrics",
-            key_groundtruth="y",
-            key_prediction="y_hat",
-        ),
-        SequenceMetricsCallback(
-            name="sequence",
-            key_groundtruth="y",
-            key_prediction="y_hat",
-            dt=config.data.stride_time,
-        ),
-        ClearMemoryCallback(),
+        # EarlyStopping(
+        #     monitor="val/loss",
+        #     mode="min",
+        #     patience=7,
+        # ),
+        # SequenceExamplesCallback(
+        #     train_freq=20,
+        # ),
+        # MetricsCallback(
+        #     name="metrics",
+        #     key_groundtruth="y",
+        #     key_prediction="y_hat",
+        # ),
+        # SequenceMetricsCallback(
+        #     name="sequence",
+        #     key_groundtruth="y",
+        #     key_prediction="y_hat",
+        #     dt=config.data.stride_time,
+        # ),
+        # ClearMemoryCallback(),
     ]
     if config.algo.do_finetuning:
         callbacks.append(
