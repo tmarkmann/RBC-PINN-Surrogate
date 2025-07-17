@@ -17,7 +17,7 @@ from rbc_pinn_surrogate.callbacks import (
     SequenceExamplesCallback,
     MetricsCallback,
     ClearMemoryCallback,
-    FinetuneCallback,
+    OperatorFinetuneCallback,
 )
 
 
@@ -76,8 +76,8 @@ def main(config: DictConfig):
     ]
     if config.algo.do_finetuning:
         callbacks.append(
-            FinetuneCallback(
-                finetune_epoch=config.algo.epochs_finetuning,
+            OperatorFinetuneCallback(
+                start_epoch=config.algo.start_finetuning_epoch_,
             )
         )
 
@@ -86,7 +86,7 @@ def main(config: DictConfig):
         logger=logger,
         accelerator="auto",
         default_root_dir=config.paths.output_dir,
-        check_val_every_n_epoch=1,
+        check_val_every_n_epoch=2,
         log_every_n_steps=10,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,

@@ -8,13 +8,13 @@ data:
   batch_size: 64
   start_time: 1
   end_time: 61
-  train_length: 5
-  test_length: 20
+  train_length: 15
+  test_length: 60
   shift_time: 1
   stride_time: 0.5
-  nr_episodes_train: 15 # this means all of them
-  nr_episodes_val: 5
-  nr_episodes_test: 10
+  nr_episodes_train: null # this means all of them
+  nr_episodes_val: null
+  nr_episodes_test: null
   # Data efficiency settings
   num_workers: 2
   pin_memory: False
@@ -33,11 +33,12 @@ model:
   n_layers: 4
   pino_weight: 200
   data_weight: 1
+  operator_weight: 1
 
 algo:
   lr: 1e-3
-  epochs: 10
+  epochs: 150
   do_finetuning: True
-  epochs_finetuning: 1
+  start_finetuning_epoch_: 100
 
 task_name: pino

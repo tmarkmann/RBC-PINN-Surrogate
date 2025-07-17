@@ -5,10 +5,17 @@ from torch import Tensor
 import lightning as L
 import neuralop as no
 
+from rbc_pinn_surrogate.callbacks import OperatorFinetuneCallback
+
 
 class PINOModule(L.LightningModule):
     def __init__(
         self,
+        pino_loss: nn.Module,
+        pino_weight: float = 1.0,
+        operator_weight: float = 1.0,
+        data_loss: nn.Module = None,
+        data_weight: float = 1.0,
         lr: float = 1e-3,
         n_modes_width: int = 16,
         n_modes_height: int = 16,
@@ -19,11 +26,6 @@ class PINOModule(L.LightningModule):
         lifting_channels: int = 16,
         projection_channels: int = 16,
         n_layers: int = 2,
-        data_loss: nn.Module = None,
-        data_weight: float = 1.0,
-        pino_loss: nn.Module = None,
-        pino_weight: float = 1.0,
-        operator_weight: float = 1.0,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["pino_loss", "operator"])
@@ -50,81 +52,49 @@ class PINOModule(L.LightningModule):
 
         # operator for finetuning
         self.finetuning = False
-        self.operator = no.models.TFNO3d(
-            n_modes_width=n_modes_width,
-            n_modes_height=n_modes_height,
-            n_modes_depth=n_modes_depth,
-            hidden_channels=hidden_channels,
-            in_channels=in_channels,
-            out_channels=out_channels,
-            lifting_channels=lifting_channels,
-            projection_channels=projection_channels,
-            n_layers=n_layers,
-        )
 
     def forward(self, x):
         return self.model(x)
 
     def set_finetuning_phase(self):
         self.finetuning = True
-        self.hparams.data_weight = 0.0
-        # clone model to operator and set weight to not trainable
-        self.operator.load_state_dict(self.model.state_dict())
-        for param in self.operator.parameters():
-            param.requires_grad = False
+        print("Finetuning phase activated. Model will now use operator finetuning.")
 
     def model_step(self, x: Tensor, y: Tensor, stage: str) -> Dict[str, Tensor]:
-        if self.finetuning:
-            return self.model_tune(x, y, stage)
-        
-        # Forward pass and compute loss
-        pred = self.forward(x)
+        prog_bar_log = stage == "train"
+
+        # Forward pass
+        pred = self(x)
 
         # data loss
         data_loss = self.data_loss(pred, y)
-        self.log(f"{stage}/data_loss", data_loss, prog_bar=True, logger=True)
-        loss = self.hparams.data_weight * data_loss
+        self.log(f"{stage}/data_loss", data_loss, prog_bar=prog_bar_log, logger=True)
 
         # pino loss
-        if self.eqn_loss is not None:
-            pino_loss = self.eqn_loss(pred)
-            pino_baseline = self.eqn_loss(y)
-            self.log(f"{stage}/pino_loss", pino_loss, prog_bar=True, logger=True)
-            self.log(f"{stage}/pino_baseline", pino_baseline, logger=True)
+        pino_loss = self.eqn_loss(pred)
+        pino_baseline = self.eqn_loss(y)
+        self.log(f"{stage}/pino_loss", pino_loss, prog_bar=prog_bar_log, logger=True)
+        self.log(f"{stage}/pino_baseline", pino_baseline, logger=True)
 
-            loss = loss + (self.hparams.pino_weight * pino_loss)
+        # operator loss
+        if self.finetuning:
+            reference = self.get_reference_model()
+            with torch.no_grad():
+                ref_pred = reference(x)
+            op_loss = self.data_loss(ref_pred, y)
+            self.log(f"{stage}/op_loss", op_loss, prog_bar=prog_bar_log, logger=True)
 
-        self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
-        return {
-            "loss": loss,
-            "x": x,
-            "y": y,
-            "y_hat": pred,
-        }
-    
-    def model_tune(self, x: Tensor, y: Tensor, stage: str) -> Dict[str, Tensor]:
-        # model prediction
-        pred = self.forward(x)
+            # operator + pino loss
+            loss = (self.hparams.operator_weight * op_loss) + (
+                self.hparams.pino_weight * pino_loss
+            )
+        else:
+            # data + pino loss
+            loss = (self.hparams.data_weight * data_loss) + (
+                self.hparams.pino_weight * pino_loss
+            )
 
-        # reference model prediction
-        with torch.no_grad():
-            op_pred = self.operator.forward(x)
-        
-        # reference loss
-        op_loss = self.data_loss(pred, op_pred)
-        self.log(f"{stage}/operator_loss", op_loss, prog_bar=True, logger=True)
-        loss = self.hparams.operator_weight * op_loss
-
-        # pino loss
-        if self.eqn_loss is not None:
-            pino_loss = self.eqn_loss(pred)
-            pino_baseline = self.eqn_loss(y)
-            self.log(f"{stage}/pino_loss", pino_loss, prog_bar=True, logger=True)
-            self.log(f"{stage}/pino_baseline", pino_baseline, logger=True)
-
-            loss = loss + (self.hparams.pino_weight * pino_loss)
-
-        self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
+        self.log(f"{stage}/loss", loss, prog_bar=prog_bar_log, logger=True)
         return {
             "loss": loss,
             "x": x,
@@ -191,3 +161,14 @@ class PINOModule(L.LightningModule):
         # Remove metadat from neuralop library TODO check if useful
         state_dict.pop("_metadata", None)
         return super().load_state_dict(state_dict, strict)
+
+    def get_reference_model(self):
+        ref_cb = next(
+            cb
+            for cb in self.trainer.callbacks
+            if isinstance(cb, OperatorFinetuneCallback)
+        )
+        if ref_cb.reference_model is not None:
+            return ref_cb.reference_model
+        else:
+            raise ValueError("Reference model is not set in OperatorFinetuneCallback.")
