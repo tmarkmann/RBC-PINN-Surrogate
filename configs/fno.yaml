@@ -10,7 +10,7 @@ data:
   end_time: 400
   train_length: 10
   test_length: 60
-  shift_time: 8
+  shift_time: 2
   stride_time: 0.5
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null

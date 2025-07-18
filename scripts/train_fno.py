@@ -20,7 +20,7 @@ from rbc_pinn_surrogate.callbacks import (
 @hydra.main(version_base="1.3", config_path="../configs", config_name="fno")
 def main(config: DictConfig):
     # data
-    dm = RBCDatamodule(data_dir="data/2D", **config.data)
+    dm = RBCDatamodule(data_dir="data/datasets/2D", **config.data)
 
     # model
     # inv_transform = NormalizeInverse(mean=cfg.data.means, std=cfg.data.stds)
@@ -29,7 +29,7 @@ def main(config: DictConfig):
     # logger
     logger = WandbLogger(
         entity="sail-project",
-        project="RayleighBenard-PINN",
+        project="RayleighBenard-FNO",
         save_dir=config.paths.output_dir,
         log_model=False,
     )

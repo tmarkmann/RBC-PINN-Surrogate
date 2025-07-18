@@ -225,3 +225,4 @@ pyrightconfig.json
 
 logs/
 data/datasets/
+wandb
