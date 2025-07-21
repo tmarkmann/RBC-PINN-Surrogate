@@ -7,8 +7,8 @@ from lightning.pytorch.callbacks import (
 )
 from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig
-from rbc_pinn_surrogate.data import RBCDatamodule
-from rbc_pinn_surrogate.model import FNO3DModule
+from rbc_pinn_surrogate.data import RBCDatamodule2D
+from rbc_pinn_surrogate.model import FNOModule
 from rbc_pinn_surrogate.callbacks import (
     SequenceMetricsCallback,
     SequenceExamplesCallback,
@@ -20,11 +20,11 @@ from rbc_pinn_surrogate.callbacks import (
 @hydra.main(version_base="1.3", config_path="../configs", config_name="fno")
 def main(config: DictConfig):
     # data
-    dm = RBCDatamodule(data_dir="data/datasets/2D", **config.data)
+    dm = RBCDatamodule2D(data_dir="data/datasets/2D", **config.data)
 
     # model
     # inv_transform = NormalizeInverse(mean=cfg.data.means, std=cfg.data.stds)
-    model = FNO3DModule(lr=config.algo.lr, **config.model)
+    model = FNOModule(lr=config.algo.lr, **config.model)
 
     # logger
     logger = WandbLogger(
@@ -55,7 +55,7 @@ def main(config: DictConfig):
             name="sequence",
             key_groundtruth="y",
             key_prediction="y_hat",
-            dt=config.data.stride_time,
+            dt=config.data.stride,
         ),
         ClearMemoryCallback(),
     ]

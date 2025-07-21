@@ -2,10 +2,10 @@ from typing import List
 
 import lightning as L
 from torch.utils.data import Dataset, DataLoader
-from .dataset import RBCDataset
+from .dataset import RBCDataset3D
 
 
-class RBCDatamodule(L.LightningDataModule):
+class RBCDatamodule3D(L.LightningDataModule):
     def __init__(
         self,
         data_dir: str,
@@ -17,8 +17,6 @@ class RBCDatamodule(L.LightningDataModule):
         persistent_workers: bool = False,
         start_time: int = 0,
         end_time: int = 100,
-        train_length: int = 8,
-        test_length: int = 8,
         shift_time: int = 1,
         stride_time: int = 1,
         nr_episodes_train: int | None = None,
@@ -37,37 +35,37 @@ class RBCDatamodule(L.LightningDataModule):
     def setup(self, stage: str):
         # Assign train/val datasets for use in dataloaders
         if stage == "fit":
-            self.datasets["val"] = RBCDataset(
+            self.datasets["val"] = RBCDataset3D(
                 self.hparams.data_dir + f"/val/ra{int(self.hparams.ra)}.h5",
                 start_time=self.hparams.start_time,
                 end_time=self.hparams.end_time,
                 nr_episodes=self.hparams.nr_episodes_val,
-                input_length=self.hparams.train_length,
-                target_length=self.hparams.train_length,
+                input_length=1,
+                target_length=1,
                 shift_time=self.hparams.shift_time,
                 stride_time=self.hparams.stride_time,
                 pressure=self.hparams.pressure,
             )
-            self.datasets["train"] = RBCDataset(
+            self.datasets["train"] = RBCDataset3D(
                 self.hparams.data_dir + f"/train/ra{int(self.hparams.ra)}.h5",
                 start_time=self.hparams.start_time,
                 end_time=self.hparams.end_time,
                 nr_episodes=self.hparams.nr_episodes_train,
-                input_length=self.hparams.train_length,
-                target_length=self.hparams.train_length,
+                input_length=1,
+                target_length=1,
                 shift_time=self.hparams.shift_time,
                 stride_time=self.hparams.stride_time,
                 pressure=self.hparams.pressure,
             )
         # Assign test dataset for use in dataloaders
         elif stage == "test":
-            self.datasets["test"] = RBCDataset(
+            self.datasets["test"] = RBCDataset3D(
                 self.hparams.data_dir + f"/test/ra{int(self.hparams.ra)}.h5",
                 start_time=self.hparams.start_time,
                 end_time=self.hparams.end_time,
                 nr_episodes=self.hparams.nr_episodes_test,
-                input_length=self.hparams.train_length,
-                target_length=self.hparams.test_length,
+                input_length=1,
+                target_length=1,
                 shift_time=self.hparams.shift_time,
                 stride_time=self.hparams.stride_time,
                 pressure=self.hparams.pressure,

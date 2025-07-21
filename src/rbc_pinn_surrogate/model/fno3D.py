@@ -5,7 +5,7 @@ import lightning as L
 import neuralop as no
 
 
-class FNOModule(L.LightningModule):
+class FNO3DModule(L.LightningModule):
     def __init__(
         self,
         lr: float = 1e-3,
@@ -42,6 +42,9 @@ class FNOModule(L.LightningModule):
         return self.model(x)
 
     def model_step(self, x: Tensor, y: Tensor, stage: str) -> Dict[str, Tensor]:
+        # unsqueeze time dimension
+        x = x.squeeze()
+        y = y.squeeze()
         # Forward pass and compute loss
         pred = self.forward(x)
 

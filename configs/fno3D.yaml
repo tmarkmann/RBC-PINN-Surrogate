@@ -4,25 +4,23 @@ defaults:
   - _self_
 
 data:
-  ra: 1000000
-  batch_size: 32
-  start: 1
-  end: 200
-  train_steps: 10
-  test_steps: 60
-  train_shift: 5
-  test_shift: 10
-  stride: 1
+  ra: 2500
+  batch_size: 4
+  start_time: 1
+  end_time: 300
+  shift_time: 0.375
+  stride_time: 0.375
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null
   nr_episodes_test: null
   # Data efficiency settings
-  num_workers: 2
-  pin_memory: True
-  persistent_workers: True
+  num_workers: 0
+  pin_memory: False
+  persistent_workers: False
   pressure: True
 
 model:
+  lr: 1e-3
   n_modes_width: 16
   n_modes_height: 16
   n_modes_depth: 16
@@ -34,7 +32,6 @@ model:
   n_layers: 4
 
 algo:
-  lr: 1e-3
-  epochs: 50
+  epochs: 400
 
 task_name: fno3d
