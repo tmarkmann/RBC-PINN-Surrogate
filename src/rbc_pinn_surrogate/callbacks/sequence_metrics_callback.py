@@ -3,10 +3,8 @@ import pandas as pd
 import seaborn as sns
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import WandbLogger
-import torch
 from torch import Tensor
 from torchmetrics import MeanSquaredError
-import gc
 
 import wandb
 from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError, NormalizedSumError

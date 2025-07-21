@@ -13,5 +13,5 @@ __all__ = [
     "MemoryCallback",
     "TimerCallback",
     "ClearMemoryCallback",
-    "OperatorFinetuneCallback"
+    "OperatorFinetuneCallback",
 ]

@@ -42,9 +42,7 @@ class RBCDataset(Dataset[Tensor]):
             # get episode
             self.episodes = {}
             for episode in range(self.nr_episodes):
-                ep = torch.tensor(
-                    file[f"states{episode}"][self.start : self.end]
-                )
+                ep = torch.tensor(file[f"states{episode}"][self.start : self.end])
                 # Swap the channel dimension to the first dimension
                 ep = self._permute(ep)
                 # store episode data
@@ -74,8 +72,8 @@ class RBCDataset(Dataset[Tensor]):
         ) // self.shift
 
     def _check_validity(self, nr_episodes):
-        assert (self.end / self.dt) <= self.episode_length, (
-            f"End time {self.end} exceeds episode length {self.episode_length}"
+        assert (self.end * self.dt) <= self.episode_length, (
+            f"End steps {self.end} (={self.end / self.dt}[time]) exceeds episode length [time] {self.episode_length}"
         )
         assert self.start < self.end, (
             f"Start time {self.start} must be less than end time {self.end}"
@@ -83,12 +81,11 @@ class RBCDataset(Dataset[Tensor]):
         assert self.nr_episodes >= nr_episodes, (
             f"Number of episodes {nr_episodes} exceeds available episodes {self.nr_episodes}"
         )
-    
+
     def _permute(self, ep: torch.Tensor) -> torch.Tensor:
         # (1, 0, 2, 3, 4, …) works for both 2‑D and 3‑D inputs
         order = (1, 0, *range(2, ep.ndim))
         return ep.permute(order)
-
 
     def __len__(self) -> int:
         return self.nr_pairs * self.nr_episodes
@@ -126,4 +123,3 @@ class RBCDataset3D(RBCDataset):
     def _set_data_properties(self, file):
         super()._set_data_properties(file)
         self.depth, self.height, self.width = file["states0"].shape[2:5]
-

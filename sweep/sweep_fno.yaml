@@ -7,7 +7,7 @@ metric:
 parameters:
   data.ra:
     value: 1_000_000
-  data.train_length:
+  data.train_steps:
     values: [2, 5, 10, 15, 20] 
   model.n_modes_width:
     values: [4, 8, 16, 32]
