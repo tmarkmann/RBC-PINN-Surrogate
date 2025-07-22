@@ -5,11 +5,13 @@ defaults:
 
 data:
   ra: 2500
-  batch_size: 8
+  batch_size: 32
   start: 1
-  end: 200
-  shift: 1
+  end: 101
+  train_shift: 2
+  test_shift: 8
   stride: 1
+  test_length: 15
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null
   nr_episodes_test: null
@@ -32,6 +34,6 @@ model:
   n_layers: 4
 
 algo:
-  epochs: 50
+  epochs: 30
 
 task_name: fno3d

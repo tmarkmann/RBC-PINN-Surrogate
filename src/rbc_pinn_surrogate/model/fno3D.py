@@ -43,8 +43,8 @@ class FNO3DModule(L.LightningModule):
 
     def model_step(self, x: Tensor, y: Tensor, stage: str) -> Dict[str, Tensor]:
         # unsqueeze time dimension
-        x = x.squeeze()
-        y = y.squeeze()
+        x = x.squeeze(dim=2)
+        y = y.squeeze(dim=2)
         # Forward pass and compute loss
         pred = self.forward(x)
 
@@ -69,27 +69,15 @@ class FNO3DModule(L.LightningModule):
 
     def test_step(self, batch, batch_idx):
         input, target = batch
-        input_length = input.shape[2]
-        target_length = target.shape[2]
 
         # autoregressive model steps
-        length = 0
-        x = input
-        pred = torch.empty(
-            x.shape[0],
-            x.shape[1],
-            target_length,
-            *x.shape[3:],
-            device=x.device,
-            dtype=x.dtype,
-        )
+        x = input.squeeze(dim=2)
+        pred = torch.empty_like(target)
 
-        while length < target_length:
+        for i in range(target.shape[2]):
             y = self.forward(x)
-            step = min(input_length, target_length - length)
-            pred[:, :, length : length + step] = y[:, :, :step]
+            pred[:, :, i] = y
             x = y
-            length += step
 
         # Compute and log metrics
         loss = self.loss(pred, target)
