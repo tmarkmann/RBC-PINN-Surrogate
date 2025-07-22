@@ -11,6 +11,7 @@ from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import FNO3DModule
 from rbc_pinn_surrogate.callbacks import (
     MetricsCallback,
+    SequenceMetricsCallback
 )
 
 
@@ -44,6 +45,12 @@ def main(config: DictConfig):
             name="metrics",
             key_groundtruth="y",
             key_prediction="y_hat",
+        ),
+        SequenceMetricsCallback(
+            name="sequence",
+            key_groundtruth="y",
+            key_prediction="y_hat",
+            dt=0.5,
         ),
     ]
 
