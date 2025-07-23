@@ -13,7 +13,7 @@ from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError, NormalizedSumE
 class SequenceMetric:
     def __init__(self, metric, name, dt):
         self.metric = metric
-        self.name = name #f"{metric.__class__.__name__}"
+        self.name = name  # f"{metric.__class__.__name__}"
         self.data = []
         self.dt = dt
 

@@ -41,21 +41,25 @@ class FNO3DModule(L.LightningModule):
     def forward(self, x):
         return self.model(x)
 
-    def model_step(self, x: Tensor, y: Tensor, stage: str) -> Dict[str, Tensor]:
-        # unsqueeze time dimension
-        x = x.squeeze(dim=2)
-        y = y.squeeze(dim=2)
-        # Forward pass and compute loss
-        pred = self.forward(x)
+    def model_step(
+        self, input: Tensor, target: Tensor, stage: str
+    ) -> Dict[str, Tensor]:
+        # autoregressive model steps
+        out = input.squeeze(dim=2)
+        outputs = []
+        for _ in range(target.shape[2]):
+            out = self.forward(out)
+            outputs.append(out)
+        pred = torch.stack(outputs, dim=2)
 
         # data loss
-        loss = self.loss(pred, y)
+        loss = self.loss(pred, target)
         self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
 
         return {
             "loss": loss,
-            "x": x,
-            "y": y,
+            "x": input,
+            "y": target,
             "y_hat": pred,
         }
 
@@ -68,26 +72,8 @@ class FNO3DModule(L.LightningModule):
         return self.model_step(x, y, stage="val")
 
     def test_step(self, batch, batch_idx):
-        input, target = batch
-
-        # autoregressive model steps
-        x = input.squeeze(dim=2)
-        pred = torch.empty_like(target)
-
-        for i in range(target.shape[2]):
-            y = self.forward(x)
-            pred[:, :, i] = y
-            x = y
-
-        # Compute and log metrics
-        loss = self.loss(pred, target)
-        self.log("test/loss", loss, logger=True)
-
-        return {
-            "loss": loss,
-            "y": target,
-            "y_hat": pred,
-        }
+        x, y = batch
+        return self.model_step(x, y, stage="test")
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(

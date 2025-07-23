@@ -1,7 +1,0 @@
-defaults:
-  - paths: default
-  - hydra: default
-  - _self_
-
-task_name: test_fno3D
-checkpoint: null

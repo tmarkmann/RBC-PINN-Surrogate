@@ -5,13 +5,14 @@ defaults:
 
 data:
   ra: 2500
-  batch_size: 32
+  batch_size: 8
   start: 1
   end: 200
-  train_shift: 2
-  test_shift: 25
+  train_length: 2
+  train_shift: 5
+  test_length: 15
+  test_shift: 5
   stride: 1
-  test_length: 50
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null
   nr_episodes_test: null

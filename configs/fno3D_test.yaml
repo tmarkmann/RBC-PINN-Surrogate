@@ -1,0 +1,25 @@
+defaults:
+  - paths: default
+  - hydra: default
+  - _self_
+
+task_name: test_fno3D
+checkpoint: ${paths.model_dir}/ra${data.ra}_test.ckpt
+
+data:
+  ra: 2500
+  batch_size: 32
+  start: 1
+  end: 200
+  train_shift: 2
+  test_shift: 25
+  stride: 1
+  test_length: 50
+  nr_episodes_train: null # this means all of them
+  nr_episodes_val: null
+  nr_episodes_test: null
+  # Data efficiency settings
+  num_workers: 2
+  pin_memory: True
+  persistent_workers: True
+  pressure: True
