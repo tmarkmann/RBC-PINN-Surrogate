@@ -100,7 +100,7 @@ class RBCDataset(Dataset[Tensor]):
 
         # only include pressure channel if specified
         if not self.pressure:
-            episode_data = episode_data[:3, :, :]
+            episode_data = episode_data[:-2, :, :]
 
         # calculate start and end indices for input and target sequences
         start_idx = pair_idx * self.shift

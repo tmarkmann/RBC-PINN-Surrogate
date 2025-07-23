@@ -11,9 +11,9 @@ from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError, NormalizedSumE
 
 
 class SequenceMetric:
-    def __init__(self, metric, dt):
+    def __init__(self, metric, name, dt):
         self.metric = metric
-        self.name = f"{metric.__class__.__name__}"
+        self.name = name #f"{metric.__class__.__name__}"
         self.data = []
         self.dt = dt
 
@@ -48,9 +48,9 @@ class SequenceMetricsCallback(Callback):
 
         # sequence metrics
         self.sequence_metrics = [
-            SequenceMetric(metric=NormalizedSumSquaredError(), dt=dt),
-            SequenceMetric(metric=NormalizedSumError(), dt=dt),
-            SequenceMetric(metric=MeanSquaredError(), dt=dt),
+            SequenceMetric(metric=NormalizedSumSquaredError(), name="NSSE", dt=dt),
+            SequenceMetric(metric=NormalizedSumError(), name="NSE", dt=dt),
+            SequenceMetric(metric=MeanSquaredError(squared=False), name="RMSE", dt=dt),
         ]
 
     # Testing callbacks

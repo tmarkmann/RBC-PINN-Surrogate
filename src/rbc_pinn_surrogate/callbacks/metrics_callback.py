@@ -17,7 +17,12 @@ class MetricsCallback(Callback):
         self.metrics = [
             NormalizedSumSquaredError(),
             NormalizedSumError(),
-            MeanSquaredError(),
+            MeanSquaredError(squared=False),
+        ]
+        self.names = [
+            "NSSE",
+            "NSE",
+            "RMSE",
         ]
 
     # Training callbacks
@@ -38,9 +43,9 @@ class MetricsCallback(Callback):
 
     # Helper function
     def log_metrics(self, output: Dict[str, Tensor], stage: str):
-        for metric in self.metrics:
+        for metric, name in zip(self.metrics, self.names):
             self.log(
-                f"{stage}/{self.name}-{metric.__class__.__name__}",
+                f"{stage}/{self.name}-{name}",
                 metric(
                     output[self.key_prediction].detach().cpu(),
                     output[self.key_groundtruth].detach().cpu(),

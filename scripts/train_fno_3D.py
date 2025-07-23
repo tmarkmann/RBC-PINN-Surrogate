@@ -11,7 +11,8 @@ from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import FNO3DModule
 from rbc_pinn_surrogate.callbacks import (
     MetricsCallback,
-    SequenceMetricsCallback
+    SequenceMetricsCallback,
+    Example3DCallback,
 )
 
 
@@ -52,6 +53,7 @@ def main(config: DictConfig):
             key_prediction="y_hat",
             dt=0.5,
         ),
+        Example3DCallback(dir=config.paths.output_dir + "/animation"),
     ]
 
     # trainer
