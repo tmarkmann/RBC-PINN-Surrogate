@@ -1,0 +1,16 @@
+program: scripts/train_fno_3D.py
+name: FNO3D
+method: grid
+metric:
+  goal: minimize
+  name: val/metrics-RMSE
+parameters:
+  data.train_lenght:
+    min: 1
+    max: 15
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}

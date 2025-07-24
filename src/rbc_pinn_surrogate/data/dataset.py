@@ -110,6 +110,12 @@ class RBCDataset(Dataset[Tensor]):
         x = episode_data[:, start_idx : end_idx_input : self.stride]
         y = episode_data[:, end_idx_input : end_idx_target : self.stride]
 
+        if x.shape[1] != self.input_steps or y.shape[1] != self.target_steps:
+            raise ValueError(
+                f"Input shape {x.shape} or target shape {y.shape} does not match expected shapes "
+                f"({self.input_steps}, {self.target_steps})"
+            )
+
         return x, y
 
 

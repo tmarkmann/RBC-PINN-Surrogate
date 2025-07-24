@@ -3,7 +3,7 @@ name: FNO
 method: random
 metric:
   goal: minimize
-  name: val/metrics-MeanSquaredError
+  name: val/metrics-RMSE
 parameters:
   data.ra:
     value: 1_000_000

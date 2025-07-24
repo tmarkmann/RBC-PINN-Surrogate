@@ -6,20 +6,20 @@ defaults:
 data:
   ra: 2500
   batch_size: 16
-  start: 1
+  start: 100
   end: 300
-  train_length: 1
-  train_shift: 10
-  test_length: 20
+  train_length: 2
+  train_shift: 5
+  test_length: 50
   test_shift: 5
   stride: 1
-  nr_episodes_train: 1 # this means all of them
+  nr_episodes_train: null # this means all of them
   nr_episodes_val: null
   nr_episodes_test: null
   # Data efficiency settings
-  num_workers: 2
-  pin_memory: True
-  persistent_workers: True
+  num_workers: 0
+  pin_memory: False
+  persistent_workers: False
   pressure: False
 
 model:
@@ -35,6 +35,6 @@ model:
   n_layers: 4
 
 algo:
-  epochs: 1
+  epochs: 50
 
 task_name: fno3d
