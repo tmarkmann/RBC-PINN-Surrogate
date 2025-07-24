@@ -11,26 +11,25 @@ from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError, NormalizedSumE
 
 
 class SequenceMetric:
-    def __init__(self, metric, name, dt):
+    def __init__(self, metric, name):
         self.metric = metric
-        self.name = name  # f"{metric.__class__.__name__}"
+        self.name = name
         self.data = []
-        self.dt = dt
 
     def update(
         self, prediction: list[Tensor], groundtruth: list[Tensor], batch_idx: int
     ):
         for sample_idx in range(groundtruth.shape[0]):
-            for tau in range(groundtruth.shape[2]):
+            for step in range(groundtruth.shape[2]):
                 self.data.append(
                     {
                         "idx": batch_idx * groundtruth.shape[0] + sample_idx,
                         "batch_idx": batch_idx,
                         "sample_idx": sample_idx,
-                        "tau": tau * self.dt,
+                        "step": step,
                         "value": self.metric(
-                            prediction[sample_idx, :, tau].reshape(-1),
-                            groundtruth[sample_idx, :, tau].reshape(-1),
+                            prediction[sample_idx, :, step].reshape(-1),
+                            groundtruth[sample_idx, :, step].reshape(-1),
                         ).item(),
                     }
                 )
@@ -40,17 +39,16 @@ class SequenceMetric:
 
 
 class SequenceMetricsCallback(Callback):
-    def __init__(self, name: str, key_groundtruth: str, key_prediction: str, dt: float):
+    def __init__(self, name: str, key_groundtruth: str, key_prediction: str,):
         self.name = name
         self.key_groundtruth = key_groundtruth
         self.key_prediction = key_prediction
-        self.dt = dt
 
         # sequence metrics
         self.sequence_metrics = [
-            SequenceMetric(metric=NormalizedSumSquaredError(), name="NSSE", dt=dt),
-            SequenceMetric(metric=NormalizedSumError(), name="NSE", dt=dt),
-            SequenceMetric(metric=MeanSquaredError(squared=False), name="RMSE", dt=dt),
+            SequenceMetric(metric=NormalizedSumSquaredError(), name="NSSE"),
+            SequenceMetric(metric=NormalizedSumError(), name="NSE"),
+            SequenceMetric(metric=MeanSquaredError(squared=False), name="RMSE"),
         ]
 
     # Testing callbacks
@@ -75,9 +73,12 @@ class SequenceMetricsCallback(Callback):
     def plot_metrics(self, df: pd.DataFrame, metric: str):
         fig = plt.figure()
         sns.set_theme()
-        ax = sns.lineplot(data=df, x="tau", y="value")
+        ax = sns.lineplot(data=df, x="step", y="value")
         ax.set_title(metric)
         ax.set_ylabel(metric)
+        ax.set_xlabel("Time Step")
+        ax.set_ylim(bottom=0, top=0.5)
+        
 
         # save as image
         im = wandb.Image(fig, caption=metric)

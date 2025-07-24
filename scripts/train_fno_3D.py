@@ -50,7 +50,6 @@ def main(config: DictConfig):
             name="sequence",
             key_groundtruth="y",
             key_prediction="y_hat",
-            dt=0.5,
         ),
     ]
 
