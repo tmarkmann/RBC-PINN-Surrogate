@@ -17,7 +17,6 @@ def main(config: DictConfig):
 
     # trainer
     trainer = L.Trainer(
-        # precision="16-mixed",
         accelerator="auto",
         default_root_dir=config.paths.output_dir,
         max_epochs=1,

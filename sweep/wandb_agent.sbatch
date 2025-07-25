@@ -16,4 +16,4 @@ conda activate rbcuv
 cd ~/RBC-PINN-Surrogate
 
 # start job
-srun uv run wandb agent $1 --project RayleighBenard-3D-FNO --entity sail-project --count 1
+srun uv run wandb agent $1
