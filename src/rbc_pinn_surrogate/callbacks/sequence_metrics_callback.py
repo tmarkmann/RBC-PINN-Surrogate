@@ -39,7 +39,12 @@ class SequenceMetric:
 
 
 class SequenceMetricsCallback(Callback):
-    def __init__(self, name: str, key_groundtruth: str, key_prediction: str,):
+    def __init__(
+        self,
+        name: str,
+        key_groundtruth: str,
+        key_prediction: str,
+    ):
         self.name = name
         self.key_groundtruth = key_groundtruth
         self.key_prediction = key_prediction
@@ -61,6 +66,8 @@ class SequenceMetricsCallback(Callback):
         # Update each metric
         for metric in self.sequence_metrics:
             metric.update(pred, gt, batch_idx)
+        
+        print(f"Batch {batch_idx} processed for sequence metrics.")
 
     def on_test_end(self, trainer, pl_module) -> None:
         for metric in self.sequence_metrics:
@@ -78,7 +85,6 @@ class SequenceMetricsCallback(Callback):
         ax.set_ylabel(metric)
         ax.set_xlabel("Time Step")
         ax.set_ylim(bottom=0, top=0.5)
-        
 
         # save as image
         im = wandb.Image(fig, caption=metric)
