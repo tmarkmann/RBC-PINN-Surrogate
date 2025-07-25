@@ -29,6 +29,7 @@ class RBCDataset(Dataset[Tensor]):
         self.pressure = pressure
 
         # retrieve dataset parameters
+        self._file = None
         with h5py.File(path, "r") as file:
             self._set_data_properties(file)
             if nr_episodes is not None:
@@ -39,14 +40,10 @@ class RBCDataset(Dataset[Tensor]):
             # check validity of parameters
             self._check_validity(nr_episodes)
 
-            # get episode
-            self.episodes = {}
-            for episode in range(self.nr_episodes):
-                ep = torch.tensor(file[f"states{episode}"][self.start : self.end])
-                # Swap the channel dimension to the first dimension
-                ep = self._permute(ep)
-                # store episode data
-                self.episodes[episode] = ep
+    def _require_file(self):
+        if self._file is None:
+            self._file = h5py.File(self.path, "r")
+        return self._file
 
     def _set_data_properties(self, file):
         # sets general data dimensions properties that are true for all episodes
@@ -82,40 +79,38 @@ class RBCDataset(Dataset[Tensor]):
             f"Number of episodes {nr_episodes} exceeds available episodes {self.nr_episodes}"
         )
 
-    def _permute(self, ep: torch.Tensor) -> torch.Tensor:
-        # (1, 0, 2, 3, 4, …) works for both 2‑D and 3‑D inputs
-        order = (1, 0, *range(2, ep.ndim))
-        return ep.permute(order)
-
     def __len__(self) -> int:
         return self.nr_pairs * self.nr_episodes
 
+    def __del__(self):
+        if self._file is not None:
+            self._file.close()
+            self._file = None
+
     def __getitem__(self, idx: int) -> Tensor:
+        f = self._require_file()
         # calculate episode and pair index
         episode_idx = idx // self.nr_pairs
         pair_idx = idx % self.nr_pairs
 
-        # get the episode data
-        episode_data = self.episodes[episode_idx]
-
-        # only include pressure channel if specified
-        if not self.pressure:
-            episode_data = episode_data[:-2, :, :]
+        # get the episode dataset
+        ds = f[f"states{episode_idx}"]
 
         # calculate start and end indices for input and target sequences
-        start_idx = pair_idx * self.shift
-        end_idx_input = start_idx + self.input_steps
-        end_idx_target = end_idx_input + self.target_steps
+        start_idx = self.start + pair_idx * self.shift
+        mid_idx = start_idx + self.input_steps
+        end_idx = mid_idx + self.target_steps
+
         # extract input and target sequences
-        x = episode_data[:, start_idx : end_idx_input : self.stride]
-        y = episode_data[:, end_idx_input : end_idx_target : self.stride]
+        x = ds[start_idx : mid_idx : self.stride]
+        y = ds[mid_idx : end_idx : self.stride]
+        if not self.pressure:
+            x = x[:, :-2]
+            y = y[:, :-2]
 
-        if x.shape[1] != self.input_steps or y.shape[1] != self.target_steps:
-            raise ValueError(
-                f"Input shape {x.shape} or target shape {y.shape} does not match expected shapes "
-                f"({self.input_steps}, {self.target_steps})"
-            )
-
+        # change channel and time dimension for neuraloperator package
+        x = torch.from_numpy(x).permute(1, 0, *range(2, x.ndim))
+        y = torch.from_numpy(y).permute(1, 0, *range(2, y.ndim))
         return x, y
 
 

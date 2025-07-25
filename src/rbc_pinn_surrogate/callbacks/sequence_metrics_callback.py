@@ -66,7 +66,7 @@ class SequenceMetricsCallback(Callback):
         # Update each metric
         for metric in self.sequence_metrics:
             metric.update(pred, gt, batch_idx)
-        
+
         print(f"Batch {batch_idx} processed for sequence metrics.")
 
     def on_test_end(self, trainer, pl_module) -> None:

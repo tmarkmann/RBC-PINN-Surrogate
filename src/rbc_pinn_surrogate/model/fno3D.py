@@ -1,6 +1,7 @@
 from typing import Dict
 import torch
 from torch import Tensor
+from torch.nn.functional import mse_loss
 import lightning as L
 import neuralop as no
 
@@ -44,23 +45,25 @@ class FNO3DModule(L.LightningModule):
     def model_step(
         self, input: Tensor, target: Tensor, stage: str
     ) -> Dict[str, Tensor]:
+        loss_list = []
+        rmse_list = []
         # autoregressive model steps
         out = input.squeeze(dim=2)
-        outputs = []
-        for _ in range(target.shape[2]):
+        for idx in range(target.shape[2]):
             out = self.forward(out)
-            outputs.append(out)
-        pred = torch.stack(outputs, dim=2)
+            loss_list.append(self.loss(out, target[:, :, idx]))
+            rmse_list.append(torch.sqrt(mse_loss(out, target[:, :, idx])))
+            # out = out.detach()
 
-        # data loss
-        loss = self.loss(pred, target)
+        # log
+        loss = torch.stack(loss_list).mean()
+        rmse = torch.stack(rmse_list).mean()
         self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
+        self.log(f"{stage}/RMSE", rmse, prog_bar=True, logger=True)
 
         return {
             "loss": loss,
-            "x": input,
-            "y": target,
-            "y_hat": pred,
+            "rmse": torch.stack(rmse_list).detach(),
         }
 
     def training_step(self, batch, batch_idx):
@@ -72,8 +75,9 @@ class FNO3DModule(L.LightningModule):
         return self.model_step(x, y, stage="val")
 
     def test_step(self, batch, batch_idx):
-        x, y = batch
-        return self.model_step(x, y, stage="test")
+        with torch.no_grad():
+            x, y = batch
+            return self.model_step(x, y, stage="test")
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(

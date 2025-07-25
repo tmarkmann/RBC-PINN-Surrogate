@@ -8,7 +8,7 @@ data:
   batch_size: 8
   start: 100
   end: 300
-  train_length: 2
+  train_length: 10
   train_shift: 5
   test_length: 50
   test_shift: 25
@@ -17,9 +17,9 @@ data:
   nr_episodes_val: null
   nr_episodes_test: null
   # Data efficiency settings
-  num_workers: 0
-  pin_memory: False
-  persistent_workers: False
+  num_workers: 2
+  pin_memory: True
+  persistent_workers: True
   pressure: False
 
 model:
@@ -35,6 +35,6 @@ model:
   n_layers: 4
 
 algo:
-  epochs: 5
+  epochs: 50
 
 task_name: fno3d

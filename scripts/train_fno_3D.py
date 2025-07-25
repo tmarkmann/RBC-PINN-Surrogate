@@ -7,12 +7,10 @@ from lightning.pytorch.callbacks import (
     RichModelSummary,
     RichProgressBar,
 )
+
 from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import FNO3DModule
-from rbc_pinn_surrogate.callbacks import (
-    MetricsCallback,
-    SequenceMetricsCallback,
-)
+from rbc_pinn_surrogate.callbacks import Metrics3DCallback
 
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="fno3D")
@@ -34,32 +32,22 @@ def main(config: DictConfig):
 
     # callbacks
     callbacks = [
-        RichProgressBar(),
+        RichProgressBar(leave=True),
         RichModelSummary(),
         EarlyStopping(
             monitor="val/loss",
             mode="min",
             patience=5,
         ),
-        MetricsCallback(
-            name="metrics",
-            key_groundtruth="y",
-            key_prediction="y_hat",
-        ),
-        SequenceMetricsCallback(
-            name="sequence",
-            key_groundtruth="y",
-            key_prediction="y_hat",
-        ),
+        Metrics3DCallback(),
     ]
 
     # trainer
     trainer = L.Trainer(
         logger=logger,
+        precision="16-mixed",
         accelerator="auto",
         default_root_dir=config.paths.output_dir,
-        check_val_every_n_epoch=1,
-        log_every_n_steps=10,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,
     )

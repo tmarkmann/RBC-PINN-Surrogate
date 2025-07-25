@@ -6,6 +6,7 @@ from .timer_callback import TimerCallback
 from .clear_memory import ClearMemoryCallback
 from .pino_finetuning import OperatorFinetuneCallback
 from .examples_3D_callback import Example3DCallback
+from .metrics_3D_callback import Metrics3DCallback
 
 __all__ = [
     "SequenceExamplesCallback",
@@ -16,4 +17,5 @@ __all__ = [
     "ClearMemoryCallback",
     "OperatorFinetuneCallback",
     "Example3DCallback",
+    "Metrics3DCallback",
 ]
