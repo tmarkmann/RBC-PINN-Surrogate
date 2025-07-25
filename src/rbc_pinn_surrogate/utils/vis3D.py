@@ -109,7 +109,7 @@ def animation_3d(
         # cbar.remove()
         # cbar = fig.colorbar(diff_faces[1], ax=ax3, orientation='vertical')
 
-        plt.suptitle(f"Simulation {frame_idx // time_length}")
+        plt.suptitle(f"Simulation {frame_idx} / {time_length}")
 
         # update color map limits
         orig_data = gt[channel, frame_idx, :, :, :]
