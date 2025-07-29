@@ -15,6 +15,9 @@ from rbc_pinn_surrogate.callbacks import Metrics3DCallback
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="fno3D")
 def main(config: DictConfig):
+    # set seed for reproducability
+    L.seed_everything(config.seed)
+
     # data
     dm = RBCDatamodule3D(data_dir="data/datasets/3D", **config.data)
 

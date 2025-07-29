@@ -12,7 +12,7 @@ data:
   batch_size: 4
   start: 300 # t=100
   end: 600 # t=300
-  test_length: 50
+  test_length: 100
   test_shift: 25
   stride: 1
   nr_episodes_train: null # this means all of them

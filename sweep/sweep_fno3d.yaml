@@ -6,8 +6,10 @@ metric:
   name: val/metrics-RMSE
 parameters:
   data.train_length:
-    min: 1
-    max: 15
+    values: [1, 2, 4, 8, 12, 16, 20]
+  # Multiple runs with different seeds per configuration
+  seed:
+    values: [42, 123, 456]
 
 command:
   - ${env}

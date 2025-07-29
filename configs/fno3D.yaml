@@ -3,6 +3,8 @@ defaults:
   - hydra: default
   - _self_
 
+seed: 42
+
 data:
   ra: 2500
   batch_size: 8
@@ -35,6 +37,6 @@ model:
   n_layers: 4
 
 algo:
-  epochs: 50
+  epochs: 35
 
 task_name: fno3d

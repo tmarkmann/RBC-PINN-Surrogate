@@ -28,7 +28,7 @@ def main(config: DictConfig):
 
     # wandb run
     wandb.init(
-        project="RBC-PINN-Surrogate",
+        project="RayleighBenard-3D-FNO",
         config=dict(config),
         dir=config.paths.output_dir,
         tags=["test"],
