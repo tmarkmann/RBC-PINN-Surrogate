@@ -22,6 +22,11 @@ def animation_3d(
     channel = ["T", "u", "v", "w"].index(feature)
     diff = pred - gt
 
+    if channel == 0:
+        vmin, vmax = 1, 2
+    else:
+        vmin, vmax = -1, 1
+
     frame_idx = 0
     time_length = gt.shape[1]
 
@@ -38,12 +43,16 @@ def animation_3d(
         ax1,
         contour_levels=contour_levels,
         show_back_faces=rotate,
+        vmin=vmin,
+        vmax=vmax,
     )
     pred_faces = plot_cube_faces(
         pred[channel, 0, :, :, :],
         ax2,
         contour_levels=contour_levels,
         show_back_faces=rotate,
+        vmin=vmin,
+        vmax=vmax,
     )
     diff_faces = plot_cube_faces(
         diff[channel, 0, :, :, :],
@@ -51,6 +60,8 @@ def animation_3d(
         cmap="RdBu_r",
         contour_levels=contour_levels,
         show_back_faces=rotate,
+        vmin=-1,
+        vmax=1,
     )
 
     ax1.set_aspect("equal", adjustable="box")
@@ -66,7 +77,6 @@ def animation_3d(
     ax2.view_init(elev=elev)
     ax3.view_init(elev=elev)
 
-    set_clims(diff_faces, vmin=-1, vmax=1)
     # divider = make_axes_locatable(ax3)
     # cax = divider.append_axes('right', size='5%', pad=0.05)
     # cbar = fig.colorbar(diff_faces[1], cax=cax, ticks=[0, 0.5, 1], extend="both", orientation='vertical')
@@ -91,12 +101,16 @@ def animation_3d(
             ax1,
             contour_levels=contour_levels,
             show_back_faces=rotate,
+            vmin=vmin,
+            vmax=vmax,
         )
         pred_faces = plot_cube_faces(
             pred[channel, frame_idx, :, :, :],
             ax2,
             contour_levels=contour_levels,
             show_back_faces=rotate,
+            vmin=vmin,
+            vmax=vmax,
         )
         diff_faces = plot_cube_faces(
             diff[channel, frame_idx, :, :, :],
@@ -104,6 +118,8 @@ def animation_3d(
             cmap="RdBu_r",
             contour_levels=contour_levels,
             show_back_faces=rotate,
+            vmin=-1,
+            vmax=1,
         )
 
         # cbar.remove()
@@ -112,10 +128,6 @@ def animation_3d(
         plt.suptitle(f"Simulation {frame_idx} / {time_length}")
 
         # update color map limits
-        orig_data = gt[channel, frame_idx, :, :, :]
-        pred_data = pred[channel, frame_idx, :, :, :]
-        vmin = min(np.min(orig_data), np.min(pred_data))
-        vmax = max(np.max(orig_data), np.max(pred_data))
         set_clims(orig_faces + pred_faces, vmin, vmax)
         set_clims(diff_faces, vmin=-1, vmax=1)
 
