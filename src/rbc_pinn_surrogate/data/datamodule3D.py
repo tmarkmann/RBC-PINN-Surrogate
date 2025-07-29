@@ -98,7 +98,7 @@ class RBCDatamodule3D(L.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(
             self.datasets["test"],
-            batch_size=self.hparams.batch_size // 4,
+            batch_size=max(self.hparams.batch_size // 4, 1),
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
             persistent_workers=self.hparams.persistent_workers,

@@ -4,22 +4,21 @@ defaults:
   - _self_
 
 task_name: test_fno3D
-checkpoint: ${paths.model_dir}/ra${data.ra}_test.ckpt
+checkpoint: ${paths.model_dir}/fno3d_latest.ckpt
 
 data:
   ra: 2500
-  batch_size: 32
-  start: 1
-  end: 200
-  train_shift: 2
+  pressure: False
+  batch_size: 4
+  start: 300 # t=100
+  end: 600 # t=300
+  test_length: 50
   test_shift: 25
   stride: 1
-  test_length: 50
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null
   nr_episodes_test: null
   # Data efficiency settings
-  num_workers: 2
-  pin_memory: True
-  persistent_workers: True
-  pressure: True
+  num_workers: 0
+  pin_memory: False
+  persistent_workers: False

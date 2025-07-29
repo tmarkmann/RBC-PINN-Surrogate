@@ -42,8 +42,17 @@ class FNO3DModule(L.LightningModule):
     def forward(self, x):
         return self.model(x)
 
+    def predict(self, input: Tensor, length) -> Tensor:
+        pred = []
+        # autoregressive model steps
+        out = input.squeeze(dim=2)
+        for _ in range(length):
+            out = self.forward(out)
+            pred.append(out.detach())
+        return torch.stack(pred, dim=2).detach().cpu()
+
     def model_step(
-        self, input: Tensor, target: Tensor, stage: str
+        self, input: Tensor, target: Tensor, stage: str, return_pred: bool = False
     ) -> Dict[str, Tensor]:
         loss_list = []
         rmse_list = []
