@@ -48,8 +48,8 @@ class FNO3DModule(L.LightningModule):
         out = input.squeeze(dim=2)
         for _ in range(length):
             out = self.forward(out)
-            pred.append(out.detach())
-        return torch.stack(pred, dim=2).detach().cpu()
+            pred.append(out.detach().cpu())
+        return torch.stack(pred, dim=2)
 
     def model_step(
         self, input: Tensor, target: Tensor, stage: str, return_pred: bool = False

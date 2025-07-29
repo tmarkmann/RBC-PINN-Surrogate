@@ -9,11 +9,11 @@ checkpoint: ${paths.model_dir}/fno3d_latest.ckpt
 data:
   ra: 2500
   pressure: False
-  batch_size: 4
+  batch_size: 4 # 2 in test
   start: 300 # t=100
   end: 600 # t=300
-  test_length: 100
-  test_shift: 25
+  test_length: 200
+  test_shift: 50
   stride: 1
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null

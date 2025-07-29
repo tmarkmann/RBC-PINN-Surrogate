@@ -1,5 +1,4 @@
 import hydra
-import numpy as np
 from tqdm import tqdm
 from omegaconf import DictConfig
 import pandas as pd

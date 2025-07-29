@@ -44,8 +44,8 @@ class RBCDatamodule3D(L.LightningDataModule):
                 end=self.hparams.end,
                 nr_episodes=self.hparams.nr_episodes_val,
                 input_steps=1,
-                target_steps=self.hparams.train_length,
-                shift=self.hparams.train_shift,
+                target_steps=self.hparams.test_length,
+                shift=self.hparams.test_shift,
                 stride=self.hparams.stride,
                 pressure=self.hparams.pressure,
             )
@@ -98,7 +98,7 @@ class RBCDatamodule3D(L.LightningDataModule):
     def test_dataloader(self):
         return DataLoader(
             self.datasets["test"],
-            batch_size=max(self.hparams.batch_size // 4, 1),
+            batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
             persistent_workers=self.hparams.persistent_workers,

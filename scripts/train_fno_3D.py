@@ -35,7 +35,7 @@ def main(config: DictConfig):
 
     # callbacks
     callbacks = [
-        RichProgressBar(leave=True),
+        RichProgressBar(),
         RichModelSummary(),
         EarlyStopping(
             monitor="val/loss",
@@ -52,6 +52,7 @@ def main(config: DictConfig):
         default_root_dir=config.paths.output_dir,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,
+        check_val_every_n_epoch=5,
     )
 
     # training
