@@ -18,6 +18,7 @@ def main(config):
             anim_name=f"test_{idx}.mp4",
         )
         idx += 1
+        break
 
 
 if __name__ == "__main__":

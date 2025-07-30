@@ -30,7 +30,7 @@ def animation_3d(
     frame_idx = 0
     time_length = gt.shape[1]
 
-    fig = plt.figure()
+    fig = plt.figure(figsize=(6, 2), dpi=200)
     ax1 = plt.subplot(1, 3, 1, projection="3d")
     (plt.axis("off"),)
     ax2 = plt.subplot(1, 3, 2, projection="3d")
@@ -71,6 +71,8 @@ def animation_3d(
     ax1.set_title("input")
     ax2.set_title("output")
     ax3.set_title("difference")
+    
+    bottom_text = fig.text(0.5, 0.02, "Simulation t = 0", ha="center", va="bottom")
 
     elev = 15
     ax1.view_init(elev=elev)
@@ -125,7 +127,7 @@ def animation_3d(
         # cbar.remove()
         # cbar = fig.colorbar(diff_faces[1], ax=ax3, orientation='vertical')
 
-        plt.suptitle(f"Simulation {frame_idx} / {time_length}")
+        bottom_text.set_text(f"Simulation t = {frame_idx}")
 
         # update color map limits
         set_clims(orig_faces + pred_faces, vmin, vmax)
