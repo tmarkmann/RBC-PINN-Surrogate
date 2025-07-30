@@ -10,7 +10,7 @@ from rbc_pinn_surrogate.model import FNO3DModule
 @hydra.main(version_base="1.3", config_path="../configs", config_name="fno3D")
 def main(config: DictConfig):
     # data
-    dm = RBCDatamodule3D(data_dir="data/datasets/3D", **config.data)
+    dm = RBCDatamodule3D(**config.data)
 
     # model
     model = FNO3DModule(**config.model)

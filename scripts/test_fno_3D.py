@@ -18,7 +18,7 @@ def main(config: DictConfig):
     device = best_device()
 
     # data
-    dm = RBCDatamodule3D(data_dir="data/datasets/3D", **config.data)
+    dm = RBCDatamodule3D(**config.data)
     dm.setup("test")
 
     # model

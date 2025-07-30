@@ -12,4 +12,4 @@ source ~/miniforge3/etc/profile.d/conda.sh
 conda activate rbcpinn
 
 cd ~/RBC-PINN-Surrogate
-srun uv run python scripts/test_fno_3D.py data.test_length=1000
+srun uv run python scripts/test_vis.py

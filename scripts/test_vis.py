@@ -5,7 +5,7 @@ from rbc_pinn_surrogate.utils.vis3D import animation_3d
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="fno3D")
 def main(config):
-    dm = RBCDatamodule3D(data_dir="data/datasets/3D", **config.data)
+    dm = RBCDatamodule3D(**config.data)
     dm.setup(stage="test")
 
     idx = 0

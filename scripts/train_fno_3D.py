@@ -19,7 +19,7 @@ def main(config: DictConfig):
     L.seed_everything(config.seed)
 
     # data
-    dm = RBCDatamodule3D(data_dir="data/datasets/3D", **config.data)
+    dm = RBCDatamodule3D(**config.data)
 
     # model
     # inv_transform = NormalizeInverse(mean=cfg.data.means, std=cfg.data.stds)
@@ -31,6 +31,7 @@ def main(config: DictConfig):
         project="RayleighBenard-3D-FNO",
         save_dir=config.paths.output_dir,
         log_model=False,
+        config=dict(config),
     )
 
     # callbacks

@@ -1,12 +1,12 @@
 program: scripts/train_fno_3D.py
-name: FNO3D
+name: FNO3D - train_length
 method: grid
 metric:
   goal: minimize
-  name: val/metrics-RMSE
+  name: val/RMSE
 parameters:
   data.train_length:
-    values: [1, 2, 4, 8, 12, 16, 20]
+    values: [1, 2, 4, 8, 12, 16]
   # Multiple runs with different seeds per configuration
   seed:
     values: [42, 123, 456]

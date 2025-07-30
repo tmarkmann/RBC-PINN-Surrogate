@@ -6,9 +6,10 @@ defaults:
 seed: 42
 
 data:
+  data_dir: /vol/cfd/rbc/newnew/3D
   ra: 2500
   batch_size: 8
-  start: 300  # t=100
+  start: 200  # t=100
   end: 600    # t=300
   train_length: 5
   train_shift: 5

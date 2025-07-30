@@ -23,7 +23,7 @@ def animation_3d(
     diff = pred - gt
 
     if channel == 0:
-        vmin, vmax = 1, 2
+        vmin, vmax = 0, 1
     else:
         vmin, vmax = -1, 1
 

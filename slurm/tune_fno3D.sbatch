@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=fno3d_test
+#SBATCH --job-name=fno3d_tune
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
@@ -12,4 +12,4 @@ source ~/miniforge3/etc/profile.d/conda.sh
 conda activate rbcpinn
 
 cd ~/RBC-PINN-Surrogate
-srun uv run python scripts/test_fno_3D.py data.test_length=1000
+srun uv run python scripts/tune_fno_3D.py
