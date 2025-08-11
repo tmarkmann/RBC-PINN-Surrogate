@@ -10,8 +10,8 @@ data:
   batch_size: 8
   start: 300  # t=100
   end: 600    # t=300
-  train_length: 5
-  train_shift: 5
+  train_length: 6
+  train_shift: 3
   test_length: 50
   test_shift: 25
   stride: 1
@@ -26,8 +26,9 @@ data:
 
 model:
   lr: 1e-3
+  preprocess: True
   n_modes_width: 16
-  n_modes_height: 16
+  n_modes_height: 8
   n_modes_depth: 16
   hidden_channels: 32
   in_channels: 4

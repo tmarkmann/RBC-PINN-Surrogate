@@ -6,29 +6,26 @@ import lightning as L
 import neuralop as no
 
 
-class FNO3DModule(L.LightningModule):
+class cFNOModule(L.LightningModule):
     def __init__(
         self,
         lr: float = 1e-3,
-        preprocess: bool = False,
         n_modes_width: int = 16,
         n_modes_height: int = 16,
-        n_modes_depth: int = 16,
         hidden_channels: int = 16,
-        in_channels: int = 3,
+        in_channels: int = 4,
         out_channels: int = 3,
         lifting_channels: int = 16,
         projection_channels: int = 16,
-        n_layers: int = 2,
+        n_layers: int = 4,
     ):
         super().__init__()
-        self.save_hyperparameters(ignore=["pino_loss", "operator"])
+        self.save_hyperparameters()
 
         # Model parameters
-        self.model = no.models.TFNO3d(
+        self.model = no.models.TFNO2d(
             n_modes_width=n_modes_width,
             n_modes_height=n_modes_height,
-            n_modes_depth=n_modes_depth,
             hidden_channels=hidden_channels,
             in_channels=in_channels,
             out_channels=out_channels,
@@ -40,23 +37,25 @@ class FNO3DModule(L.LightningModule):
         # Loss Function
         self.loss = no.H1Loss(d=3)
 
-    def forward(self, x):
-        if self.hparams.preprocess:
-            # Subtract mean temperature field
-            # x is expected to be (B, C, H, W, D); height dimension is index 2
-            B, C, H, W, D = x.shape
-            Tt, Tb = 1.0, 2.0
-            vprof = torch.linspace(Tt, Tb, H, device=x.device, dtype=x.dtype)
-            vprof = vprof.view(1, 1, H, 1, 1)
-            vprof = vprof.expand(1, 1, H, W, D)
-            # one-hot mask for the temperature channel
-            ch_mask = torch.zeros(1, C, 1, 1, 1, device=x.device, dtype=x.dtype)
-            ch_mask[:, 0] = 1
-            profile = ch_mask * vprof
+    def forward(self, x, a):
+        # control mask
+        B, C, H, W = x.shape
+        mask = torch.zeros((B, 1, H, W), device=x.device)
 
-            return self.model(x - profile) + profile
-        else:
-            return self.model(x)
+        # upsample action to match input shape
+        nh = a.shape[1]
+        ax = a.view(B, 1, 1, nh)
+        ax = torch.nn.functional.interpolate(ax, size=(1, W), mode="nearest")
+        ax = ax.squeeze()
+
+        # write mask on the bottom boundary
+        mask[:, 0, H - 1, :] = ax
+
+        # rest of forward method continues...
+
+        # concat x and a
+        mask[:, 0, H - 1, :] = ax
+        return self.model(torch.cat([x, mask], dim=1))
 
     def predict(self, input: Tensor, length) -> Tensor:
         pred = []
@@ -68,16 +67,17 @@ class FNO3DModule(L.LightningModule):
         return torch.stack(pred, dim=2)
 
     def model_step(
-        self, input: Tensor, target: Tensor, stage: str, return_pred: bool = False
+        self, input: Tensor, actions: Tensor, target: Tensor, stage: str
     ) -> Dict[str, Tensor]:
         loss_list = []
         rmse_list = []
         # autoregressive model steps
         out = input.squeeze(dim=2)
         for idx in range(target.shape[2]):
-            out = self.forward(out)
-            loss_list.append(self.loss(out, target[:, :, idx]))
-            rmse_list.append(torch.sqrt(mse_loss(out, target[:, :, idx])))
+            action = actions[:, idx]
+            out = self.forward(out, action)
+            loss_list.append(self.loss(out, target[:, idx]))
+            rmse_list.append(torch.sqrt(mse_loss(out, target[:, idx])))
             # out = out.detach()
 
         # log
@@ -92,17 +92,17 @@ class FNO3DModule(L.LightningModule):
         }
 
     def training_step(self, batch, batch_idx):
-        x, y = batch
-        return self.model_step(x, y, stage="train")
+        (x, a), y = batch
+        return self.model_step(x, a, y, stage="train")
 
     def validation_step(self, batch, batch_idx):
-        x, y = batch
-        return self.model_step(x, y, stage="val")
+        (x, a), y = batch
+        return self.model_step(x, a, y, stage="val")
 
     def test_step(self, batch, batch_idx):
         with torch.no_grad():
-            x, y = batch
-            return self.model_step(x, y, stage="test")
+            (x, a), y = batch
+            return self.model_step(x, a, y, stage="test")
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(

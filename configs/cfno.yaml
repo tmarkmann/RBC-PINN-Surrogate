@@ -1,0 +1,33 @@
+defaults:
+  - paths: default
+  - hydra: default
+  - _self_
+
+data:
+  ra: 10000
+  batch_size: 32
+  horizon: 6
+  shift: 2
+  nr_episodes_train: 3 # this means all of them
+  nr_episodes_val: 2
+  nr_episodes_test: 3
+  # Data efficiency settings
+  num_workers: 0
+  pin_memory: False
+  persistent_workers: False
+
+model:
+  n_modes_width: 16
+  n_modes_height: 16
+  hidden_channels: 32
+  in_channels: 4
+  out_channels: 3
+  lifting_channels: 16
+  projection_channels: 16
+  n_layers: 4
+
+algo:
+  lr: 1e-3
+  epochs: 50
+
+task_name: fno3d
