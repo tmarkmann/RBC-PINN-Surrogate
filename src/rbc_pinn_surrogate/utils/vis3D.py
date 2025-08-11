@@ -71,7 +71,7 @@ def animation_3d(
     ax1.set_title("input")
     ax2.set_title("output")
     ax3.set_title("difference")
-    
+
     bottom_text = fig.text(0.5, 0.02, "Simulation t = 0", ha="center", va="bottom")
 
     elev = 15
