@@ -1,15 +1,15 @@
-from .sequence_examples_callback import SequenceExamplesCallback
+from .examples import ExamplesCallback
 from .sequence_metrics_callback import SequenceMetricsCallback
-from .metrics_callback import MetricsCallback
+from .metrics import MetricsCallback
 from .memory_callback import MemoryCallback
 from .timer_callback import TimerCallback
 from .clear_memory import ClearMemoryCallback
 from .pino_finetuning import OperatorFinetuneCallback
-from .examples_3D_callback import Example3DCallback
-from .metrics_3D_callback import Metrics3DCallback
+from .examples_3D import Example3DCallback
+from .metrics_3D import Metrics3DCallback
 
 __all__ = [
-    "SequenceExamplesCallback",
+    "ExamplesCallback",
     "SequenceMetricsCallback",
     "MetricsCallback",
     "MemoryCallback",

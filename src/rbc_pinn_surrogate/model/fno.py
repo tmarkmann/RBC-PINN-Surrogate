@@ -18,6 +18,7 @@ class FNOModule(L.LightningModule):
         lifting_channels: int = 16,
         projection_channels: int = 16,
         n_layers: int = 2,
+        loss: str = "H1",
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["pino_loss", "operator"])
@@ -36,7 +37,14 @@ class FNOModule(L.LightningModule):
         )
 
         # Loss Function
-        self.loss = no.H1Loss(d=3)
+        if loss == "L2":
+            self.loss = no.L2Loss()
+        elif loss == "H1":
+            self.loss = no.H1Loss(d=3)
+        elif loss == "mse":
+            self.loss = torch.nn.MSELoss()
+        else:
+            raise ValueError(f"Unknown loss function: {loss}")
 
     def forward(self, x):
         return self.model(x)

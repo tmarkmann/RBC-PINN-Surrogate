@@ -11,6 +11,9 @@ from lightning.pytorch.callbacks import (
 
 from rbc_pinn_surrogate.data import RBCDatamodule2DControl
 from rbc_pinn_surrogate.model import cFNOModule
+from rbc_pinn_surrogate.callbacks import (
+    ExamplesCallback,
+)
 
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="cfno")
@@ -33,11 +36,12 @@ def main(config: DictConfig):
     callbacks = [
         RichProgressBar(),
         RichModelSummary(),
-        EarlyStopping(
-            monitor="val/loss",
-            mode="min",
-            patience=7,
-        ),
+        # EarlyStopping(
+        #    monitor="val/loss",
+        #    mode="min",
+        #    patience=7,
+        # ),
+        ExamplesCallback(train_freq=5),
     ]
 
     # trainer

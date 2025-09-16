@@ -10,9 +10,11 @@ from matplotlib import animation
 from matplotlib import pyplot as plt
 
 
-class SequenceExamplesCallback(Callback):
-    def __init__(self, train_freq: int = 5):
+class ExamplesCallback(Callback):
+    def __init__(self, dm, train_freq: int = 5):
         self.train_freq = train_freq
+        self.dm = dm
+        self.denormalize = None
 
         logger = logging.getLogger("matplotlib.animation")
         logger.setLevel(logging.ERROR)
@@ -36,9 +38,17 @@ class SequenceExamplesCallback(Callback):
             self.log_output(outputs, idx, "test", trainer.logger)
 
     def log_output(self, outputs: dict, idx: int, stage: str, logger: Logger):
+        # set up denormalization
+        if self.denormalize is None:
+            self.denormalize = self.dm.datasets[stage].denormalize_batch
+
         # unpack sequence
-        y = outputs["y"][idx].detach().cpu().numpy()
-        y_hat = outputs["y_hat"][idx].detach().cpu().numpy()
+        y = outputs["y"][idx].detach().cpu()
+        y_hat = outputs["y_hat"][idx].detach().cpu()
+
+        # denormalize
+        y = self.denormalize(y).numpy()
+        y_hat = self.denormalize(y_hat).numpy()
 
         # generate videos
         videos = []
@@ -69,7 +79,7 @@ class SequenceExamplesCallback(Callback):
         sequence,
         caption: str,
         field="T",
-        colormap="coolwarm",
+        colormap="rainbow",
         fps=2,
     ) -> str:
         # set up path
@@ -96,7 +106,15 @@ class SequenceExamplesCallback(Callback):
         steps = sequence.shape[1]
         for i in range(steps):
             artists.append(
-                [ax.imshow(sequence[channel][i], cmap=colormap, vmin=vmin, vmax=vmax)],
+                [
+                    ax.imshow(
+                        sequence[channel][i],
+                        cmap=colormap,
+                        origin="lower",
+                        vmin=vmin,
+                        vmax=vmax,
+                    )
+                ],
             )
         ani = animation.ArtistAnimation(fig, artists, blit=True)
 

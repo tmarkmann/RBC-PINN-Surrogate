@@ -9,11 +9,12 @@ import neuralop as no
 class cFNOModule(L.LightningModule):
     def __init__(
         self,
+        control_mask: bool = False,
         lr: float = 1e-3,
         n_modes_width: int = 16,
         n_modes_height: int = 16,
         hidden_channels: int = 16,
-        in_channels: int = 4,
+        in_channels: int = 3,
         out_channels: int = 3,
         lifting_channels: int = 16,
         projection_channels: int = 16,
@@ -35,9 +36,15 @@ class cFNOModule(L.LightningModule):
         )
 
         # Loss Function
-        self.loss = no.H1Loss(d=3)
+        self.loss = mse_loss  # no.H1Loss(d=2)
 
-    def forward(self, x, a):
+        # inverse normalization for visualization
+        self.denorm_mean = torch.tensor([1.5, 0.0, 0.0]).view(1, out_channels, 1, 1, 1)
+        self.denorm_std = torch.tensor([0.25, 0.35, 0.35]).view(
+            1, out_channels, 1, 1, 1
+        )
+
+    def control_mask(self, x, a):
         # control mask
         B, C, H, W = x.shape
         mask = torch.zeros((B, 1, H, W), device=x.device)
@@ -51,58 +58,95 @@ class cFNOModule(L.LightningModule):
         # write mask on the bottom boundary
         mask[:, 0, H - 1, :] = ax
 
-        # rest of forward method continues...
+        return torch.cat([x, mask], dim=1)
 
-        # concat x and a
-        mask[:, 0, H - 1, :] = ax
-        return self.model(torch.cat([x, mask], dim=1))
+    def forward(self, x: Tensor, a: Tensor | None = None):
+        if self.hparams.control_mask and a is not None:
+            x = self.control_mask(x, a)
+        return self.model(x)
 
-    def predict(self, input: Tensor, length) -> Tensor:
-        pred = []
-        # autoregressive model steps
-        out = input.squeeze(dim=2)
-        for _ in range(length):
-            out = self.forward(out)
-            pred.append(out.detach().cpu())
-        return torch.stack(pred, dim=2)
+    def predict(
+        self, input: Tensor, length: int | None = None, actions: Tensor | None = None
+    ) -> Tensor:
+        if actions is not None:
+            T = actions.shape[1]
+        else:
+            assert length is not None and length > 0, (
+                "Provide `length` when `actions` is None"
+            )
+            T = length
+
+        preds = []
+        out = input
+        for t in range(T):
+            a_t = None if actions is None else actions[:, t]
+            out = self.forward(out, a_t)
+            preds.append(out)
+        return torch.stack(preds, dim=2)
 
     def model_step(
-        self, input: Tensor, actions: Tensor, target: Tensor, stage: str
+        self, sequence: Tensor, actions: Tensor, stage: str
     ) -> Dict[str, Tensor]:
-        loss_list = []
-        rmse_list = []
-        # autoregressive model steps
-        out = input.squeeze(dim=2)
-        for idx in range(target.shape[2]):
-            action = actions[:, idx]
-            out = self.forward(out, action)
-            loss_list.append(self.loss(out, target[:, idx]))
-            rmse_list.append(torch.sqrt(mse_loss(out, target[:, idx])))
+        x0 = sequence[:, 0]  # [B, C, H, W]
+        target = sequence[:, 1:]  # [B, T-1, C, H, W]
+
+        loss_list: list[Tensor] = []
+        rmse_list: list[Tensor] = []
+        pred_list: list[Tensor] = []
+
+        out = x0
+        for t in range(target.shape[1]):
+            a_t = actions[:, t]  # [B, A]
+            out = self.forward(out, a_t)  # [B, C, H, W]
+            y_t = target[:, t]  # [B, C, H, W]
+
+            # primary training loss (LpLoss or H1Loss)
+            loss_list.append(self.loss(out, y_t))
+
+            # RMSE metric (no grad to avoid graph bloat)
+            with torch.no_grad():
+                rmse_list.append(torch.sqrt(mse_loss(out, y_t)))
+
+            # store prediction for logging
+            pred_list.append(out)
+
+            # If you want truncated BPTT, uncomment:
             # out = out.detach()
 
-        # log
-        loss = torch.stack(loss_list).mean()
-        rmse = torch.stack(rmse_list).mean()
+        loss = torch.stack(loss_list, dim=0).mean()
+        rmse = torch.stack(rmse_list, dim=0).mean()
+
+        y = target.detach().transpose(1, 2)  # [B, T-1, C, H, W] -> [B, C, T-1, H, W]
+        y_hat = torch.stack(pred_list, dim=2)  # [B, C, T-1, H, W]
+
+        # unnormalize for vis
+        y = y * self.denorm_std.to(y.device) + self.denorm_mean.to(y.device)
+        y_hat = y_hat * self.denorm_std.to(y_hat.device) + self.denorm_mean.to(
+            y_hat.device
+        )
+
+        # log metrics
         self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
         self.log(f"{stage}/RMSE", rmse, prog_bar=True, logger=True)
-
         return {
             "loss": loss,
-            "rmse": torch.stack(rmse_list).detach(),
+            "rmse": torch.stack(rmse_list),
+            "y": y,
+            "y_hat": y_hat,
         }
 
     def training_step(self, batch, batch_idx):
-        (x, a), y = batch
-        return self.model_step(x, a, y, stage="train")
+        x, a = batch
+        return self.model_step(x, a, stage="train")
 
     def validation_step(self, batch, batch_idx):
-        (x, a), y = batch
-        return self.model_step(x, a, y, stage="val")
+        x, a = batch
+        return self.model_step(x, a, stage="val")
 
     def test_step(self, batch, batch_idx):
         with torch.no_grad():
-            (x, a), y = batch
-            return self.model_step(x, a, y, stage="test")
+            x, a = batch
+            return self.model_step(x, a, stage="test")
 
     def configure_optimizers(self):
         optimizer = torch.optim.Adam(
@@ -112,6 +156,6 @@ class cFNOModule(L.LightningModule):
         return {"optimizer": optimizer}
 
     def load_state_dict(self, state_dict, strict: bool = True):
-        # Remove metadat from neuralop library TODO check if useful
+        # Remove metadata from neuralop library TODO check if useful
         state_dict.pop("_metadata", None)
         return super().load_state_dict(state_dict, strict)

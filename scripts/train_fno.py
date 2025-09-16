@@ -11,7 +11,7 @@ from rbc_pinn_surrogate.data import RBCDatamodule2D
 from rbc_pinn_surrogate.model import FNOModule
 from rbc_pinn_surrogate.callbacks import (
     SequenceMetricsCallback,
-    SequenceExamplesCallback,
+    ExamplesCallback,
     MetricsCallback,
     ClearMemoryCallback,
 )
@@ -23,7 +23,6 @@ def main(config: DictConfig):
     dm = RBCDatamodule2D(data_dir="data/datasets/2D", **config.data)
 
     # model
-    # inv_transform = NormalizeInverse(mean=cfg.data.means, std=cfg.data.stds)
     model = FNOModule(lr=config.algo.lr, **config.model)
 
     # logger
@@ -43,8 +42,9 @@ def main(config: DictConfig):
             mode="min",
             patience=7,
         ),
-        SequenceExamplesCallback(
+        ExamplesCallback(
             train_freq=20,
+            dm=dm,
         ),
         MetricsCallback(
             name="metrics",
@@ -55,7 +55,6 @@ def main(config: DictConfig):
             name="sequence",
             key_groundtruth="y",
             key_prediction="y_hat",
-            dt=config.data.stride,
         ),
         ClearMemoryCallback(),
     ]

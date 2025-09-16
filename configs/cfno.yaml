@@ -5,29 +5,31 @@ defaults:
 
 data:
   ra: 10000
+  types: ["zero"] #["ppo", "random", "zero"]
   batch_size: 32
   horizon: 6
-  shift: 2
-  nr_episodes_train: 3 # this means all of them
-  nr_episodes_val: 2
-  nr_episodes_test: 3
+  shift: 6
+  nr_episodes_train: 10 # this means all of them
+  nr_episodes_val: 4
+  nr_episodes_test: 4
   # Data efficiency settings
-  num_workers: 0
-  pin_memory: False
-  persistent_workers: False
+  num_workers: 2
+  pin_memory: True
+  persistent_workers: True
 
 model:
-  n_modes_width: 16
-  n_modes_height: 16
+  control_mask: False
+  n_modes_width: 8
+  n_modes_height: 8
   hidden_channels: 32
-  in_channels: 4
+  in_channels: 3
   out_channels: 3
   lifting_channels: 16
   projection_channels: 16
   n_layers: 4
 
 algo:
-  lr: 1e-3
+  lr: 3e-4
   epochs: 50
 
-task_name: fno3d
+task_name: cfno

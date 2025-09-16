@@ -6,12 +6,12 @@ defaults:
 data:
   ra: 1000000
   batch_size: 32
-  start: 1
-  end: 200
-  train_steps: 10
-  test_steps: 60
+  start: 200
+  end: 500
+  train_steps: 5
+  test_steps: 100
   train_shift: 5
-  test_shift: 10
+  test_shift: 50
   stride: 1
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null
@@ -20,15 +20,16 @@ data:
   num_workers: 2
   pin_memory: True
   persistent_workers: True
-  pressure: True
+  pressure: False
+  normalize: True
 
 model:
   n_modes_width: 16
   n_modes_height: 16
   n_modes_depth: 16
   hidden_channels: 32
-  in_channels: 5
-  out_channels: 5
+  in_channels: 3
+  out_channels: 3
   lifting_channels: 16
   projection_channels: 16
   n_layers: 4
@@ -37,4 +38,4 @@ algo:
   lr: 1e-3
   epochs: 50
 
-task_name: fno3d
+task_name: fno
