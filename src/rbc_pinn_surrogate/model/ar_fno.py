@@ -9,6 +9,7 @@ class AutoRegressiveFNOModule(L.LightningModule):
     def __init__(
         self,
         lr: float = 1e-3,
+        weight_decay: float = 1e-4,
         n_modes_space: int = 16,
         hidden_channels: int = 16,
         in_channels: int = 3,
@@ -95,9 +96,10 @@ class AutoRegressiveFNOModule(L.LightningModule):
         return self.model_step(x, y, stage="test")
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.AdamW(
             self.model.parameters(),
             lr=self.hparams.lr,
+            weight_decay=self.hparams.get("weight_decay", 0.0),
         )
         return {"optimizer": optimizer}
 

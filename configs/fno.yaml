@@ -3,6 +3,8 @@ defaults:
   - hydra: default
   - _self_
 
+seed: 42
+
 data:
   data_dir: data/datasets/2D
   ra: 1000000
@@ -28,6 +30,7 @@ model:
   type: 2d # options: 2d, 3d
   loss: H1
   lr: 1e-3
+  weight_decay: 1e-4
   n_modes_time: 16
   n_modes_space: 16
   hidden_channels: 32

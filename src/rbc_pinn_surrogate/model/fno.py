@@ -9,6 +9,7 @@ class FNOModule(L.LightningModule):
     def __init__(
         self,
         lr: float = 1e-3,
+        weight_decay: float = 1e-4,
         n_modes_space: int = 16,
         n_modes_time: int = 16,
         hidden_channels: int = 16,
@@ -107,16 +108,26 @@ class FNOModule(L.LightningModule):
         loss = self.loss(pred, target)
         self.log("test/loss", loss, logger=True)
 
+        # denormalize for logging
+        if self.denormalize is not None:
+            with torch.no_grad():
+                y_hat_vis = self.denormalize(pred)
+                y_vis = self.denormalize(target)
+        else:
+            y_hat_vis = pred
+            y_vis = target
+
         return {
             "loss": loss,
-            "y": target,
-            "y_hat": pred,
+            "y": y_vis,
+            "y_hat": y_hat_vis,
         }
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(
+        optimizer = torch.optim.AdamW(
             self.model.parameters(),
             lr=self.hparams.lr,
+            weight_decay=self.hparams.get("weight_decay", 0.0),
         )
         return {"optimizer": optimizer}
 

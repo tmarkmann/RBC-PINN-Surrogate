@@ -19,6 +19,9 @@ from rbc_pinn_surrogate.callbacks import (
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="fno")
 def main(config: DictConfig):
+    # seed
+    L.seed_everything(config.seed, workers=True)
+    
     # data
     dm = RBCDatamodule2D(**config.data)
     dm.setup("fit")
