@@ -8,7 +8,7 @@ from lightning.pytorch.callbacks import (
 from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig
 from rbc_pinn_surrogate.data import RBCDatamodule2D
-from rbc_pinn_surrogate.model import FNOModule
+from rbc_pinn_surrogate.model import FNOModule, AutoRegressiveFNOModule
 from rbc_pinn_surrogate.callbacks import (
     SequenceMetricsCallback,
     ExamplesCallback,
@@ -20,15 +20,23 @@ from rbc_pinn_surrogate.callbacks import (
 @hydra.main(version_base="1.3", config_path="../configs", config_name="fno")
 def main(config: DictConfig):
     # data
-    dm = RBCDatamodule2D(data_dir="data/datasets/2D", **config.data)
+    dm = RBCDatamodule2D(**config.data)
+    dm.setup("fit")
 
     # model
-    model = FNOModule(lr=config.algo.lr, **config.model)
+    denormalize = dm.datasets["train"].denormalize_batch
+
+    if config.model.type == "3d":
+        model = FNOModule(denormalize=denormalize, **config.model)
+    elif config.model.type == "2d":
+        model = AutoRegressiveFNOModule(denormalize=denormalize, **config.model)
+    else:
+        raise ValueError(f"Unknown model type: {config.model.type}")
 
     # logger
     logger = WandbLogger(
         entity="sail-project",
-        project="RayleighBenard-FNO",
+        project="RBC-2D-FNO",
         save_dir=config.paths.output_dir,
         log_model=False,
     )
@@ -40,19 +48,16 @@ def main(config: DictConfig):
         EarlyStopping(
             monitor="val/loss",
             mode="min",
-            patience=7,
+            patience=8,
         ),
         ExamplesCallback(
             train_freq=20,
-            dm=dm,
         ),
         MetricsCallback(
-            name="metrics",
             key_groundtruth="y",
             key_prediction="y_hat",
         ),
         SequenceMetricsCallback(
-            name="sequence",
             key_groundtruth="y",
             key_prediction="y_hat",
         ),

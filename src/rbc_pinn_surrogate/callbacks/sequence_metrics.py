@@ -7,13 +7,13 @@ from torch import Tensor
 from torchmetrics import MeanSquaredError
 
 import wandb
-from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError, NormalizedSumError
+from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError
 
 
 class SequenceMetric:
-    def __init__(self, metric, name):
-        self.metric = metric
+    def __init__(self, name, metric):
         self.name = name
+        self.metric = metric
         self.data = []
 
     def update(
@@ -41,18 +41,15 @@ class SequenceMetric:
 class SequenceMetricsCallback(Callback):
     def __init__(
         self,
-        name: str,
         key_groundtruth: str,
         key_prediction: str,
     ):
-        self.name = name
         self.key_groundtruth = key_groundtruth
         self.key_prediction = key_prediction
 
         # sequence metrics
         self.sequence_metrics = [
-            SequenceMetric(metric=NormalizedSumSquaredError(), name="NSSE"),
-            SequenceMetric(metric=NormalizedSumError(), name="NSE"),
+            SequenceMetric(metric=NormalizedSumSquaredError(), name="R-MSE"),
             SequenceMetric(metric=MeanSquaredError(squared=False), name="RMSE"),
         ]
 

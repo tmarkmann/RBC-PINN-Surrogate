@@ -12,4 +12,4 @@ source ~/miniforge3/etc/profile.d/conda.sh
 conda activate rbcpinn
 
 cd ~/RBC-PINN-Surrogate
-srun uv run python scripts/train_fno.py
+srun uv run python scripts/train_fno.py data.data_dir=/vol/cfd/rbc/2D

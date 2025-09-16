@@ -1,5 +1,5 @@
 from .examples import ExamplesCallback
-from .sequence_metrics_callback import SequenceMetricsCallback
+from .sequence_metrics import SequenceMetricsCallback
 from .metrics import MetricsCallback
 from .memory_callback import MemoryCallback
 from .timer_callback import TimerCallback

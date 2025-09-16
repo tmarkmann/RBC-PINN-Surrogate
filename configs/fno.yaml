@@ -4,6 +4,7 @@ defaults:
   - _self_
 
 data:
+  data_dir: data/datasets/2D
   ra: 1000000
   batch_size: 32
   start: 200
@@ -24,9 +25,11 @@ data:
   normalize: True
 
 model:
-  n_modes_width: 16
-  n_modes_height: 16
-  n_modes_depth: 16
+  type: 2d # options: 2d, 3d
+  loss: H1
+  lr: 1e-3
+  n_modes_time: 16
+  n_modes_space: 16
   hidden_channels: 32
   in_channels: 3
   out_channels: 3
@@ -35,7 +38,6 @@ model:
   n_layers: 4
 
 algo:
-  lr: 1e-3
   epochs: 50
 
 task_name: fno

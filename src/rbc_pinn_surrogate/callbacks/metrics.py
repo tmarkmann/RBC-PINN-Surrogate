@@ -8,8 +8,7 @@ from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError
 
 
 class MetricsCallback(Callback):
-    def __init__(self, name: str, key_groundtruth: str, key_prediction: str):
-        self.name = name
+    def __init__(self, key_groundtruth: str, key_prediction: str):
         self.key_groundtruth = key_groundtruth
         self.key_prediction = key_prediction
 
@@ -19,7 +18,7 @@ class MetricsCallback(Callback):
             MeanSquaredError(squared=False),
         ]
         self.names = [
-            "NSSE",
+            "R-MSE",
             "RMSE",
         ]
 
@@ -43,7 +42,7 @@ class MetricsCallback(Callback):
     def log_metrics(self, output: Dict[str, Tensor], stage: str):
         for metric, name in zip(self.metrics, self.names):
             self.log(
-                f"{stage}/{self.name}-{name}",
+                f"{stage}/{name}",
                 metric(
                     output[self.key_prediction].detach().cpu(),
                     output[self.key_groundtruth].detach().cpu(),
