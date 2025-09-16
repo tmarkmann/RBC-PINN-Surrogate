@@ -4,7 +4,7 @@ from lightning.pytorch.callbacks import Callback
 from torch import Tensor
 from torchmetrics import MeanSquaredError
 
-from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError, NormalizedSumError
+from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError
 
 
 class MetricsCallback(Callback):
@@ -16,12 +16,10 @@ class MetricsCallback(Callback):
         # metrics
         self.metrics = [
             NormalizedSumSquaredError(),
-            NormalizedSumError(),
             MeanSquaredError(squared=False),
         ]
         self.names = [
             "NSSE",
-            "NSE",
             "RMSE",
         ]
 

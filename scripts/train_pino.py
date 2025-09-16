@@ -14,7 +14,7 @@ from rbc_pinn_surrogate.data import RBCDatamodule
 from rbc_pinn_surrogate.loss import RBCEquationLoss
 from rbc_pinn_surrogate.callbacks import (
     SequenceMetricsCallback,
-    SequenceExamplesCallback,
+    ExamplesCallback,
     MetricsCallback,
     ClearMemoryCallback,
     OperatorFinetuneCallback,
@@ -58,7 +58,7 @@ def main(config: DictConfig):
             mode="min",
             patience=7,
         ),
-        SequenceExamplesCallback(
+        ExamplesCallback(
             train_freq=20,
         ),
         MetricsCallback(
