@@ -41,6 +41,6 @@ model:
   n_layers: 4
 
 algo:
-  epochs: 50
+  epochs: 75
 
 task_name: fno

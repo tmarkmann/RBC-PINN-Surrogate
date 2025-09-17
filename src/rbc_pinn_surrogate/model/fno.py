@@ -52,7 +52,7 @@ class FNOModule(L.LightningModule):
     def forward(self, x):
         return self.model(x)
 
-    def model_step(self, x: Tensor, y: Tensor, stage: str) -> Dict[str, Tensor]:
+    def single_step(self, x: Tensor, y: Tensor, stage: str) -> Dict[str, Tensor]:
         # Forward pass and compute loss
         pred = self.forward(x)
 
@@ -67,21 +67,11 @@ class FNOModule(L.LightningModule):
 
         return {
             "loss": loss,
-            "x": x,
             "y": y,
             "y_hat": pred,
         }
 
-    def training_step(self, batch, batch_idx):
-        x, y = batch
-        return self.model_step(x, y, stage="train")
-
-    def validation_step(self, batch, batch_idx):
-        x, y = batch
-        return self.model_step(x, y, stage="val")
-
-    def test_step(self, batch, batch_idx):
-        input, target = batch
+    def multi_step(self, input: Tensor, target: Tensor, stage: str):
         input_length = input.shape[2]
         target_length = target.shape[2]
 
@@ -106,7 +96,7 @@ class FNOModule(L.LightningModule):
 
         # Compute and log metrics
         loss = self.loss(pred, target)
-        self.log("test/loss", loss, logger=True)
+        self.log(f"{stage}/loss", loss, logger=True)
 
         # denormalize for logging
         if self.denormalize is not None:
@@ -122,6 +112,18 @@ class FNOModule(L.LightningModule):
             "y": y_vis,
             "y_hat": y_hat_vis,
         }
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        return self.single_step(x, y, stage="train")
+
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        return self.multi_step(x, y, stage="val")
+    
+    def test_step(self, batch, batch_idx):
+        x, y = batch
+        return self.multi_step(x, y, stage="val")
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(

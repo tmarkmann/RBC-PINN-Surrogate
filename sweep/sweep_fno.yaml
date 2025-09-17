@@ -1,18 +1,18 @@
 program: scripts/train_fno.py
-name: FNO
+name: FNO_Base_Sweep
 
 method: bayes
 metric:
   goal: minimize
   name: val/RMSE
 
-count: 50
-
 parameters:
   seed:
     values: [0, 1, 2]
   data.ra:
     value: 1_000_000
+  data.data_dir:
+    value: /vol/cfd/rbc/2D
   data.batch_size:
     values: [16, 32, 64]
   data.train_steps:
@@ -22,11 +22,9 @@ parameters:
   model.loss:
     values: [L2, H1]
   model.lr:
-    distribution: log_uniform
-    min: 1e-4
-    max: 3e-3
+    values: [0.0001, 0.0003, 0.001, 0.003]
   model.weight_decay:
-    values: [0.0, 1e-4, 1e-3]
+    values: [0.0, 0.0001, 0.001]
   model.n_modes_space:
     values: [8, 16, 32]
   model.n_modes_time:

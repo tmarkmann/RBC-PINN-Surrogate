@@ -4,6 +4,7 @@ from lightning.pytorch.callbacks import (
     EarlyStopping,
     RichModelSummary,
     RichProgressBar,
+    ModelCheckpoint,
 )
 from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig
@@ -53,17 +54,17 @@ def main(config: DictConfig):
             mode="min",
             patience=8,
         ),
-        ExamplesCallback(
-            train_freq=20,
-        ),
         MetricsCallback(
             key_groundtruth="y",
             key_prediction="y_hat",
         ),
-        SequenceMetricsCallback(
-            key_groundtruth="y",
-            key_prediction="y_hat",
-        ),
+        # ExamplesCallback(
+        #     train_freq=20,
+        # ),
+        # SequenceMetricsCallback(
+        #     key_groundtruth="y",
+        #     key_prediction="y_hat",
+        # ),
         ClearMemoryCallback(),
     ]
 
@@ -72,17 +73,18 @@ def main(config: DictConfig):
         logger=logger,
         accelerator="auto",
         default_root_dir=config.paths.output_dir,
-        check_val_every_n_epoch=1,
+        check_val_every_n_epoch=2,
         log_every_n_steps=10,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,
+        enable_checkpointing=False,
     )
 
     # training
     trainer.fit(model, dm)
 
     # rollout on test set
-    trainer.test(model, datamodule=dm, ckpt_path="best")
+    #trainer.test(model, datamodule=dm, ckpt_path="best")
 
 
 if __name__ == "__main__":

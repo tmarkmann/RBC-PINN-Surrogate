@@ -41,20 +41,6 @@ class RBCDatamodule2D(L.LightningDataModule):
     def setup(self, stage: str):
         # Assign train/val datasets for use in dataloaders
         if stage == "fit":
-            self.datasets["val"] = RBCDataset2D(
-                self.hparams.data_dir + f"/val/ra{int(self.hparams.ra)}.h5",
-                start=self.hparams.start,
-                end=self.hparams.end,
-                nr_episodes=self.hparams.nr_episodes_val,
-                input_steps=self.hparams.train_steps,
-                target_steps=self.hparams.train_steps,
-                shift=self.hparams.train_shift,
-                stride=self.hparams.stride,
-                pressure=self.hparams.pressure,
-                normalize=self.hparams.normalize,
-                means=self.means,
-                stds=self.stds,
-            )
             self.datasets["train"] = RBCDataset2D(
                 self.hparams.data_dir + f"/train/ra{int(self.hparams.ra)}.h5",
                 start=self.hparams.start,
@@ -63,6 +49,21 @@ class RBCDatamodule2D(L.LightningDataModule):
                 input_steps=self.hparams.train_steps,
                 target_steps=self.hparams.train_steps,
                 shift=self.hparams.train_shift,
+                stride=self.hparams.stride,
+                pressure=self.hparams.pressure,
+                normalize=self.hparams.normalize,
+                means=self.means,
+                stds=self.
+                stds,
+            )
+            self.datasets["val"] = RBCDataset2D(
+                self.hparams.data_dir + f"/val/ra{int(self.hparams.ra)}.h5",
+                start=self.hparams.start,
+                end=self.hparams.end,
+                nr_episodes=self.hparams.nr_episodes_val,
+                input_steps=self.hparams.train_steps,
+                target_steps=self.hparams.test_steps,
+                shift=self.hparams.test_shift,
                 stride=self.hparams.stride,
                 pressure=self.hparams.pressure,
                 normalize=self.hparams.normalize,
