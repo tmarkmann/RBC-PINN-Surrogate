@@ -8,7 +8,7 @@
             "name": "Train FNO",
             "type": "debugpy",
             "request": "launch",
-            "program": "scripts/train_cfno.py",
+            "program": "scripts/train_fno.py",
             "console": "integratedTerminal",
             "justMyCode": false,
         }

@@ -27,7 +27,7 @@ data:
   normalize: True
 
 model:
-  type: 2d # options: 2d, 3d
+  type: 3d # options: 2d, 3d
   loss: H1
   lr: 1e-3
   weight_decay: 1e-4

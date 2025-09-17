@@ -3,6 +3,7 @@ import torch
 from torch import Tensor
 import lightning as L
 import neuralop as no
+import math
 
 
 class FNOModule(L.LightningModule):
@@ -75,28 +76,30 @@ class FNOModule(L.LightningModule):
         input_length = input.shape[2]
         target_length = target.shape[2]
 
-        # autoregressive model steps
-        length = 0
-        x = input
-        pred = torch.empty(
-            x.shape[0],
-            x.shape[1],
+        # Preallocate prediction tensor 
+        pred = input.new_empty(
+            input.shape[0],
+            input.shape[1],
             target_length,
-            *x.shape[3:],
-            device=x.device,
-            dtype=x.dtype,
+            *input.shape[3:],
         )
 
-        while length < target_length:
-            y = self.forward(x)
-            step = min(input_length, target_length - length)
-            pred[:, :, length : length + step] = y[:, :, :step]
-            x = y
-            length += step
+        # no autograd
+        with torch.inference_mode():
+            n_chunks = math.ceil(target_length / input_length)
+            x = input
+            for k in range(n_chunks):
+                y = self.forward(x)
+                start = k * input_length
+                end = min(start + input_length, target_length)
+                step = end - start
+                pred[:, :, start:end] = y[:, :, :step]
+                # Always keep the latest input window size for the next step
+                x = y[:, :, -input_length:]
 
         # Compute and log metrics
         loss = self.loss(pred, target)
-        self.log(f"{stage}/loss", loss, logger=True)
+        self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
 
         # denormalize for logging
         if self.denormalize is not None:
@@ -123,7 +126,7 @@ class FNOModule(L.LightningModule):
     
     def test_step(self, batch, batch_idx):
         x, y = batch
-        return self.multi_step(x, y, stage="val")
+        return self.multi_step(x, y, stage="test")
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
