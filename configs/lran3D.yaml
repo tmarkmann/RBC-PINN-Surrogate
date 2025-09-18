@@ -28,7 +28,7 @@ data:
 model:
   loss: "r-mse"
   latent_dimension: 100
-  input_channel: 3
+  input_channel: 4
   base_filters: 64
   kernel_size: 5
   ae_ckpt: null #${paths.model_dir}/autoencoder/ra${data.ra}.ckpt

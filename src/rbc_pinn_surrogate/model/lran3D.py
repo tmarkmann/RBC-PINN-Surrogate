@@ -6,13 +6,13 @@ import torch
 from torch import Tensor
 
 from rbc_pinn_surrogate.model.components import (
-    Autoencoder3D as Autoencoder,
+    Autoencoder3D,
     KoopmanOperator,
 )
 from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError
 
 
-class LRANModule(pl.LightningModule):
+class LRAN3DModule(pl.LightningModule):
     def __init__(
         self,
         # Autoencoder params
@@ -38,7 +38,7 @@ class LRANModule(pl.LightningModule):
 
         # Model
         activation = nn.GELU
-        self.autoencoder = Autoencoder(
+        self.autoencoder = Autoencoder3D(
             latent_dimension=latent_dimension,
             input_channel=input_channel,
             base_filters=base_filters,

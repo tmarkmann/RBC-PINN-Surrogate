@@ -6,19 +6,6 @@ from torch import Tensor
 
 
 class Autoencoder3D(nn.Module):
-    """
-    3D convolutional autoencoder.
-
-    Args:
-        latent_dimension: size of the latent vector z
-        input_channel: number of input channels (e.g., 4 for [T, u, v, w])
-        base_filters: base number of feature maps
-        kernel_size: kernel size for all conv layers (int)
-        activation: activation class (e.g., nn.ReLU)
-        input_shape: spatial input shape as (D, H, W). Used to infer encoder output size
-                      and to properly reshape in the decoder.
-    """
-
     def __init__(
         self,
         latent_dimension: int,

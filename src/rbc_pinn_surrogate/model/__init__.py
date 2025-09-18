@@ -4,6 +4,7 @@ from .fno3D import FNO3DModule
 from .cfno import cFNOModule
 from .ar_fno import AutoRegressiveFNOModule
 from .lran import LRANModule
+from .lran3D import LRAN3DModule
 
 __all__ = [
     "FNOModule",
@@ -12,4 +13,5 @@ __all__ = [
     "cFNOModule",
     "AutoRegressiveFNOModule",
     "LRANModule",
+    "LRAN3DModule",
 ]
