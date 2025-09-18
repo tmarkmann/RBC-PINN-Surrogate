@@ -123,8 +123,8 @@ class LRAN3DModule(pl.LightningModule):
 
         return {
             "loss": loss,
-            "y": x,
-            "y_hat": x_hat,
+            # "y": x,
+            # "y_hat": x_hat,
         }
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:

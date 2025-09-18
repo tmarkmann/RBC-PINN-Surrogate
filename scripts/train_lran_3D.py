@@ -46,7 +46,7 @@ def main(config: DictConfig):
             mode="min",
             patience=8,
         ),
-        Metrics3DCallback(),
+        #Metrics3DCallback(),
     ]
 
     # trainer

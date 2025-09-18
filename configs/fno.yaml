@@ -8,10 +8,10 @@ seed: 42
 data:
   data_dir: data/datasets/2D
   ra: 1000000
-  batch_size: 32
+  batch_size: 16
   start: 200
   end: 500
-  train_steps: 5
+  train_steps: 15
   test_steps: 100
   train_shift: 5
   test_shift: 50
@@ -27,18 +27,18 @@ data:
   normalize: True
 
 model:
-  type: 2d # options: 2d, 3d
+  type: 3d # options: 2d, 3d
   loss: H1
-  lr: 1e-3
-  weight_decay: 1e-4
+  lr: 3e-3
+  weight_decay: 1e-3
   n_modes_time: 16
   n_modes_space: 16
-  hidden_channels: 32
+  hidden_channels: 64
   in_channels: 3
   out_channels: 3
   lifting_channels: 16
   projection_channels: 16
-  n_layers: 4
+  n_layers: 6
 
 algo:
   epochs: 75
