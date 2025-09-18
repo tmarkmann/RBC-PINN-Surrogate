@@ -1,0 +1,45 @@
+defaults:
+  - paths: default
+  - hydra: default
+  - _self_
+
+seed: 42
+
+data:
+  data_dir: /vol/cfd/rbc/newnew/3D
+  ra: 2500
+  batch_size: 8
+  start: 200
+  end: 600
+  train_steps: 6
+  test_steps: 3
+  train_shift: 50
+  test_shift: 25
+  stride: 1
+  nr_episodes_train: null # this means all of them
+  nr_episodes_val: null
+  nr_episodes_test: null
+  # Data efficiency settings
+  num_workers: 2
+  pin_memory: True
+  persistent_workers: True
+  pressure: False
+  #normalize: True
+
+model:
+  loss: "r-mse"
+  latent_dimension: 50
+  input_channel: 3
+  base_filters: 64
+  kernel_size: 5
+  ae_ckpt: null #${paths.model_dir}/autoencoder/ra${data.ra}.ckpt
+  lambda_id: 1.0
+  lambda_fwd: 1.0
+  lambda_hid: 1.0
+  lr_operator: 0.0005
+  lr_autoencoder: 0.0005
+
+algo:
+  epochs: 35
+
+task_name: fno
