@@ -18,7 +18,7 @@ from rbc_pinn_surrogate.callbacks import (
 def main(config: DictConfig):
     # seed
     L.seed_everything(config.seed, workers=True)
-    
+
     # data
     dm = RBCDatamodule3D(**config.data)
     dm.setup("fit")
@@ -63,7 +63,7 @@ def main(config: DictConfig):
     trainer.fit(model, dm)
 
     # rollout on test set
-    #trainer.test(model, datamodule=dm, ckpt_path="best")
+    # trainer.test(model, datamodule=dm, ckpt_path="best")
 
 
 if __name__ == "__main__":

@@ -5,7 +5,10 @@ import torch.nn as nn
 import torch
 from torch import Tensor
 
-from rbc_pinn_surrogate.model.components import Autoencoder, KoopmanOperator
+from rbc_pinn_surrogate.model.components import (
+    Autoencoder3D as Autoencoder,
+    KoopmanOperator,
+)
 from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError
 
 
@@ -17,6 +20,7 @@ class LRANModule(pl.LightningModule):
         input_channel: int,
         base_filters: int,
         kernel_size: int,
+        input_shape: Tuple[int, int, int],
         ae_ckpt: str,
         # Loss params
         loss: str,
@@ -35,7 +39,12 @@ class LRANModule(pl.LightningModule):
         # Model
         activation = nn.GELU
         self.autoencoder = Autoencoder(
-            latent_dimension, input_channel, base_filters, kernel_size, activation
+            latent_dimension=latent_dimension,
+            input_channel=input_channel,
+            base_filters=base_filters,
+            kernel_size=kernel_size,
+            activation=activation,
+            input_shape=input_shape,
         )
         if ae_ckpt is not None:
             ckpt = torch.load(ae_ckpt, map_location=self.device)
@@ -49,12 +58,13 @@ class LRANModule(pl.LightningModule):
             self.loss = torch.nn.MSELoss()
         else:
             raise ValueError(f"Loss {loss} not supported")
-        
+
         # Denormalize
         self.denormalize = inv_transform
 
         # Debugging
-        self.example_input_array = torch.zeros(1, input_channel, 64, 96)
+        D, H, W = input_shape
+        self.example_input_array = torch.zeros(1, input_channel, D, H, W)
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
         g = self.autoencoder.encode(x)

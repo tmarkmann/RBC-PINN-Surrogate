@@ -53,8 +53,7 @@ class RBCDatamodule2D(L.LightningDataModule):
                 pressure=self.hparams.pressure,
                 normalize=self.hparams.normalize,
                 means=self.means,
-                stds=self.
-                stds,
+                stds=self.stds,
             )
             self.datasets["val"] = RBCDataset2D(
                 self.hparams.data_dir + f"/val/ra{int(self.hparams.ra)}.h5",

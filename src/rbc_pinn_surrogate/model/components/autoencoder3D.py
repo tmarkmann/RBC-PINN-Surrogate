@@ -1,10 +1,24 @@
 from typing import Tuple
 
+import torch
 import torch.nn as nn
 from torch import Tensor
 
 
 class Autoencoder3D(nn.Module):
+    """
+    3D convolutional autoencoder.
+
+    Args:
+        latent_dimension: size of the latent vector z
+        input_channel: number of input channels (e.g., 4 for [T, u, v, w])
+        base_filters: base number of feature maps
+        kernel_size: kernel size for all conv layers (int)
+        activation: activation class (e.g., nn.ReLU)
+        input_shape: spatial input shape as (D, H, W). Used to infer encoder output size
+                      and to properly reshape in the decoder.
+    """
+
     def __init__(
         self,
         latent_dimension: int,
@@ -12,21 +26,47 @@ class Autoencoder3D(nn.Module):
         base_filters: int,
         kernel_size: int,
         activation: nn.Module,
+        input_shape: Tuple[int, int, int],  # (D, H, W)
     ):
         super().__init__()
         self.latent_dimension = latent_dimension
         self.input_channel = input_channel
         self.base_filters = base_filters
         self.kernel_size = kernel_size
+        self.input_shape = input_shape  # (D, H, W)
 
         # Build models
-        self.encoder = _Encoder(input_channel, base_filters, kernel_size, activation)
-        self.decoder = _Decoder(input_channel, base_filters, kernel_size, activation)
+        self.encoder = _Encoder(
+            input_channel=input_channel,
+            base_filters=base_filters,
+            kernel_size=kernel_size,
+            activation=activation,
+        )
+        # Infer encoder output feature dim and spatial shape dynamically
+        with torch.no_grad():
+            dummy = torch.zeros(
+                1, input_channel, input_shape[0], input_shape[1], input_shape[2]
+            )
+            enc_feat, enc_shape = self.encoder.feature_map(dummy)
+        self.encoder_out_channels = enc_feat.shape[1]
+        self.encoder_out_spatial = enc_shape  # (D_e, H_e, W_e)
+        self.encoder_out_dim = int(
+            self.encoder_out_channels * enc_shape[0] * enc_shape[1] * enc_shape[2]
+        )
 
-        # linear layers
-        self.encoder_linear = nn.Linear(self.encoder.out_dim, latent_dimension)
+        self.decoder = _Decoder(
+            output_channel=input_channel,
+            base_filters=base_filters,
+            kernel_size=kernel_size,
+            activation=activation,
+            start_channels=self.encoder_out_channels,
+            start_shape=self.encoder_out_spatial,
+        )
+
+        # Linear layers
+        self.encoder_linear = nn.Linear(self.encoder_out_dim, latent_dimension)
         self.decoder_linear = nn.Sequential(
-            nn.Linear(latent_dimension, self.encoder.out_dim),
+            nn.Linear(latent_dimension, self.encoder_out_dim),
             activation(),
         )
 
@@ -42,6 +82,7 @@ class Autoencoder3D(nn.Module):
         assert self.kernel_size == params["kernel_size"], (
             f"'kernel_size' does not match. ({self.kernel_size} != {params['kernel_size']})"
         )
+        # Note: input_shape might differ; we infer dynamically at runtime.
 
         # Load weights
         state = ckpt["state_dict"]
@@ -55,8 +96,8 @@ class Autoencoder3D(nn.Module):
             for k, v in state.items()
             if k.startswith("autoencoder.decoder.")
         }
-        self.encoder.load_state_dict(encoder_weights)
-        self.decoder.load_state_dict(decoder_weights)
+        self.encoder.load_state_dict(encoder_weights, strict=False)
+        self.decoder.load_state_dict(decoder_weights, strict=False)
 
         # Freeze
         if freeze:
@@ -71,10 +112,17 @@ class Autoencoder3D(nn.Module):
         return x_hat, z
 
     def encode(self, x: Tensor) -> Tensor:
-        return self.encoder_linear(self.encoder(x))
+        # Pass through encoder convs and flatten
+        feats, _ = self.encoder.feature_map(x)
+        feats = feats.reshape(feats.shape[0], -1)
+        return self.encoder_linear(feats)
 
     def decode(self, z: Tensor) -> Tensor:
-        return self.decoder(self.decoder_linear(z))
+        h = self.decoder_linear(z)
+        # reshape to starting feature map for decoder
+        B = h.shape[0]
+        h = h.view(B, self.encoder_out_channels, *self.encoder_out_spatial)
+        return self.decoder(h)
 
 
 class _Encoder(nn.Module):
@@ -86,65 +134,73 @@ class _Encoder(nn.Module):
         activation: nn.Module,
     ) -> None:
         super().__init__()
-
-        # Parameters
         hid = base_filters
         k = kernel_size
-        self.out_dim = 2 * 3 * 4 * hid
+        s = (2, 2, 2)
+        p = 2
 
+        # Five downsampling stages (like original 2D code) but in 3D
         self.net = nn.Sequential(
-            nn.Conv2d(input_channel, hid, kernel_size=k, padding=2, stride=2),
+            nn.Conv3d(input_channel, hid, kernel_size=k, padding=p, stride=s),
             activation(),
-            nn.Conv2d(hid, 2 * hid, kernel_size=k, padding=2, stride=2),
+            nn.Conv3d(hid, 2 * hid, kernel_size=k, padding=p, stride=s),
             activation(),
-            nn.Conv2d(2 * hid, 2 * hid, kernel_size=k, padding=2, stride=2),
+            nn.Conv3d(2 * hid, 2 * hid, kernel_size=k, padding=p, stride=s),
             activation(),
-            nn.Conv2d(2 * hid, 4 * hid, kernel_size=k, padding=2, stride=2),
+            nn.Conv3d(2 * hid, 4 * hid, kernel_size=k, padding=p, stride=s),
             activation(),
-            nn.Conv2d(4 * hid, 4 * hid, kernel_size=k, padding=2, stride=2),
+            nn.Conv3d(4 * hid, 4 * hid, kernel_size=k, padding=p, stride=s),
             activation(),
-            nn.Flatten(),
         )
 
-    def forward(self, x) -> Tensor:
-        return self.net(x)
+    def feature_map(self, x: Tensor) -> Tuple[Tensor, Tuple[int, int, int]]:
+        """Return last feature map and its spatial shape (D, H, W)."""
+        y = self.net(x)
+        D, H, W = y.shape[-3], y.shape[-2], y.shape[-1]
+        return y, (D, H, W)
 
 
 class _Decoder(nn.Module):
     def __init__(
         self,
-        input_channel: int,
+        output_channel: int,
         base_filters: int,
         kernel_size: int,
         activation: nn.Module,
+        start_channels: int,
+        start_shape: Tuple[int, int, int],  # (D_e, H_e, W_e)
     ) -> None:
         super().__init__()
-
-        # Parameters
         hid = base_filters
         k = kernel_size
+        s = (2, 2, 2)
+        p = 2
+        op = 1
 
-        # Model
+        # The first ConvTranspose3d expects `start_channels`
         self.net = nn.Sequential(
-            nn.ConvTranspose2d(
-                4 * hid, 4 * hid, k, padding=2, stride=2, output_padding=1
+            nn.ConvTranspose3d(
+                start_channels, 4 * hid, k, padding=p, stride=s, output_padding=op
             ),
             activation(),
-            nn.ConvTranspose2d(
-                4 * hid, 2 * hid, k, padding=2, stride=2, output_padding=1
+            nn.ConvTranspose3d(
+                4 * hid, 4 * hid, k, padding=p, stride=s, output_padding=op
             ),
             activation(),
-            nn.ConvTranspose2d(
-                2 * hid, 2 * hid, k, padding=2, stride=2, output_padding=1
+            nn.ConvTranspose3d(
+                4 * hid, 2 * hid, k, padding=p, stride=s, output_padding=op
             ),
             activation(),
-            nn.ConvTranspose2d(2 * hid, hid, k, padding=2, stride=2, output_padding=1),
+            nn.ConvTranspose3d(
+                2 * hid, 2 * hid, k, padding=p, stride=s, output_padding=op
+            ),
             activation(),
-            nn.ConvTranspose2d(
-                hid, input_channel, k, padding=2, stride=2, output_padding=1
+            nn.ConvTranspose3d(2 * hid, hid, k, padding=p, stride=s, output_padding=op),
+            activation(),
+            nn.ConvTranspose3d(
+                hid, output_channel, k, padding=p, stride=s, output_padding=op
             ),
         )
 
-    def forward(self, x) -> Tensor:
-        x = x.reshape(x.shape[0], -1, 2, 3)
+    def forward(self, x: Tensor) -> Tensor:
         return self.net(x)

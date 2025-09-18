@@ -49,7 +49,7 @@ class LRANModule(pl.LightningModule):
             self.loss = torch.nn.MSELoss()
         else:
             raise ValueError(f"Loss {loss} not supported")
-        
+
         # Denormalize
         self.denormalize = inv_transform
 

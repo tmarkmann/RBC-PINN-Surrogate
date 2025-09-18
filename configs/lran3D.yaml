@@ -9,11 +9,11 @@ data:
   data_dir: /vol/cfd/rbc/newnew/3D
   ra: 2500
   batch_size: 8
-  start: 200
-  end: 600
-  train_steps: 6
-  test_steps: 3
-  train_shift: 50
+  start: 200  # t=100
+  end: 600    # t=300
+  train_length: 6
+  train_shift: 3
+  test_length: 50
   test_shift: 25
   stride: 1
   nr_episodes_train: null # this means all of them
@@ -24,11 +24,10 @@ data:
   pin_memory: True
   persistent_workers: True
   pressure: False
-  #normalize: True
 
 model:
   loss: "r-mse"
-  latent_dimension: 50
+  latent_dimension: 100
   input_channel: 3
   base_filters: 64
   kernel_size: 5

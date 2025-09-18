@@ -65,7 +65,7 @@ class AutoRegressiveFNOModule(L.LightningModule):
             # save loss and prediction
             loss_list.append(self.loss(out, y_t))
             pred_list.append(out)
-        
+
         # stack predictions and loss
         loss = torch.stack(loss_list, dim=0).mean()
         y_hat = torch.stack(pred_list, dim=2)

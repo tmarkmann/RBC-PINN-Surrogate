@@ -76,7 +76,7 @@ class FNOModule(L.LightningModule):
         input_length = input.shape[2]
         target_length = target.shape[2]
 
-        # Preallocate prediction tensor 
+        # Preallocate prediction tensor
         pred = input.new_empty(
             input.shape[0],
             input.shape[1],
@@ -123,7 +123,7 @@ class FNOModule(L.LightningModule):
     def validation_step(self, batch, batch_idx):
         x, y = batch
         return self.multi_step(x, y, stage="val")
-    
+
     def test_step(self, batch, batch_idx):
         x, y = batch
         return self.multi_step(x, y, stage="test")
