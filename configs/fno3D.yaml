@@ -8,7 +8,7 @@ seed: 42
 data:
   data_dir: /vol/cfd/rbc/newnew/3D
   ra: 2500
-  batch_size: 8
+  batch_size: 2
   start: 200  # t=100
   end: 600    # t=300
   train_length: 6

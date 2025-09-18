@@ -6,7 +6,7 @@ defaults:
 seed: 42
 
 data:
-  data_dir: /vol/cfd/rbc/newnew/3D
+  data_dir: data/datasets/3D #/vol/cfd/rbc/newnew/3D
   ra: 2500
   batch_size: 8
   start: 200  # t=100

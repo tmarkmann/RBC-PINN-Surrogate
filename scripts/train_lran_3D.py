@@ -52,7 +52,7 @@ def main(config: DictConfig):
     # trainer
     trainer = L.Trainer(
         logger=logger,
-        accelerator="auto",
+        accelerator="cpu",
         default_root_dir=config.paths.output_dir,
         check_val_every_n_epoch=2,
         log_every_n_steps=10,

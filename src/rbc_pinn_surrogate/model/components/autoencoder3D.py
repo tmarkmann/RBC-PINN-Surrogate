@@ -136,8 +136,6 @@ class _Encoder(nn.Module):
             activation(),
             nn.Conv3d(2 * hid, 4 * hid, kernel_size=k, padding=p, stride=s),
             activation(),
-            nn.Conv3d(4 * hid, 4 * hid, kernel_size=k, padding=p, stride=s),
-            activation(),
         )
 
     def feature_map(self, x: Tensor) -> Tuple[Tensor, Tuple[int, int, int]]:
@@ -171,15 +169,7 @@ class _Decoder(nn.Module):
             ),
             activation(),
             nn.ConvTranspose3d(
-                4 * hid, 4 * hid, k, padding=p, stride=s, output_padding=op
-            ),
-            activation(),
-            nn.ConvTranspose3d(
                 4 * hid, 2 * hid, k, padding=p, stride=s, output_padding=op
-            ),
-            activation(),
-            nn.ConvTranspose3d(
-                2 * hid, 2 * hid, k, padding=p, stride=s, output_padding=op
             ),
             activation(),
             nn.ConvTranspose3d(2 * hid, hid, k, padding=p, stride=s, output_padding=op),
