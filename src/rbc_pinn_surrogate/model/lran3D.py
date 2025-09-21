@@ -2,6 +2,7 @@ from typing import Any, Dict, Tuple, Callable
 
 import lightning.pytorch as pl
 import torch.nn as nn
+from torch.nn.functional import mse_loss
 import torch
 from torch import Tensor
 
@@ -103,8 +104,12 @@ class LRAN3DModule(pl.LightningModule):
             + self.hparams.lambda_hid * hidden
         )
 
+        # Metrics
+        rmse = torch.sqrt(mse_loss(x_hat, x))
+
         # Log
         self.log(f"{stage}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log(f"{stage}/RMSE", rmse)
         self.log_dict(
             {
                 f"{stage}/loss/reconstruction": reconstruction,

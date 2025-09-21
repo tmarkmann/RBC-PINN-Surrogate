@@ -5,6 +5,7 @@ from .cfno import cFNOModule
 from .ar_fno import AutoRegressiveFNOModule
 from .lran import LRANModule
 from .lran3D import LRAN3DModule
+from .autoencoder import AutoencoderModule
 
 __all__ = [
     "FNOModule",
@@ -14,4 +15,5 @@ __all__ = [
     "AutoRegressiveFNOModule",
     "LRANModule",
     "LRAN3DModule",
+    "AutoencoderModule",
 ]

@@ -14,6 +14,7 @@ from rbc_pinn_surrogate.callbacks import (
     ExamplesCallback,
     MetricsCallback,
     ClearMemoryCallback,
+    SequenceMetricsCallback,
 )
 
 
@@ -54,10 +55,17 @@ def main(config: DictConfig):
         ExamplesCallback(
             train_freq=20,
         ),
-        # SequenceMetricsCallback(
-        #     key_groundtruth="y",
-        #     key_prediction="y_hat",
-        # ),
+        SequenceMetricsCallback(
+            key_groundtruth="y",
+            key_prediction="y_hat",
+        ),
+        ModelCheckpoint(
+            dirpath=f"{config.paths.output_dir}/checkpoints/",
+            save_top_k=1,
+            save_weights_only=True,
+            monitor="val/RMSE",
+            mode="min",
+        ),
         ClearMemoryCallback(),
     ]
 
@@ -70,14 +78,13 @@ def main(config: DictConfig):
         log_every_n_steps=10,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,
-        enable_checkpointing=False,
     )
 
     # training
     trainer.fit(model, dm)
 
     # rollout on test set
-    # trainer.test(model, datamodule=dm, ckpt_path="best")
+    trainer.test(model, datamodule=dm, ckpt_path="best")
 
 
 if __name__ == "__main__":

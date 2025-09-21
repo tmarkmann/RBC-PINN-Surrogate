@@ -1,0 +1,46 @@
+program: scripts/train_fno.py
+name: FNO3D_Results
+
+method: grid
+metric:
+  goal: minimize
+  name: val/RMSE
+
+parameters:
+  seed:
+    values: [0, 1, 2, 3, 4]
+  data.ra:
+    value: [10_000, 30_000, 100_000, 300_000, 1_000_000, 3_000_000, 10_000_000]
+  data.data_dir:
+    value: /vol/cfd/rbc/2D
+  data.batch_size:
+    value: 16
+  data.train_steps:
+    value: 15
+  model.type:
+    value: 3d
+  model.loss:
+    value: H1
+  model.lr:
+    value: 0.003
+  model.weight_decay:
+    value: 0.001
+  model.n_modes_space:
+    value: 16
+  model.n_modes_time:
+    value: 16
+  model.hidden_channels:
+    value: 64
+  model.lifting_channels:
+    value: 16
+  model.projection_channels:
+    value: 16
+  model.n_layers:
+    value: 6
+
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}

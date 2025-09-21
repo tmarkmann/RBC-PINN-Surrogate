@@ -1,0 +1,25 @@
+program: scripts/train_lran_2D.py
+name: LRAN3D_Base_Sweep
+
+method: bayes
+metric:
+  goal: minimize
+  name: val/RMSE
+
+parameters:
+  seed:
+    values: [0, 1, 2]
+
+  data.train_length:
+    values: [4, 8, 12]
+  data.batch_size:
+    values: [32, 64]
+
+  model.latent_dimension:
+    values: [64, 96, 128, 256]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}

@@ -11,8 +11,8 @@ data:
   batch_size: 32
   start: 200
   end: 500
-  train_steps: 20
-  test_steps: 100
+  train_steps: 1
+  test_steps: 1
   train_shift: 10
   test_shift: 50
   stride: 1
@@ -27,19 +27,13 @@ data:
   normalize: True
 
 model:
-  loss: "r-mse"
   latent_dimension: 32
   input_channel: 3
   base_filters: 64
   kernel_size: 5
-  ae_ckpt: null #${paths.model_dir}/autoencoder/ra${data.ra}.ckpt
-  lambda_id: 0.01
-  lambda_fwd: 10
-  lambda_hid: 10
-  lr_operator: 0.0001
-  lr_autoencoder: 0.001
+  lr: 0.001
 
 algo:
-  epochs: 75
+  epochs: 50
 
-task_name: lran2D
+task_name: ae2D

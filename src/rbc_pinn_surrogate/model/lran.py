@@ -46,7 +46,7 @@ class LRANModule(pl.LightningModule):
         if loss == "r-mse":
             self.loss = NormalizedSumSquaredError()
         elif loss == "mse":
-            self.loss = torch.nn.MSELoss()
+            self.loss = torch.nn.functional.mse_loss
         else:
             raise ValueError(f"Loss {loss} not supported")
 
