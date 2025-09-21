@@ -2,8 +2,10 @@ from typing import Any, Dict, Tuple, Callable
 
 import torch
 import torch.nn as nn
-from lightning.pytorch import LightningModule
 from torch import Tensor
+from torch.nn.functional import mse_loss
+
+from lightning.pytorch import LightningModule
 
 from rbc_pinn_surrogate.model.components import Autoencoder
 
@@ -16,7 +18,6 @@ class AutoencoderModule(LightningModule):
         base_filters: int,
         kernel_size: int,
         lr: float,
-        compile: bool,
         inv_transform: Callable = None,
     ):
         super().__init__()
@@ -28,8 +29,8 @@ class AutoencoderModule(LightningModule):
             latent_dimension, input_channel, base_filters, kernel_size, self.activation
         )
 
-        # Loss function
-        self.criterion = torch.nn.functional.mse_loss
+        # Denormalize
+        self.denormalize = inv_transform
 
         # Debugging
         self.example_input_array = torch.zeros(1, input_channel, 64, 96)
@@ -39,17 +40,20 @@ class AutoencoderModule(LightningModule):
         x_hat, _ = self.autoencoder(x)
         return x_hat
 
-    def model_step(self, batch: Tensor, stage: str) -> Tuple[Tensor, Tensor, Tensor]:
+    def model_step(self, x: Tensor, stage: str) -> Tuple[Tensor, Tensor, Tensor]:
         # check input dimensions
-        assert batch.shape[1] == 1, (
+        assert x.shape[2] == 1, (
             "Expect sequence length of 1 for autoencoder training"
         )
-        x = batch.squeeze(dim=1)
 
         # model forward
-        x_hat = self.forward(x)
-        loss = self.criterion(x_hat, x)
+        x_hat = self.forward(x.squeeze(dim=2))
+        x_hat = x_hat.unsqueeze(dim=2)
+
+        # compute loss
+        loss = mse_loss(x_hat, x)
         self.log(f"{stage}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
+        self.log(f"{stage}/RMSE", torch.sqrt(loss), on_step=False, on_epoch=True)
         
         # Apply inverse transform
         if self.denormalize is not None:
@@ -59,22 +63,21 @@ class AutoencoderModule(LightningModule):
 
         return {
             "loss": loss,
-            "x_hat": x_hat,
-            "x": x,
+            "y_hat": x_hat,
+            "y": x,
         }
 
     def training_step(self, batch, batch_idx):
-        return self.model_step(batch, stage="train")
+        x, _ = batch
+        return self.model_step(x, stage="train")
 
     def validation_step(self, batch, batch_idx):
-        return self.model_step(batch, stage="val")
+        x, _ = batch
+        return self.model_step(x, stage="val")
 
     def test_step(self, batch, batch_idx):
-        return self.model_step(batch, stage="test")
-
-    def setup(self, stage: str) -> None:
-        if self.hparams.compile and stage == "fit":
-            self.autoencoder = torch.compile(self.autoencoder)
+        x, _ = batch
+        return self.model_step(x, stage="test")
 
     def configure_optimizers(self) -> Dict[str, Any]:
         optimizer = torch.optim.Adam(
