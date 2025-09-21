@@ -32,7 +32,7 @@ model:
   input_channel: 3
   base_filters: 64
   kernel_size: 5
-  ae_ckpt: null #${paths.model_dir}/autoencoder/ra${data.ra}.ckpt
+  ae_ckpt: ${paths.model_dir}/autoencoder/ra${data.ra}.ckpt
   lambda_id: 0.01
   lambda_fwd: 10
   lambda_hid: 10

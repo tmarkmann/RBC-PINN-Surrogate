@@ -38,8 +38,9 @@ class LRANModule(pl.LightningModule):
             latent_dimension, input_channel, base_filters, kernel_size, activation
         )
         if ae_ckpt is not None:
-            ckpt = torch.load(ae_ckpt, map_location=self.device)
-            self.autoencoder.load_weights(ckpt, freeze=False)
+            ckpt = torch.load(ae_ckpt, map_location="cpu", weights_only=True)
+            self.autoencoder.load_state_dict(ckpt["state_dict"], strict=False)
+            print(f"Loaded autoencoder weights from {ae_ckpt}")
         self.operator = KoopmanOperator(latent_dimension)
 
         # Loss

@@ -21,7 +21,7 @@ class AutoencoderModule(LightningModule):
         inv_transform: Callable = None,
     ):
         super().__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=["inv_transform"])
 
         # model
         self.activation = nn.GELU
