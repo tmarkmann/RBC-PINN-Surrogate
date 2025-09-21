@@ -4,6 +4,7 @@ import lightning.pytorch as pl
 import torch.nn as nn
 import torch
 from torch import Tensor
+from torch.nn.modules.utils import consume_prefix_in_state_dict_if_present
 
 from rbc_pinn_surrogate.model.components import Autoencoder, KoopmanOperator
 from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError
@@ -39,7 +40,7 @@ class LRANModule(pl.LightningModule):
         )
         if ae_ckpt is not None:
             ckpt = torch.load(ae_ckpt, map_location="cpu", weights_only=True)
-            self.autoencoder.load_state_dict(ckpt["state_dict"], strict=False)
+            self.autoencoder.load_weights(ckpt, freeze=True)
             print(f"Loaded autoencoder weights from {ae_ckpt}")
         self.operator = KoopmanOperator(latent_dimension)
 

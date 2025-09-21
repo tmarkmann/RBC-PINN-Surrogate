@@ -53,7 +53,7 @@ def main(config: DictConfig):
             key_prediction="y_hat",
         ),
         ExamplesCallback(
-            train_freq=20,
+            train_freq=2,
         ),
         SequenceMetricsCallback(
             key_groundtruth="y",
@@ -74,7 +74,7 @@ def main(config: DictConfig):
         logger=logger,
         accelerator="auto",
         default_root_dir=config.paths.output_dir,
-        check_val_every_n_epoch=2,
+        check_val_every_n_epoch=1,
         log_every_n_steps=10,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,
