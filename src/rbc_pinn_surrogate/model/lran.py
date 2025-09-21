@@ -4,7 +4,6 @@ import lightning.pytorch as pl
 import torch.nn as nn
 import torch
 from torch import Tensor
-from torch.nn.modules.utils import consume_prefix_in_state_dict_if_present
 
 from rbc_pinn_surrogate.model.components import Autoencoder, KoopmanOperator
 from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError

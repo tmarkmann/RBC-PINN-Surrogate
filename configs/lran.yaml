@@ -11,7 +11,7 @@ data:
   batch_size: 32
   start: 200
   end: 500
-  train_steps: 20
+  train_steps: 15
   test_steps: 100
   train_shift: 10
   test_shift: 50
@@ -35,7 +35,7 @@ model:
   ae_ckpt: ${paths.model_dir}/autoencoder/ra${data.ra}.ckpt
   lambda_id: 1
   lambda_fwd: 1
-  lambda_hid: 0
+  lambda_hid: 5
   lr_operator: 0.0001
   lr_autoencoder: 0.001
 
