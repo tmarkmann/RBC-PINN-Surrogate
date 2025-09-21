@@ -42,9 +42,7 @@ class AutoencoderModule(LightningModule):
 
     def model_step(self, x: Tensor, stage: str) -> Tuple[Tensor, Tensor, Tensor]:
         # check input dimensions
-        assert x.shape[2] == 1, (
-            "Expect sequence length of 1 for autoencoder training"
-        )
+        assert x.shape[2] == 1, "Expect sequence length of 1 for autoencoder training"
 
         # model forward
         x_hat = self.forward(x.squeeze(dim=2))
@@ -54,7 +52,7 @@ class AutoencoderModule(LightningModule):
         loss = mse_loss(x_hat, x)
         self.log(f"{stage}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log(f"{stage}/RMSE", torch.sqrt(loss), on_step=False, on_epoch=True)
-        
+
         # Apply inverse transform
         if self.denormalize is not None:
             with torch.no_grad():

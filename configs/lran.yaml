@@ -27,15 +27,15 @@ data:
   normalize: True
 
 model:
-  loss: "r-mse"
-  latent_dimension: 32
+  loss: "mse"
+  latent_dimension: 64
   input_channel: 3
   base_filters: 64
   kernel_size: 5
   ae_ckpt: ${paths.model_dir}/autoencoder/ra${data.ra}.ckpt
-  lambda_id: 0.01
-  lambda_fwd: 10
-  lambda_hid: 10
+  lambda_id: 1
+  lambda_fwd: 1
+  lambda_hid: 0
   lr_operator: 0.0001
   lr_autoencoder: 0.001
 

@@ -1,5 +1,5 @@
 program: scripts/train_lran_2D.py
-name: LRAN_Base_Sweep
+name: LRAN_Results
 
 method: grid
 metric:
@@ -13,31 +13,6 @@ parameters:
     values: [10_000, 30_000, 100_000, 300_000, 1_000_000, 3_000_000, 10_000_000]
   data.data_dir:
     value: /vol/cfd/rbc/2D
-
-  data.train_steps:
-    value: 20
-  data.train_shift:
-    value: 10
-  data.batch_size:
-    value: 32
-
-  model.latent_dimension:
-    value: 32
-  model.base_filters:
-    value: 64
-
-  model.lr_operator:
-    value: 0.0001
-  model.lr_autoencoder:
-    value: 0.001
-  model.lambda_id:
-    value: 0.01
-  model.lambda_fwd:
-    value: 10
-  model.lambda_hid:
-    value: 10
-  
-
 
 command:
   - ${env}

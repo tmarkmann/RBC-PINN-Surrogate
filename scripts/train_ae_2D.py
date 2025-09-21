@@ -74,6 +74,9 @@ def main(config: DictConfig):
     # rollout on test set
     trainer.test(model, datamodule=dm, ckpt_path="best")
 
+    # finish logging
+    logger.experiment.finish()
+
 
 if __name__ == "__main__":
     main()
