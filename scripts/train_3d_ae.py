@@ -8,39 +8,32 @@ from lightning.pytorch.callbacks import (
 )
 from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig
-from rbc_pinn_surrogate.data import RBCDatamodule2D
-from rbc_pinn_surrogate.model import FNOModule, AutoRegressiveFNOModule
+from rbc_pinn_surrogate.data import RBCDatamodule3D
+from rbc_pinn_surrogate.model import Autoencoder3DModule
 from rbc_pinn_surrogate.callbacks import (
-    SequenceMetricsCallback,
     ExamplesCallback,
-    MetricsCallback,
-    ClearMemoryCallback,
 )
 
 
-@hydra.main(version_base="1.3", config_path="../configs", config_name="2d_fno")
+@hydra.main(version_base="1.3", config_path="../configs", config_name="3d_ae")
 def main(config: DictConfig):
     # seed
     L.seed_everything(config.seed, workers=True)
 
     # data
-    dm = RBCDatamodule2D(**config.data)
+    dm = RBCDatamodule3D(**config.data)
     dm.setup("fit")
 
     # model
     denormalize = dm.datasets["train"].denormalize_batch
-
-    if config.model.type == "3d":
-        model = FNOModule(denormalize=denormalize, **config.model)
-    elif config.model.type == "2d":
-        model = AutoRegressiveFNOModule(denormalize=denormalize, **config.model)
-    else:
-        raise ValueError(f"Unknown model type: {config.model.type}")
+    model = Autoencoder3DModule(
+        **config.model, input_shape=[32, 48, 48], inv_transform=denormalize
+    )
 
     # logger
     logger = WandbLogger(
         entity="sail-project",
-        project="RBC-2D-FNO",
+        project="RBC-3D-AE",
         save_dir=config.paths.output_dir,
         log_model=False,
     )
@@ -54,16 +47,8 @@ def main(config: DictConfig):
             mode="min",
             patience=8,
         ),
-        MetricsCallback(
-            key_groundtruth="y",
-            key_prediction="y_hat",
-        ),
         ExamplesCallback(
             train_freq=20,
-        ),
-        SequenceMetricsCallback(
-            key_groundtruth="y",
-            key_prediction="y_hat",
         ),
         ModelCheckpoint(
             dirpath=f"{config.paths.output_dir}/checkpoints/",
@@ -72,7 +57,6 @@ def main(config: DictConfig):
             monitor="val/RMSE",
             mode="min",
         ),
-        ClearMemoryCallback(),
     ]
 
     # trainer
@@ -91,6 +75,9 @@ def main(config: DictConfig):
 
     # rollout on test set
     trainer.test(model, datamodule=dm, ckpt_path="best")
+
+    # finish logging
+    logger.experiment.finish()
 
 
 if __name__ == "__main__":
