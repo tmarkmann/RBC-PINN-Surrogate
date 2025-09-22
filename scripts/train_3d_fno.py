@@ -1,40 +1,37 @@
 import hydra
+from omegaconf import DictConfig
 import lightning as L
+from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import (
     EarlyStopping,
     RichModelSummary,
     RichProgressBar,
 )
-from lightning.pytorch.loggers import WandbLogger
-from omegaconf import DictConfig
+
 from rbc_pinn_surrogate.data import RBCDatamodule3D
-from rbc_pinn_surrogate.model import LRAN3DModule
-from rbc_pinn_surrogate.callbacks import (
-    Metrics3DCallback,
-)
+from rbc_pinn_surrogate.model import FNO3DModule
+from rbc_pinn_surrogate.callbacks import Metrics3DCallback
 
 
-@hydra.main(version_base="1.3", config_path="../configs", config_name="lran3D")
+@hydra.main(version_base="1.3", config_path="../configs", config_name="3d_fno")
 def main(config: DictConfig):
-    # seed
-    L.seed_everything(config.seed, workers=True)
+    # set seed for reproducability
+    L.seed_everything(config.seed)
 
     # data
     dm = RBCDatamodule3D(**config.data)
-    dm.setup("fit")
 
     # model
-    denormalize = dm.datasets["train"].denormalize_batch
-    model = LRAN3DModule(
-        input_shape=[32, 48, 48], inv_transform=denormalize, **config.model
-    )
+    # inv_transform = NormalizeInverse(mean=cfg.data.means, std=cfg.data.stds)
+    model = FNO3DModule(**config.model)
 
     # logger
     logger = WandbLogger(
         entity="sail-project",
-        project="RBC-3D-LRAN",
+        project="RayleighBenard-3D-FNO",
         save_dir=config.paths.output_dir,
         log_model=False,
+        config=dict(config),
     )
 
     # callbacks
@@ -44,7 +41,7 @@ def main(config: DictConfig):
         EarlyStopping(
             monitor="val/loss",
             mode="min",
-            patience=8,
+            patience=5,
         ),
         Metrics3DCallback(),
     ]
@@ -54,18 +51,16 @@ def main(config: DictConfig):
         logger=logger,
         accelerator="auto",
         default_root_dir=config.paths.output_dir,
-        check_val_every_n_epoch=2,
-        log_every_n_steps=10,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,
-        enable_checkpointing=False,
+        check_val_every_n_epoch=5,
     )
 
     # training
     trainer.fit(model, dm)
 
     # rollout on test set
-    # trainer.test(model, datamodule=dm, ckpt_path="best")
+    trainer.test(model, datamodule=dm, ckpt_path="best")
 
 
 if __name__ == "__main__":

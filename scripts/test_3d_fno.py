@@ -12,7 +12,7 @@ from rbc_pinn_surrogate.model import FNO3DModule
 from rbc_pinn_surrogate.utils.vis3D import animation_3d
 
 
-@hydra.main(version_base="1.3", config_path="../configs", config_name="fno3D_test")
+@hydra.main(version_base="1.3", config_path="../configs", config_name="3d_fno_test")
 def main(config: DictConfig):
     # device
     device = best_device()
