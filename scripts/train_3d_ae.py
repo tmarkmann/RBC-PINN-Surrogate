@@ -47,9 +47,6 @@ def main(config: DictConfig):
             mode="min",
             patience=8,
         ),
-        ExamplesCallback(
-            train_freq=20,
-        ),
         ModelCheckpoint(
             dirpath=f"{config.paths.output_dir}/checkpoints/",
             save_top_k=1,
