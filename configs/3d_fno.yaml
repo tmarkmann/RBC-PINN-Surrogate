@@ -8,7 +8,7 @@ seed: 42
 data:
   data_dir: data/datasets/3D
   ra: 2500
-  batch_size: 4
+  batch_size: 8
   start: 200  # t=100
   end: 600    # t=300
   train_length: 8

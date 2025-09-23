@@ -22,13 +22,16 @@ def main(config: DictConfig):
     dm = RBCDatamodule3D(**config.data)
 
     # model
-    # inv_transform = NormalizeInverse(mean=cfg.data.means, std=cfg.data.stds)
-    model = FNO3DModule(**config.model)
+    denormalize = dm.datasets["train"].denormalize_batch
+    model = FNO3DModule(
+        denormalize=denormalize,
+        **config.model,
+    )
 
     # logger
     logger = WandbLogger(
         entity="sail-project",
-        project="RayleighBenard-3D-FNO",
+        project="RBC-3D-FNO",
         save_dir=config.paths.output_dir,
         log_model=False,
         config=dict(config),
@@ -49,7 +52,7 @@ def main(config: DictConfig):
     # trainer
     trainer = L.Trainer(
         logger=logger,
-        accelerator="cpu",
+        accelerator="auto",
         default_root_dir=config.paths.output_dir,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,

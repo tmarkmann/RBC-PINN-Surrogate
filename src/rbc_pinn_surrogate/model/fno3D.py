@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Dict, Callable
 import torch
 from torch import Tensor
 from torch.nn.functional import mse_loss
@@ -20,9 +20,10 @@ class FNO3DModule(L.LightningModule):
         lifting_channels: int = 16,
         projection_channels: int = 16,
         n_layers: int = 2,
+        denormalize: Callable = None,
     ):
         super().__init__()
-        self.save_hyperparameters(ignore=["pino_loss", "operator"])
+        self.save_hyperparameters(ignore=["pino_loss", "operator", "denormalize"])
 
         # Model parameters
         self.model = no.models.TFNO3d(
@@ -39,6 +40,9 @@ class FNO3DModule(L.LightningModule):
 
         # Loss Function
         self.loss = no.H1Loss(d=3)
+
+        # Denormalize
+        self.denormalize = denormalize
 
     def forward(self, x):
         if self.hparams.preprocess:
@@ -59,13 +63,17 @@ class FNO3DModule(L.LightningModule):
             return self.model(x)
 
     def predict(self, input: Tensor, length) -> Tensor:
-        pred = []
-        # autoregressive model steps
-        out = input.squeeze(dim=2)
-        for _ in range(length):
-            out = self.forward(out)
-            pred.append(out.detach().cpu())
-        return torch.stack(pred, dim=2)
+        with torch.no_grad():
+            pred = []
+            # autoregressive model steps
+            out = input.squeeze(dim=2)
+            for _ in range(length):
+                out = self.forward(out)
+                if self.denormalize is not None:
+                    out = self.denormalize(out.detach().cpu())
+                pred.append(out)
+            return torch.stack(pred, dim=2)
+
 
     def model_step(
         self, input: Tensor, target: Tensor, stage: str, return_pred: bool = False

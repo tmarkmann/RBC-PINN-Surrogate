@@ -26,15 +26,15 @@ data:
   pressure: False
 
 model:
-  loss: "r-mse"
-  latent_dimension: 100
+  loss: "mse"
+  latent_dimension: 128
   input_channel: 4
   base_filters: 64
   kernel_size: 5
-  ae_ckpt: null #${paths.model_dir}/autoencoder/ra${data.ra}.ckpt
-  lambda_id: 0.1
-  lambda_fwd: 10
-  lambda_hid: 10
+  ae_ckpt: ${paths.model_dir}/autoencoder3D/ra${data.ra}.ckpt
+  lambda_id: 1
+  lambda_fwd: 1
+  lambda_hid: 5
   lr_operator: 0.0001
   lr_autoencoder: 0.001
 

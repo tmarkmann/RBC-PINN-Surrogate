@@ -25,6 +25,7 @@ class RBCDatamodule3D(L.LightningDataModule):
         nr_episodes_train: int | None = None,
         nr_episodes_val: int | None = None,
         nr_episodes_test: int | None = None,
+        normalize: bool = True,
     ) -> None:
         super().__init__()
         # DataModule parameters
@@ -33,7 +34,9 @@ class RBCDatamodule3D(L.LightningDataModule):
         self.datasets: dict[str, Dataset] = {}
         self.paths: dict[str, List[str]] = {}
         # Transform
-        # TODO
+        if normalize:
+            self.means = [1.5, 0.0, 0.0, 0.0, -1.5, 0.0]
+            self.stds = [0.25, 0.35, 0.35, 0.35, 0.0, 0.0]
 
     def setup(self, stage: str):
         # Assign train/val datasets for use in dataloaders
@@ -48,6 +51,9 @@ class RBCDatamodule3D(L.LightningDataModule):
                 shift=self.hparams.test_shift,
                 stride=self.hparams.stride,
                 pressure=self.hparams.pressure,
+                normalize=self.hparams.normalize,
+                means=self.means,
+                stds=self.stds,
             )
             self.datasets["train"] = RBCDataset3D(
                 self.hparams.data_dir + f"/train/ra{int(self.hparams.ra)}.h5",
@@ -59,6 +65,9 @@ class RBCDatamodule3D(L.LightningDataModule):
                 shift=self.hparams.train_shift,
                 stride=self.hparams.stride,
                 pressure=self.hparams.pressure,
+                normalize=self.hparams.normalize,
+                means=self.means,
+                stds=self.stds,
             )
         # Assign test dataset for use in dataloaders
         elif stage == "test":
@@ -72,6 +81,9 @@ class RBCDatamodule3D(L.LightningDataModule):
                 shift=self.hparams.test_shift,
                 stride=self.hparams.stride,
                 pressure=self.hparams.pressure,
+                normalize=self.hparams.normalize,
+                means=self.means,
+                stds=self.stds,
             )
         else:
             raise ValueError(f"Stage not implemented: {stage}")

@@ -32,10 +32,10 @@ class LRAN3DModule(pl.LightningModule):
         lr_operator: float,
         lr_autoencoder: float,
         # Misc
-        inv_transform: Callable = None,
+        denormalize: Callable = None,
     ) -> None:
         super().__init__()
-        self.save_hyperparameters(ignore=["inv_transform"])
+        self.save_hyperparameters(ignore=["denormalize"])
 
         # Model
         activation = nn.GELU
@@ -61,17 +61,29 @@ class LRAN3DModule(pl.LightningModule):
             raise ValueError(f"Loss {loss} not supported")
 
         # Denormalize
-        self.denormalize = inv_transform
+        self.denormalize = denormalize
 
         # Debugging
         D, H, W = input_shape
         self.example_input_array = torch.zeros(1, input_channel, D, H, W)
 
-    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
+    def forward(self, x: Tensor) -> Tensor:
         g = self.autoencoder.encode(x)
         g_next = self.operator(g)
         x_hat = self.autoencoder.decode(g_next)
-        return x_hat, g_next, g
+        return x_hat
+    
+    def predict(self, input: Tensor, length) -> Tensor:
+        with torch.no_grad():
+            pred = []
+            # autoregressive model steps
+            out = input.squeeze(dim=2)
+            for _ in range(length):
+                out = self.forward(out)
+                if self.denormalize is not None:
+                    out = self.denormalize(out.detach().cpu())
+                pred.append(out)
+            return torch.stack(pred, dim=2)
 
     def model_step(self, x: Tensor, stage: str) -> Dict[str, Tensor]:
         seq_length = x.shape[2]
@@ -105,13 +117,15 @@ class LRAN3DModule(pl.LightningModule):
         )
 
         # Metrics
-        rmse = torch.sqrt(mse_loss(x_hat, x))
+        rmse = self.rmse(x_hat, x)
+        nmse = self.nmse(x_hat, x)
 
         # Log
         self.log(f"{stage}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log(f"{stage}/RMSE", rmse)
         self.log_dict(
             {
+                f"{stage}/RMSE": rmse.mean(),
+                f"{stage}/NMSE": nmse.mean(),
                 f"{stage}/loss/reconstruction": reconstruction,
                 f"{stage}/loss/forward": forward,
                 f"{stage}/loss/hidden": hidden,
@@ -120,16 +134,10 @@ class LRAN3DModule(pl.LightningModule):
             on_epoch=True,
         )
 
-        # Apply inverse transform
-        if self.denormalize is not None:
-            with torch.no_grad():
-                x = self.denormalize(x.detach())
-                x_hat = self.denormalize(x_hat.detach())
-
         return {
             "loss": loss,
-            # "y": x,
-            # "y_hat": x_hat,
+            "rmse": rmse.detach(),
+            "nmse": nmse.detach(),
         }
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
@@ -158,3 +166,17 @@ class LRAN3DModule(pl.LightningModule):
             ],
         )
         return {"optimizer": optimizer}
+
+    def rmse(self, pred: Tensor, target: Tensor) -> Tensor:
+        return torch.sqrt(
+            mse_loss(pred, target, reduction="none").mean(dim=[1, 3, 4])
+        )
+
+    def nmse(self, pred: Tensor, target: Tensor) -> Tensor:
+        eps = torch.finfo(pred.dtype).eps
+        diff = pred - target
+        # sum over C,H,W,D, keep batch dimension
+        nom = (diff * diff).sum(dim=(1, 3, 4))
+        denom = (target * target).sum(dim=(1, 3, 4))
+        denom = torch.clamp(denom, min=eps)
+        return nom / denom
