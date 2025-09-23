@@ -6,6 +6,7 @@ from lightning.pytorch.callbacks import (
     EarlyStopping,
     RichModelSummary,
     RichProgressBar,
+    ModelCheckpoint,
 )
 
 from rbc_pinn_surrogate.data import RBCDatamodule3D
@@ -20,6 +21,7 @@ def main(config: DictConfig):
 
     # data
     dm = RBCDatamodule3D(**config.data)
+    dm.setup("fit")
 
     # model
     denormalize = dm.datasets["train"].denormalize_batch
@@ -47,6 +49,12 @@ def main(config: DictConfig):
             patience=5,
         ),
         Metrics3DCallback(),
+        ModelCheckpoint(
+            dirpath=f"{config.paths.output_dir}/checkpoints/",
+            save_top_k=1,
+            monitor="val/RMSE",
+            mode="min",
+        ),
     ]
 
     # trainer
@@ -56,7 +64,7 @@ def main(config: DictConfig):
         default_root_dir=config.paths.output_dir,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,
-        check_val_every_n_epoch=5,
+        check_val_every_n_epoch=3,
     )
 
     # training

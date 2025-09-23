@@ -74,7 +74,6 @@ class FNO3DModule(L.LightningModule):
                 pred.append(out)
             return torch.stack(pred, dim=2)
 
-
     def model_step(
         self, input: Tensor, target: Tensor, stage: str, return_pred: bool = False
     ) -> Dict[str, Tensor]:

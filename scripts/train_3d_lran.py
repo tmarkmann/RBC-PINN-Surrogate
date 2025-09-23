@@ -4,6 +4,7 @@ from lightning.pytorch.callbacks import (
     EarlyStopping,
     RichModelSummary,
     RichProgressBar,
+    ModelCheckpoint,
 )
 from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig
@@ -50,6 +51,12 @@ def main(config: DictConfig):
             patience=5,
         ),
         Metrics3DCallback(),
+        ModelCheckpoint(
+            dirpath=f"{config.paths.output_dir}/checkpoints/",
+            save_top_k=1,
+            monitor="val/RMSE",
+            mode="min",
+        ),
     ]
 
     # trainer
@@ -59,7 +66,7 @@ def main(config: DictConfig):
         default_root_dir=config.paths.output_dir,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,
-        check_val_every_n_epoch=5,
+        check_val_every_n_epoch=3,
     )
 
     # training

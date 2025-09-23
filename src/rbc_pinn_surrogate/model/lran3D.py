@@ -72,7 +72,7 @@ class LRAN3DModule(pl.LightningModule):
         g_next = self.operator(g)
         x_hat = self.autoencoder.decode(g_next)
         return x_hat
-    
+
     def predict(self, input: Tensor, length) -> Tensor:
         with torch.no_grad():
             pred = []
@@ -168,9 +168,7 @@ class LRAN3DModule(pl.LightningModule):
         return {"optimizer": optimizer}
 
     def rmse(self, pred: Tensor, target: Tensor) -> Tensor:
-        return torch.sqrt(
-            mse_loss(pred, target, reduction="none").mean(dim=[1, 3, 4])
-        )
+        return torch.sqrt(mse_loss(pred, target, reduction="none").mean(dim=[1, 3, 4]))
 
     def nmse(self, pred: Tensor, target: Tensor) -> Tensor:
         eps = torch.finfo(pred.dtype).eps

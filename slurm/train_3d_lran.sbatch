@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=lran3D
+#SBATCH --job-name=3d_lran
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
@@ -12,4 +12,4 @@ source ~/miniforge3/etc/profile.d/conda.sh
 conda activate rbcpinn
 
 cd ~/RBC-PINN-Surrogate
-srun uv run python scripts/train_lran_3D.py
+srun uv run python scripts/train_3d_lran.py

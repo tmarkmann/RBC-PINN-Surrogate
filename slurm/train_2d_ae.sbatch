@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=ae_ra
+#SBATCH --job-name=2d_ae
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
@@ -25,4 +25,4 @@ conda activate rbcpinn
 cd ~/RBC-PINN-Surrogate
 
 # Run training with this RA
-srun uv run python scripts/train_ae_2D.py -m seed=0,1,2,3,4 data.data_dir=/vol/cfd/rbc/2D data.ra=${RA}
+srun uv run python scripts/train_2d_ae.py -m seed=0,1,2,3,4 data.data_dir=/vol/cfd/rbc/2D data.ra=${RA}

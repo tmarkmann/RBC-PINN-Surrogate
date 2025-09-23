@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=fno
+#SBATCH --job-name=3d_test
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
@@ -12,4 +12,4 @@ source ~/miniforge3/etc/profile.d/conda.sh
 conda activate rbcpinn
 
 cd ~/RBC-PINN-Surrogate
-srun uv run python scripts/train_fno.py data.data_dir=/vol/cfd/rbc/2D
+srun uv run python scripts/test_3d.py

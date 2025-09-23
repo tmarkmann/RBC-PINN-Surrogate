@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=ae_ra
+#SBATCH --job-name=3d_ae
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G

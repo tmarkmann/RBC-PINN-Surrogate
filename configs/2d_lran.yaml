@@ -42,4 +42,4 @@ model:
 algo:
   epochs: 75
 
-task_name: lran2D
+task_name: 2d_lran

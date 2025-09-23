@@ -6,19 +6,19 @@ defaults:
 seed: 42
 
 data:
-  data_dir: data/datasets/3D
+  data_dir: /vol/cfd/rbc/newnew/3D
   ra: 2500
   batch_size: 8
   start: 200  # t=100
   end: 600    # t=300
-  train_length: 8
+  train_length: 6
   train_shift: 3
-  test_length: 50
+  test_length: 25
   test_shift: 25
   stride: 1
-  nr_episodes_train: 1 # this means all of them
-  nr_episodes_val: 1
-  nr_episodes_test: 1
+  nr_episodes_train: null # this means all of them
+  nr_episodes_val: null
+  nr_episodes_test: null
   # Data efficiency settings
   num_workers: 2
   pin_memory: True
@@ -41,4 +41,4 @@ model:
 algo:
   epochs: 35
 
-task_name: fno3d
+task_name: 3d_fno
