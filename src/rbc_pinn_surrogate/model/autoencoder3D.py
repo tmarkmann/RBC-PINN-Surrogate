@@ -47,7 +47,9 @@ class Autoencoder3DModule(LightningModule):
 
     def model_step(self, x: Tensor, stage: str) -> Tuple[Tensor, Tensor, Tensor]:
         # check input dimensions
-        assert x.shape[2] == 1, f"Expect sequence length of 1 for autoencoder training, got {x.shape}"
+        assert x.shape[2] == 1, (
+            f"Expect sequence length of 1 for autoencoder training, got {x.shape}"
+        )
 
         # model forward
         x_hat = self.forward(x.squeeze(dim=2))

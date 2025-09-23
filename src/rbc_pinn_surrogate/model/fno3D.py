@@ -70,25 +70,33 @@ class FNO3DModule(L.LightningModule):
     def model_step(
         self, input: Tensor, target: Tensor, stage: str, return_pred: bool = False
     ) -> Dict[str, Tensor]:
-        loss_list = []
-        rmse_list = []
+        loss = []
+        rmse = []
+        nmse = []
         # autoregressive model steps
         out = input.squeeze(dim=2)
         for idx in range(target.shape[2]):
             out = self.forward(out)
-            loss_list.append(self.loss(out, target[:, :, idx]))
-            rmse_list.append(torch.sqrt(mse_loss(out, target[:, :, idx])))
+            loss.append(self.loss(out, target[:, :, idx]))
+            # metrics in size (B, T)
+            rmse.append(self.rmse(out, target[:, :, idx]))
+            nmse.append(self.nmse(out, target[:, :, idx]))
+
+            # for autograd
             # out = out.detach()
 
         # log
-        loss = torch.stack(loss_list).mean()
-        rmse = torch.stack(rmse_list).mean()
+        loss = torch.stack(loss).mean()
+        rmse = torch.stack(rmse, dim=1)
+        nmse = torch.stack(nmse, dim=1)
         self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
-        self.log(f"{stage}/RMSE", rmse, prog_bar=True, logger=True)
+        self.log(f"{stage}/RMSE", rmse.mean(), prog_bar=True, logger=True)
+        self.log(f"{stage}/NMSE", nmse.mean(), prog_bar=True, logger=True)
 
         return {
             "loss": loss,
-            "rmse": torch.stack(rmse_list).detach(),
+            "rmse": rmse.detach(),
+            "nmse": nmse.detach(),
         }
 
     def training_step(self, batch, batch_idx):
@@ -115,3 +123,17 @@ class FNO3DModule(L.LightningModule):
         # Remove metadat from neuralop library TODO check if useful
         state_dict.pop("_metadata", None)
         return super().load_state_dict(state_dict, strict)
+
+    def rmse(self, pred: Tensor, target: Tensor) -> Tensor:
+        return torch.sqrt(
+            mse_loss(pred, target, reduction="none").mean(dim=[1, 2, 3, 4])
+        )
+
+    def nmse(self, pred: Tensor, target: Tensor) -> Tensor:
+        eps = torch.finfo(pred.dtype).eps
+        diff = pred - target
+        # sum over C,H,W,D, keep batch dimension
+        nom = (diff * diff).sum(dim=(1, 2, 3, 4))
+        denom = (target * target).sum(dim=(1, 2, 3, 4))
+        denom = torch.clamp(denom, min=eps)
+        return nom / denom

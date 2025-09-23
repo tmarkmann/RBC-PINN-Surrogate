@@ -3,42 +3,59 @@ import pandas as pd
 import seaborn as sns
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import WandbLogger
+import wandb
 
 
 class Metrics3DCallback(Callback):
     def __init__(
         self,
     ):
-        self.samples = []
+        self.data = []
 
     # Testing callbacks
     def on_test_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ) -> None:
-        rmse_seq = outputs["rmse"].cpu().numpy()
-        self.samples.append(rmse_seq)
-        # Remove rmse from outputs to free memory
-        del outputs["rmse"]
+        # get metrics in form (B, T)
+        rmse = outputs["rmse"].cpu().numpy()
+        nmse = outputs["nmse"].cpu().numpy()
+
+        # save in df form
+        samples = rmse.shape[0]
+        steps = rmse.shape[1]
+        for i in range(samples):
+            for j in range(steps):
+                self.data.append(
+                    {
+                        "idx": batch_idx * samples + i,
+                        "batch_idx": batch_idx,
+                        "sample_idx": i,
+                        "step": j,
+                        "rmse": rmse[i, j],
+                        "nmse": nmse[i, j],
+                    }
+                )
 
     def on_test_end(self, trainer, pl_module) -> None:
-        im = self.plot_metric()
-        if isinstance(trainer.logger, WandbLogger):
-            trainer.logger.log_image("test/Plot-RMSE", [im])
+        df = pd.DataFrame(self.data)
+        im1 = self.plot_metric(df, "rmse")
+        im2 = self.plot_metric(df, "nmse")
 
-    def plot_metric(self):
-        # plot the rmse sequence using matplotlib
-        df = pd.DataFrame(
-            self.samples, columns=[i for i in range(self.samples[0].shape[0])]
-        )
-        df = df.melt(var_name="Time", value_name="RMSE")
+        if isinstance(trainer.logger, WandbLogger):
+            trainer.logger.log_table("test/Table-Metrics", dataframe=df)
+            trainer.logger.log_image("test/Plot-RMSE", [im1])
+            trainer.logger.log_image("test/Plot-NMSE", [im2])
+
+    def plot_metric(self, df: pd.DataFrame, metric: str):
+        fig = plt.figure()
         sns.set_theme()
-        plt.figure(figsize=(7, 7))
-        sns.lineplot(data=df, x="Time", y="RMSE")
-        plt.title("RMSE Sequence Over Time")
-        plt.xlabel("Time Step")
-        plt.ylim(0, 0.5)
-        plt.ylabel("RMSE")
-        plt.tight_layout()
-        im = plt.gcf()
-        plt.close()
+        ax = sns.lineplot(data=df, x="step", y=metric)
+        ax.set_title(metric)
+        ax.set_ylabel(metric)
+        ax.set_xlabel("Time Step")
+        ax.set_ylim(bottom=0, top=0.5)
+
+        # save as image
+        im = wandb.Image(fig, caption=metric)
+        plt.close(fig)
         return im
