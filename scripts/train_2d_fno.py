@@ -52,7 +52,7 @@ def main(config: DictConfig):
         EarlyStopping(
             monitor="val/loss",
             mode="min",
-            patience=8,
+            patience=4,
         ),
         MetricsCallback(
             key_groundtruth="y",

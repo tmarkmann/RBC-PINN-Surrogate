@@ -1,4 +1,4 @@
-program: scripts/train_fno_3D.py
+program: scripts/train_3d_fno.py
 name: FNO3D - train_length
 method: grid
 metric:

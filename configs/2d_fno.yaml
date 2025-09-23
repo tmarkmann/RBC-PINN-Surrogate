@@ -33,7 +33,7 @@ model:
   weight_decay: 1e-3
   n_modes_time: 16
   n_modes_space: 16
-  hidden_channels: 32
+  hidden_channels: 64
   in_channels: 3
   out_channels: 3
   lifting_channels: 16

@@ -1,4 +1,4 @@
-program: scripts/train_lran_2D.py
+program: scripts/train_3d_lran.py
 name: LRAN3D_Base_Sweep
 
 method: bayes

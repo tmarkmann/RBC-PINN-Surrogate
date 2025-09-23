@@ -1,4 +1,4 @@
-program: scripts/train_lran_2D.py
+program: scripts/train_2d_lran.py
 name: LRAN_Results
 
 method: grid

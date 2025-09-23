@@ -1,4 +1,4 @@
-program: scripts/train_fno.py
+program: scripts/train_2d_fno.py
 name: FNO_train_steps
 
 method: grid

@@ -1,4 +1,4 @@
-program: scripts/train_fno.py
+program: scripts/train_2d_fno.py
 name: FNO2D_Results
 
 method: grid
@@ -10,7 +10,7 @@ parameters:
   seed:
     values: [0, 1, 2, 3, 4]
   data.ra:
-    value: [10_000, 30_000, 100_000, 300_000, 1_000_000, 3_000_000, 10_000_000]
+    values: [10_000, 30_000, 100_000, 300_000, 1_000_000, 3_000_000, 10_000_000]
   data.data_dir:
     value: /vol/cfd/rbc/2D
   data.train_steps:
