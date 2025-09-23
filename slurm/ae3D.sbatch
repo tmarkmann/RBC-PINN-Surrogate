@@ -25,4 +25,4 @@ conda activate rbcpinn
 cd ~/RBC-PINN-Surrogate
 
 # Run training with this RA
-srun uv run python scripts/train_ae_3D.py -m seed=0,1,2,3,4 data.ra=${RA}
+srun uv run python scripts/train_3d_ae.py -m seed=0,1,2,3,4 data.ra=${RA}

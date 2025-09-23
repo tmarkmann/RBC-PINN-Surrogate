@@ -10,9 +10,6 @@ from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig
 from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import Autoencoder3DModule
-from rbc_pinn_surrogate.callbacks import (
-    ExamplesCallback,
-)
 
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="3d_ae")
