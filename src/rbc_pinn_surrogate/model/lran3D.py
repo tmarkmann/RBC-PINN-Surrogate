@@ -168,13 +168,13 @@ class LRAN3DModule(pl.LightningModule):
         return {"optimizer": optimizer}
 
     def rmse(self, pred: Tensor, target: Tensor) -> Tensor:
-        return torch.sqrt(mse_loss(pred, target, reduction="none").mean(dim=[1, 3, 4]))
+        return torch.sqrt(mse_loss(pred, target, reduction="none").mean(dim=[1, 3, 4, 5]))
 
     def nmse(self, pred: Tensor, target: Tensor) -> Tensor:
         eps = torch.finfo(pred.dtype).eps
         diff = pred - target
         # sum over C,H,W,D, keep batch dimension
-        nom = (diff * diff).sum(dim=(1, 3, 4))
-        denom = (target * target).sum(dim=(1, 3, 4))
+        nom = (diff * diff).sum(dim=(1, 3, 4, 5))
+        denom = (target * target).sum(dim=(1, 3, 4, 5))
         denom = torch.clamp(denom, min=eps)
         return nom / denom

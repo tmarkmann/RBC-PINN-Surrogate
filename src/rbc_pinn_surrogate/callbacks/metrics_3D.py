@@ -53,7 +53,7 @@ class Metrics3DCallback(Callback):
         ax.set_title(metric)
         ax.set_ylabel(metric)
         ax.set_xlabel("Time Step")
-        ax.set_ylim(bottom=0, top=0.5)
+        ax.set_ylim(bottom=0, top=1)
 
         # save as image
         im = wandb.Image(fig, caption=metric)
