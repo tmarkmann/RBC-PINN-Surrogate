@@ -14,7 +14,7 @@ def get_sweep_results(project, method, tag):
 
     # Download
     for run in runs:
-        ra = run.config["ra"]
+        ra = run.config.get("ra", 2500)
         seed = run.config["seed"]
         for artifact in run.logged_artifacts():
             if artifact.type == "run_table" and "Table-Metrics" in artifact.name:
@@ -34,9 +34,11 @@ def get_sweep_results(project, method, tag):
 # config
 sweeps = [
     "sail-project/RBC-3D-FNO",
+    "sail-project/RBC-3D-LRAN"
 ]
 methods = [
     "3d-fno",
+    "3d-lran"
 ]
 
 for sweep, method in zip(sweeps, methods):
