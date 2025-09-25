@@ -168,7 +168,9 @@ class LRAN3DModule(pl.LightningModule):
         return {"optimizer": optimizer}
 
     def rmse(self, pred: Tensor, target: Tensor) -> Tensor:
-        return torch.sqrt(mse_loss(pred, target, reduction="none").mean(dim=[1, 3, 4, 5]))
+        return torch.sqrt(
+            mse_loss(pred, target, reduction="none").mean(dim=[1, 3, 4, 5])
+        )
 
     def nmse(self, pred: Tensor, target: Tensor) -> Tensor:
         eps = torch.finfo(pred.dtype).eps

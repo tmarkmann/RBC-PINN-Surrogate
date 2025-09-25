@@ -58,8 +58,8 @@ def main(config: DictConfig):
                         "batch_idx": batch,
                         "sample_idx": idx,
                         "step": t,
-                        "rmse": rmse[t],
-                        "nmse": nmse[t],
+                        "rmse": rmse[t].item(),
+                        "nmse": nmse[t].item(),
                     }
                 )
             wandb.log(

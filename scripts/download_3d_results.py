@@ -30,6 +30,7 @@ def get_sweep_results(project, method, tag):
                 os.makedirs(outdir, exist_ok=True)
                 df.to_csv(f"{outdir}/ra{ra}-{seed}.csv", index=False)
 
+
 # config
 sweeps = [
     "sail-project/RBC-3D-FNO",
