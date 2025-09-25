@@ -10,19 +10,19 @@ seed: 0
 checkpoint: ${paths.model_dir}/3d_${model}/ra${data.ra}-${seed}.ckpt
 
 data:
-  data_dir: data/datasets/3D #/vol/cfd/rbc/newnew/3D_long
+  data_dir: /vol/cfd/rbc/newnew/3D_long
   ra: 2500
   pressure: False
   batch_size: 4
   start: 200 # t=100
-  end: 300 # t=300
-  test_length: 50
-  test_shift: 50
+  end: 2000 # t=300
+  test_length: 100
+  test_shift: 200
   stride: 1
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null
-  nr_episodes_test: 1
+  nr_episodes_test: null
   # Data efficiency settings
-  num_workers: 0
-  pin_memory: False
-  persistent_workers: False
+  num_workers: 2
+  pin_memory: True
+  persistent_workers: True
