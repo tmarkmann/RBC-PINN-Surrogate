@@ -62,7 +62,7 @@ def main(config: DictConfig):
     # trainer
     trainer = L.Trainer(
         logger=logger,
-        accelerator="cpu",
+        accelerator="auto",
         default_root_dir=config.paths.output_dir,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,

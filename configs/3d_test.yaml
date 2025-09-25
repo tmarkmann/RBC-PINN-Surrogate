@@ -3,10 +3,11 @@ defaults:
   - hydra: default
   - _self_
 
-task_name: 3d_fno_test
+task_name: 3d_test
 
 model: fno # fno or lran
-checkpoint: ${paths.model_dir}/3d_${model}/ra${data.ra}.ckpt
+seed: 0
+checkpoint: ${paths.model_dir}/3d_${model}/ra${data.ra}-${seed}.ckpt
 
 data:
   data_dir: /vol/cfd/rbc/newnew/3D_long
@@ -16,11 +17,11 @@ data:
   start: 200 # t=100
   end: 2000 # t=300
   test_length: 100
-  test_shift: 200
+  test_shift: 700
   stride: 1
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null
-  nr_episodes_test: null
+  nr_episodes_test: 1
   # Data efficiency settings
   num_workers: 0
   pin_memory: False

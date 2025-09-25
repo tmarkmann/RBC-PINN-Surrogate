@@ -14,4 +14,4 @@ conda activate rbcpinn
 cd ~/RBC-PINN-Surrogate
 
 # one seed per array task (0..4). No Hydra multirun here.
-srun uv run python scripts/train_3d_lran.py seed=${SLURM_ARRAY_TASK_ID}
+srun uv run python scripts/train_3d_lran.py seed=${SLURM_ARRAY_TASK_ID} model.ae_ckpt=null

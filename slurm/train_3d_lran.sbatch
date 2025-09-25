@@ -12,4 +12,4 @@ source ~/miniforge3/etc/profile.d/conda.sh
 conda activate rbcpinn
 
 cd ~/RBC-PINN-Surrogate
-srun uv run python scripts/train_3d_lran.py
+srun uv run python scripts/train_3d_lran.py #model.ae_ckpt=null

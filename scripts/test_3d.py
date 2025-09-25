@@ -40,16 +40,16 @@ def main(config: DictConfig):
     metrics = []
     for batch, (x, y) in enumerate(tqdm(dm.test_dataloader(), desc="Testing")):
         with torch.no_grad():
-            pred = model.predict(x.to(device), y.shape[2])
+            pred = model.predict(x.to(device), y.shape[2]).cpu()
 
         # loop through each sample in the batch
         batch_size = pred.shape[0]
         seq_len = pred.shape[2]
         for idx in range(batch_size):
-            # metrics
-            loss = model.loss(pred[idx], y[idx]).cpu()
-            rmse = compute_rmse(pred[idx], y[idx]).cpu()
-            nmse = compute_nmse(pred[idx], y[idx]).cpu()
+            # metrics per sample and time step
+            loss = model.loss(pred[idx], y[idx])
+            rmse = compute_rmse(pred[idx], y[idx])
+            nmse = compute_nmse(pred[idx], y[idx])
 
             for t in range(seq_len):
                 metrics.append(
@@ -62,24 +62,25 @@ def main(config: DictConfig):
                         "nmse": nmse[t],
                     }
                 )
-
-            # vis
-            path = animation_3d(
-                gt=y[idx].cpu().numpy(),
-                pred=pred[idx].cpu().numpy(),
-                feature="T",
-                anim_dir=config.paths.output_dir + "/animations",
-                anim_name=f"test_{batch}_{idx}.mp4",
-            )
-            video = wandb.Video(path, format="mp4", caption=f"Test {batch}.{idx}")
             wandb.log(
                 {
                     "test/loss": loss,
                     "test/RMSE": rmse.mean(),
                     "test/NMSE": nmse.mean(),
-                    "test/video": video,
                 }
             )
+
+            # vis
+            if idx == 0:  # only first sample in batch
+                path = animation_3d(
+                    gt=y[idx].cpu().numpy(),
+                    pred=pred[idx].cpu().numpy(),
+                    feature="T",
+                    anim_dir=config.paths.output_dir + "/animations",
+                    anim_name=f"test_{batch}_{idx}.mp4",
+                )
+                video = wandb.Video(path, format="mp4", caption=f"Test {batch}.{idx}")
+                wandb.log({"test/video": video})
 
     # log metrics
     df = pd.DataFrame(metrics)
@@ -109,7 +110,7 @@ def compute_rmse(pred, target):
     return rmse.mean(dim=(0, 2, 3, 4))
 
 
-def plot_metric(self, df: pd.DataFrame, metric: str):
+def plot_metric(df: pd.DataFrame, metric: str):
     fig = plt.figure()
     sns.set_theme()
     ax = sns.lineplot(data=df, x="step", y=metric)
