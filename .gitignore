@@ -227,3 +227,4 @@ logs/
 data/datasets/
 wandb
 models/
+artifacts
