@@ -7,16 +7,17 @@ task_name: 3d_test
 
 model: fno # fno or lran
 seed: 0
-checkpoint: ${paths.model_dir}/3d_${model}/ra${data.ra}-${seed}.ckpt
+checkpoint: ${paths.model_dir}/2d_${model}/ra${data.ra}-${seed}.ckpt
 
 data:
-  data_dir: data/datasets/3D #/vol/cfd/rbc/newnew/3D_long
-  ra: 2500
-  pressure: False
-  batch_size: 4
-  start: 200 # t=100
-  end: 400 # t=300
-  test_length: 25
+  data_dir: data/datasets/2D
+  ra: 1000000
+  batch_size: 8
+  start: 200
+  end: 500
+  train_steps: 15
+  test_steps: 25
+  train_shift: 5
   test_shift: 50
   stride: 1
   nr_episodes_train: null # this means all of them
@@ -26,3 +27,5 @@ data:
   num_workers: 2
   pin_memory: True
   persistent_workers: True
+  pressure: False
+  normalize: True

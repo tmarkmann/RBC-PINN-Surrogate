@@ -3,39 +3,10 @@ import pandas as pd
 import seaborn as sns
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import WandbLogger
+import torch
 from torch import Tensor
-from torchmetrics import MeanSquaredError
-
+from torch.nn.functional import mse_loss
 import wandb
-from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError
-
-
-class SequenceMetric:
-    def __init__(self, name, metric):
-        self.name = name
-        self.metric = metric
-        self.data = []
-
-    def update(
-        self, prediction: list[Tensor], groundtruth: list[Tensor], batch_idx: int
-    ):
-        for sample_idx in range(groundtruth.shape[0]):
-            for step in range(groundtruth.shape[2]):
-                self.data.append(
-                    {
-                        "idx": batch_idx * groundtruth.shape[0] + sample_idx,
-                        "batch_idx": batch_idx,
-                        "sample_idx": sample_idx,
-                        "step": step,
-                        "value": self.metric(
-                            prediction[sample_idx, :, step].reshape(-1),
-                            groundtruth[sample_idx, :, step].reshape(-1),
-                        ).item(),
-                    }
-                )
-
-    def get_dataframe(self):
-        return pd.DataFrame(self.data)
 
 
 class SequenceMetricsCallback(Callback):
@@ -46,12 +17,7 @@ class SequenceMetricsCallback(Callback):
     ):
         self.key_groundtruth = key_groundtruth
         self.key_prediction = key_prediction
-
-        # sequence metrics
-        self.sequence_metrics = [
-            SequenceMetric(metric=NormalizedSumSquaredError(), name="R-MSE"),
-            SequenceMetric(metric=MeanSquaredError(squared=False), name="RMSE"),
-        ]
+        self.data = []
 
     # Testing callbacks
     def on_test_batch_end(
@@ -61,23 +27,66 @@ class SequenceMetricsCallback(Callback):
         gt = outputs[self.key_groundtruth].cpu()
 
         # Update each metric
-        for metric in self.sequence_metrics:
-            metric.update(pred, gt, batch_idx)
-
-        print(f"Batch {batch_idx} processed for sequence metrics.")
+        self.update(pred, gt, batch_idx)
 
     def on_test_end(self, trainer, pl_module) -> None:
-        for metric in self.sequence_metrics:
-            df = metric.get_dataframe()
-            im = self.plot_metrics(df, metric.name)
-            if isinstance(trainer.logger, WandbLogger):
-                trainer.logger.log_table(f"test/Table-{metric.name}", dataframe=df)
-                trainer.logger.log_image(f"test/Plot-{metric.name}", [im])
+        df = self.get_dataframe()
+        im1 = self.plot_metrics(df, "rmse")
+        im2 = self.plot_metrics(df, "nsse")
+
+        if isinstance(trainer.logger, WandbLogger):
+            trainer.logger.log_table("test/Table-Metrics", dataframe=df)
+            trainer.logger.log_image("test/Plot-RMSE", [im1])
+            trainer.logger.log_image("test/Plot-NSSE", [im2])
+
+    def update(self, pred: list[Tensor], target: list[Tensor], batch_idx: int):
+        for idx in range(target.shape[0]):
+            for step in range(target.shape[2]):
+                self.data.append(
+                    {
+                        "idx": batch_idx * target.shape[0] + idx,
+                        "batch_idx": batch_idx,
+                        "sample_idx": idx,
+                        "step": step,
+                        "rmse": self.rmse(pred[idx, :, step], target[idx, :, step]),
+                        "nsse": self.nsse(pred[idx, :, step], target[idx, :, step]),
+                        "mean_q_pred": self.mean_q(pred[idx, :, step]),
+                        "mean_q_target": self.mean_q(target[idx, :, step]),
+                    }
+                )
+
+    def rmse(self, preds: Tensor, target: Tensor):
+        return (torch.sqrt(mse_loss(preds, target)).item(),)
+
+    def nsse(self, pred: Tensor, target: Tensor):
+        eps = torch.finfo(pred.dtype).eps
+        mse_val = mse_loss(pred, target, reduction="sum")
+        denom = torch.sum(target * target) + eps
+        return mse_val / denom
+
+    def mean_q(self, state: Tensor):
+        T = state[0]
+        uz = state[2]
+        q = uz * (T - torch.mean(T))
+        return torch.mean(q).item()
+
+    def div_loss(self, state: Tensor):
+        dx = 6 * torch.pi / 96
+        dz = 2 / 64
+
+        dudx = torch.gradient(state[1], dim=3, spacing=dx)[0]
+        dwdz = torch.gradient(state[2], dim=2, spacing=dz)[0]
+        div = dudx + dwdz
+
+        return mse_loss(div, torch.zeros_like(div))
+
+    def get_dataframe(self):
+        return pd.DataFrame(self.data)
 
     def plot_metrics(self, df: pd.DataFrame, metric: str):
         fig = plt.figure()
         sns.set_theme()
-        ax = sns.lineplot(data=df, x="step", y="value")
+        ax = sns.lineplot(data=df, x="step", y=metric)
         ax.set_title(metric)
         ax.set_ylabel(metric)
         ax.set_xlabel("Time Step")

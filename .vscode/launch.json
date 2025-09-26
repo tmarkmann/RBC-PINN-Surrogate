@@ -8,7 +8,7 @@
             "name": "Train FNO",
             "type": "debugpy",
             "request": "launch",
-            "program": "scripts/download_3d_results.py",
+            "program": "scripts/test_2d.py",
             "console": "integratedTerminal",
             "justMyCode": false,
         }

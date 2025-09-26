@@ -18,8 +18,8 @@ class RBCEquationLoss(nn.Module):
         # discretization steps
         _, _, time_steps, height, width = pred.shape
         dt = self.time / time_steps
-        dx = self.domain_width / width
-        dz = self.domain_height / height
+        dx = self.domain_width / width  # 6pi / 96
+        dz = self.domain_height / height  # 2 / 64
 
         # fields
         T = pred[:, 0].squeeze(1)

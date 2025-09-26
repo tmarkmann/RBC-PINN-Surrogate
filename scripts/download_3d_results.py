@@ -32,14 +32,8 @@ def get_sweep_results(project, method, tag):
 
 
 # config
-sweeps = [
-    "sail-project/RBC-3D-FNO",
-    "sail-project/RBC-3D-LRAN"
-]
-methods = [
-    "3d-fno",
-    "3d-lran"
-]
+sweeps = ["sail-project/RBC-3D-FNO", "sail-project/RBC-3D-LRAN"]
+methods = ["3d-fno", "3d-lran"]
 
 for sweep, method in zip(sweeps, methods):
     get_sweep_results(sweep, method, tag="results1")

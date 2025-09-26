@@ -128,6 +128,10 @@ class FNOModule(L.LightningModule):
         x, y = batch
         return self.multi_step(x, y, stage="test")
 
+    def predict(self, input, target):
+        with torch.inference_mode():
+            return self.multi_step(input, target, stage="predict")["y_hat"]
+
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(
             self.model.parameters(),
