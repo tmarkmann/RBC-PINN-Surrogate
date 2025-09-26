@@ -1,0 +1,18 @@
+program: scripts/train_3d_fno.py
+name: FNO_params
+method: grid
+metric:
+  goal: minimize
+  name: val/RMSE
+parameters:
+  seed:
+    values: [0, 1, 2]
+  
+  model.hidden_channels:
+    values: [4, 8, 16, 32, 64]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}

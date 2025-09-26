@@ -1,0 +1,18 @@
+program: scripts/train_3d_fno.py
+name: FNO_params
+method: grid
+metric:
+  goal: minimize
+  name: val/RMSE
+parameters:
+  seed:
+    values: [0, 1, 2]
+  
+  data.nr_episodes_train:
+    values: [3, 7, 15, 30, 60]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}

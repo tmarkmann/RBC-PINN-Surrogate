@@ -1,0 +1,27 @@
+program: scripts/train_2d_fno.py
+name: FNO_Params
+
+method: grid
+metric:
+  goal: minimize
+  name: val/RMSE
+
+parameters:
+  seed:
+    values: [0, 1, 2]
+  data.ra:
+    value: 1_000_000
+  data.data_dir:
+    value: /vol/cfd/rbc/2D
+  model.type:
+    values: 3d
+  
+  data.nr_episodes_train:
+    values: [3, 6, 12, 25, 50]
+  
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}

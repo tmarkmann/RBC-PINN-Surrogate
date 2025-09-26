@@ -27,13 +27,13 @@ data:
   normalize: True
 
 model:
-  type: 2d # options: 2d, 3d
+  type: 3d # options: 2d, 3d
   loss: H1
   lr: 3e-3
   weight_decay: 1e-3
   n_modes_time: 16
   n_modes_space: 16
-  hidden_channels: 64
+  hidden_channels: 40
   in_channels: 3
   out_channels: 3
   lifting_channels: 16

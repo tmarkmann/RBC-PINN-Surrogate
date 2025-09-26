@@ -89,7 +89,7 @@ def main(config: DictConfig):
     trainer.fit(model, dm)
 
     # rollout on test set
-    trainer.test(model, datamodule=dm, ckpt_path="best")
+    # trainer.test(model, datamodule=dm, ckpt_path="best")
 
 
 if __name__ == "__main__":
