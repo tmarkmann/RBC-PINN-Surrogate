@@ -10,7 +10,7 @@ parameters:
   seed:
     values: [0, 1, 2, 3, 4]
   data.ra:
-    values: [10_000, 30_000, 100_000, 300_000, 1_000_000, 3_000_000, 10_000_000]
+    values: [300_000, 1_000_000, 3_000_000, 10_000_000]
   data.data_dir:
     value: /vol/cfd/rbc/2D
 
