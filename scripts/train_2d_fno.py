@@ -52,7 +52,7 @@ def main(config: DictConfig):
         EarlyStopping(
             monitor="val/loss",
             mode="min",
-            patience=4,
+            patience=15,
         ),
         MetricsCallback(
             key_groundtruth="y",
@@ -69,7 +69,7 @@ def main(config: DictConfig):
             dirpath=f"{config.paths.output_dir}/checkpoints/",
             save_top_k=1,
             save_weights_only=True,
-            monitor="val/RMSE",
+            monitor="val/loss",
             mode="min",
         ),
         ClearMemoryCallback(),
@@ -80,7 +80,7 @@ def main(config: DictConfig):
         logger=logger,
         accelerator="auto",
         default_root_dir=config.paths.output_dir,
-        check_val_every_n_epoch=2,
+        check_val_every_n_epoch=1,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,
     )

@@ -229,3 +229,4 @@ wandb
 models/
 artifacts
 figs
+notebooks/results

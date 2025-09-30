@@ -4,7 +4,7 @@ name: LRAN_Results
 method: grid
 metric:
   goal: minimize
-  name: val/RMSE
+  name: val/loss
 
 parameters:
   seed:

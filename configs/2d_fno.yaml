@@ -13,7 +13,7 @@ data:
   end: 500
   train_steps: 15
   test_steps: 100
-  train_shift: 5
+  train_shift: 10
   test_shift: 50
   stride: 1
   nr_episodes_train: null # this means all of them
