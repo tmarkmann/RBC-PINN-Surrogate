@@ -8,7 +8,7 @@ seed: 42
 data:
   data_dir: data/datasets/2D
   ra: 1000000
-  batch_size: 16
+  batch_size: 32
   start: 200
   end: 500
   train_steps: 15
@@ -33,7 +33,7 @@ model:
   weight_decay: 1e-3
   n_modes_time: 16
   n_modes_space: 16
-  hidden_channels: 40
+  hidden_channels: 32
   in_channels: 3
   out_channels: 3
   lifting_channels: 16

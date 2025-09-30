@@ -1,3 +1,4 @@
+import math
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
@@ -31,13 +32,14 @@ class SequenceMetricsCallback(Callback):
 
     def on_test_end(self, trainer, pl_module) -> None:
         df = self.get_dataframe()
+        print(df)
         im1 = self.plot_metrics(df, "rmse")
-        im2 = self.plot_metrics(df, "nsse")
+        im2 = self.plot_metrics(df, "nrsse")
 
         if isinstance(trainer.logger, WandbLogger):
             trainer.logger.log_table("test/Table-Metrics", dataframe=df)
             trainer.logger.log_image("test/Plot-RMSE", [im1])
-            trainer.logger.log_image("test/Plot-NSSE", [im2])
+            trainer.logger.log_image("test/Plot-NRSSE", [im2])
 
     def update(self, pred: list[Tensor], target: list[Tensor], batch_idx: int):
         for idx in range(target.shape[0]):
@@ -49,20 +51,23 @@ class SequenceMetricsCallback(Callback):
                         "sample_idx": idx,
                         "step": step,
                         "rmse": self.rmse(pred[idx, :, step], target[idx, :, step]),
-                        "nsse": self.nsse(pred[idx, :, step], target[idx, :, step]),
+                        "nrsse": self.nrsse(pred[idx, :, step], target[idx, :, step]),
                         "mean_q_pred": self.mean_q(pred[idx, :, step]),
                         "mean_q_target": self.mean_q(target[idx, :, step]),
+                        "div_pred": self.div_rms(pred[idx, :, step]),
+                        "div_target": self.div_rms(target[idx, :, step]),
                     }
                 )
 
     def rmse(self, preds: Tensor, target: Tensor):
-        return (torch.sqrt(mse_loss(preds, target)).item(),)
+        return torch.sqrt(mse_loss(preds, target)).item()
 
-    def nsse(self, pred: Tensor, target: Tensor):
+    def nrsse(self, pred: Tensor, target: Tensor):
         eps = torch.finfo(pred.dtype).eps
-        mse_val = mse_loss(pred, target, reduction="sum")
-        denom = torch.sum(target * target) + eps
-        return mse_val / denom
+        num = torch.linalg.vector_norm(pred - target, dim=[1, 2])
+        denom = torch.linalg.vector_norm(target, dim=[1, 2]) + eps
+        # return mean across channels for scalar metric
+        return (num / denom).mean().item()
 
     def mean_q(self, state: Tensor):
         T = state[0]
@@ -70,15 +75,19 @@ class SequenceMetricsCallback(Callback):
         q = uz * (T - torch.mean(T))
         return torch.mean(q).item()
 
-    def div_loss(self, state: Tensor):
-        dx = 6 * torch.pi / 96
-        dz = 2 / 64
+    def div_rms(self, state: Tensor):
+        # state shape: [C, H, W] with channels [T, u(x), w(z)]
+        dx = 6.0 * math.pi / 96.0 
+        dz = 2.0 / 64.0
 
-        dudx = torch.gradient(state[1], dim=3, spacing=dx)[0]
-        dwdz = torch.gradient(state[2], dim=2, spacing=dz)[0]
+        # On channel slices [H, W], valid dims are 0 (z/height) and 1 (x/width)
+        # ∂u/∂x along width -> dim=1
+        dudx = torch.gradient(state[1], dim=1, spacing=(dx,))[0]
+        # ∂w/∂z along height -> dim=0
+        dwdz = torch.gradient(state[2], dim=0, spacing=(dz,))[0]
         div = dudx + dwdz
 
-        return mse_loss(div, torch.zeros_like(div))
+        return torch.sqrt(torch.mean(div ** 2)).item()
 
     def get_dataframe(self):
         return pd.DataFrame(self.data)
