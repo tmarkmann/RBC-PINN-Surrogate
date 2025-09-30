@@ -3,6 +3,9 @@ import pandas as pd
 import seaborn as sns
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import WandbLogger
+from torch import Tensor
+from torch.nn.functional import mse_loss
+import torch
 import wandb
 
 
@@ -16,35 +19,30 @@ class Metrics3DCallback(Callback):
     def on_test_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ) -> None:
-        # get metrics in form (B, T)
-        rmse = outputs["rmse"].cpu().numpy()
-        nmse = outputs["nmse"].cpu().numpy()
+        # get metrics in size (T)
+        rmse = outputs["rmse"].numpy()
+        nrsse = outputs["nrsse"].numpy()
 
-        # save in df form
-        samples = rmse.shape[0]
-        steps = rmse.shape[1]
-        for i in range(samples):
-            for j in range(steps):
-                self.data.append(
-                    {
-                        "idx": batch_idx * samples + i,
-                        "batch_idx": batch_idx,
-                        "sample_idx": i,
-                        "step": j,
-                        "rmse": rmse[i, j],
-                        "nmse": nmse[i, j],
-                    }
-                )
+        # save in df format
+        for t in range(rmse.shape[0]):
+            self.data.append(
+                {
+                    "batch_idx": batch_idx,
+                    "step": t,
+                    "rmse": rmse[t],
+                    "nrsse": nrsse[t],
+                }
+            )
 
     def on_test_end(self, trainer, pl_module) -> None:
         df = pd.DataFrame(self.data)
         im1 = self.plot_metric(df, "rmse")
-        im2 = self.plot_metric(df, "nmse")
+        im2 = self.plot_metric(df, "nrsse")
 
         if isinstance(trainer.logger, WandbLogger):
             trainer.logger.log_table("test/Table-Metrics", dataframe=df)
             trainer.logger.log_image("test/Plot-RMSE", [im1])
-            trainer.logger.log_image("test/Plot-NMSE", [im2])
+            trainer.logger.log_image("test/Plot-NRSSE", [im2])
 
     def plot_metric(self, df: pd.DataFrame, metric: str):
         fig = plt.figure()
@@ -59,3 +57,15 @@ class Metrics3DCallback(Callback):
         im = wandb.Image(fig, caption=metric)
         plt.close(fig)
         return im
+
+
+def rmse(pred: Tensor, target: Tensor) -> Tensor:
+    return torch.sqrt(mse_loss(pred, target))
+
+
+def nrsse(pred: Tensor, target: Tensor) -> Tensor:
+    eps = torch.finfo(pred.dtype).eps
+    num = torch.linalg.vector_norm(pred - target, dim=[0, 2, 3, 4])
+    denom = torch.linalg.vector_norm(target, dim=[0, 2, 3, 4]) + eps
+    # return mean across channels for scalar metric
+    return (num / denom).mean()

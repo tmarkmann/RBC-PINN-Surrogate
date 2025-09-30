@@ -26,8 +26,7 @@ data:
   pressure: False
 
 model:
-  loss: "mse"
-  latent_dimension: 128
+  latent_dimension: 1024
   input_channel: 4
   base_filters: 64
   kernel_size: 5

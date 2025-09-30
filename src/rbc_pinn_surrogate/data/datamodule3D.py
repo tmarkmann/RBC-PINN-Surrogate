@@ -34,9 +34,8 @@ class RBCDatamodule3D(L.LightningDataModule):
         self.datasets: dict[str, Dataset] = {}
         self.paths: dict[str, List[str]] = {}
         # Transform
-        if normalize:
-            self.means = [1.5, 0.0, 0.0, 0.0, -1.5, 0.0]
-            self.stds = [0.25, 0.35, 0.35, 0.35, 0.0, 0.0]
+        self.means = [0.5, 0.0, 0.0, 0.0, -0.4, 0.0]
+        self.stds = [0.24, 0.185, 0.185, 0.185, 0.33, 0.15]
 
     def setup(self, stage: str):
         # Assign train/val datasets for use in dataloaders

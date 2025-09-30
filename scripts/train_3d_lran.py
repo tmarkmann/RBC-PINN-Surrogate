@@ -48,13 +48,13 @@ def main(config: DictConfig):
         EarlyStopping(
             monitor="val/loss",
             mode="min",
-            patience=5,
+            patience=15,
         ),
         Metrics3DCallback(),
         ModelCheckpoint(
             dirpath=f"{config.paths.output_dir}/checkpoints/",
             save_top_k=1,
-            monitor="val/RMSE",
+            monitor="val/loss",
             mode="min",
         ),
     ]
@@ -74,6 +74,9 @@ def main(config: DictConfig):
 
     # rollout on test set
     trainer.test(model, datamodule=dm, ckpt_path="best")
+
+    # finish logging
+    logger.experiment.finish()
 
 
 if __name__ == "__main__":

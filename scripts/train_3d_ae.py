@@ -24,7 +24,9 @@ def main(config: DictConfig):
     # model
     denormalize = dm.datasets["train"].denormalize_batch
     model = Autoencoder3DModule(
-        **config.model, input_shape=[32, 48, 48], inv_transform=denormalize
+        **config.model,
+        input_shape=[32, 48, 48],
+        inv_transform=denormalize,
     )
 
     # logger
@@ -33,6 +35,7 @@ def main(config: DictConfig):
         project="RBC-3D-AE",
         save_dir=config.paths.output_dir,
         log_model=False,
+        config=dict(config),
     )
 
     # callbacks
@@ -42,13 +45,13 @@ def main(config: DictConfig):
         EarlyStopping(
             monitor="val/loss",
             mode="min",
-            patience=8,
+            patience=15,
         ),
         ModelCheckpoint(
             dirpath=f"{config.paths.output_dir}/checkpoints/",
             save_top_k=1,
             save_weights_only=True,
-            monitor="val/RMSE",
+            monitor="val/loss",
             mode="min",
         ),
     ]
@@ -59,7 +62,6 @@ def main(config: DictConfig):
         accelerator="auto",
         default_root_dir=config.paths.output_dir,
         check_val_every_n_epoch=2,
-        log_every_n_steps=10,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,
     )

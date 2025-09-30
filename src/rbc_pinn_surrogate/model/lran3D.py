@@ -10,7 +10,7 @@ from rbc_pinn_surrogate.model.components import (
     Autoencoder3D,
     KoopmanOperator,
 )
-from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError
+import rbc_pinn_surrogate.callbacks.metrics_3D as metrics
 
 
 class LRAN3DModule(pl.LightningModule):
@@ -24,7 +24,6 @@ class LRAN3DModule(pl.LightningModule):
         input_shape: Tuple[int, int, int],
         ae_ckpt: str,
         # Loss params
-        loss: str,
         lambda_id: float,
         lambda_fwd: float,
         lambda_hid: float,
@@ -53,12 +52,7 @@ class LRAN3DModule(pl.LightningModule):
         self.operator = KoopmanOperator(latent_dimension)
 
         # Loss
-        if loss == "r-mse":
-            self.loss = NormalizedSumSquaredError()
-        elif loss == "mse":
-            self.loss = torch.nn.MSELoss()
-        else:
-            raise ValueError(f"Loss {loss} not supported")
+        self.loss = mse_loss
 
         # Denormalize
         self.denormalize = denormalize
@@ -85,47 +79,61 @@ class LRAN3DModule(pl.LightningModule):
                 pred.append(out)
             return torch.stack(pred, dim=2)
 
-    def model_step(self, x: Tensor, stage: str) -> Dict[str, Tensor]:
-        seq_length = x.shape[2]
-        g, g_hat, x_hat = [], [], []
+    def model_step(
+        self, input: Tensor, target: Tensor, stage: str
+    ) -> Dict[str, Tensor]:
+        x = input.squeeze(dim=2)
+        y = target
+        seq_length = target.shape[2]
+        g, g_hat, y_hat = [], [], []
+
         # Get ground truth for observables
         with torch.no_grad():
-            for tau in range(0, seq_length):
-                g.append(self.autoencoder.encode(x[:, :, tau]).detach())
+            g0 = self.autoencoder.encode(input.squeeze(dim=2)).detach()
+            for t in range(0, seq_length):
+                gt = self.autoencoder.encode(target[:, :, t]).detach()
+                g.append(gt)
 
-        # Prediction
-        g0 = g[0].detach()
-        g_hat.append(g0)
-        x_hat.append(self.autoencoder.decode(g0))
+        # Reconstruction
+        x_hat = self.autoencoder.decode(g0)
+
         # Predict sequence
-        for tau in range(1, seq_length):
-            g_hat.append(self.operator(g_hat[tau - 1]))
-            x_hat.append(self.autoencoder.decode(g_hat[tau]))
+        g0_hat = self.operator(g0)
+        g_hat.append(g0_hat)
+        for t in range(seq_length):
+            # predict
+            yt_hat = self.autoencoder.decode(g_hat[t])
+            y_hat.append(yt_hat)
+            # next g_hat
+            g_hat.append(self.operator(g_hat[t]))
+
         # To tensor
         g = torch.stack(g, dim=1)
         g_hat = torch.stack(g_hat, dim=1)
-        x_hat = torch.stack(x_hat, dim=2)
+        y_hat = torch.stack(y_hat, dim=2)
 
         # Loss
-        reconstruction = self.loss(x_hat[:, :, :1], x[:, :, :1])
-        forward = self.loss(x_hat[:, :, 1:], x[:, :, 1:])
-        hidden = self.loss(g_hat[:, 1:], g[:, 1:])
+        reconstruction = self.loss(x_hat, x)
+        forward = self.loss(y_hat, y)
+        hidden = self.loss(g_hat, g)
         loss = (
             self.hparams.lambda_id * reconstruction
             + self.hparams.lambda_fwd * forward
             + self.hparams.lambda_hid * hidden
         )
 
-        # Metrics
-        rmse = self.rmse(x_hat, x)
-        nmse = self.nmse(x_hat, x)
+        # compute Metrics for each t
+        rmse = [metrics.rmse(y_hat[:, :, t], y[:, :, t]) for t in range(seq_length)]
+        nrsse = [metrics.nrsse(y_hat[:, :, t], y[:, :, t]) for t in range(seq_length)]
+        rmse = (torch.stack(rmse).detach().cpu(),)
+        nrsse = (torch.stack(nrsse).detach().cpu(),)
 
         # Log
         self.log(f"{stage}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log_dict(
             {
                 f"{stage}/RMSE": rmse.mean(),
-                f"{stage}/NMSE": nmse.mean(),
+                f"{stage}/NRSSE": nrsse.mean(),
                 f"{stage}/loss/reconstruction": reconstruction,
                 f"{stage}/loss/forward": forward,
                 f"{stage}/loss/hidden": hidden,
@@ -136,8 +144,8 @@ class LRAN3DModule(pl.LightningModule):
 
         return {
             "loss": loss,
-            "rmse": rmse.detach(),
-            "nmse": nmse.detach(),
+            "rmse": rmse,
+            "nrsse": nrsse,
         }
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
@@ -166,17 +174,3 @@ class LRAN3DModule(pl.LightningModule):
             ],
         )
         return {"optimizer": optimizer}
-
-    def rmse(self, pred: Tensor, target: Tensor) -> Tensor:
-        return torch.sqrt(
-            mse_loss(pred, target, reduction="none").mean(dim=[1, 3, 4, 5])
-        )
-
-    def nmse(self, pred: Tensor, target: Tensor) -> Tensor:
-        eps = torch.finfo(pred.dtype).eps
-        diff = pred - target
-        # sum over C,H,W,D, keep batch dimension
-        nom = (diff * diff).sum(dim=(1, 3, 4, 5))
-        denom = (target * target).sum(dim=(1, 3, 4, 5))
-        denom = torch.clamp(denom, min=eps)
-        return nom / denom

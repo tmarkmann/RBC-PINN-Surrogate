@@ -68,8 +68,6 @@ class Autoencoder3DModule(LightningModule):
 
         return {
             "loss": loss,
-            "y_hat": x_hat,
-            "y": x,
         }
 
     def training_step(self, batch, batch_idx):

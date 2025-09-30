@@ -77,7 +77,7 @@ class SequenceMetricsCallback(Callback):
 
     def div_rms(self, state: Tensor):
         # state shape: [C, H, W] with channels [T, u(x), w(z)]
-        dx = 6.0 * math.pi / 96.0 
+        dx = 6.0 * math.pi / 96.0
         dz = 2.0 / 64.0
 
         # On channel slices [H, W], valid dims are 0 (z/height) and 1 (x/width)
@@ -87,7 +87,7 @@ class SequenceMetricsCallback(Callback):
         dwdz = torch.gradient(state[2], dim=0, spacing=(dz,))[0]
         div = dudx + dwdz
 
-        return torch.sqrt(torch.mean(div ** 2)).item()
+        return torch.sqrt(torch.mean(div**2)).item()
 
     def get_dataframe(self):
         return pd.DataFrame(self.data)

@@ -49,7 +49,7 @@ class Autoencoder3D(nn.Module):
             start_channels=self.encoder_out_channels,
             start_shape=self.encoder_out_spatial,
         )
-
+        print(f"Autoencoder3D encoder output dim: {self.encoder_out_dim}")
         # Linear layers
         self.encoder_linear = nn.Linear(self.encoder_out_dim, latent_dimension)
         self.decoder_linear = nn.Sequential(
