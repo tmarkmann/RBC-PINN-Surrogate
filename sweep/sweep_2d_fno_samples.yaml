@@ -14,7 +14,7 @@ parameters:
   data.data_dir:
     value: /vol/cfd/rbc/2D
   model.type:
-    values: 3d
+    value: 3d
   
   data.nr_episodes_train:
     values: [3, 6, 12, 25, 50]

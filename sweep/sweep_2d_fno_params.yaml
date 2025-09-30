@@ -14,7 +14,7 @@ parameters:
   data.data_dir:
     value: /vol/cfd/rbc/2D
   model.type:
-    values: 3d
+    value: 3d
   
   model.hidden_channels:
     values: [8, 16, 24, 32, 40, 48, 64]

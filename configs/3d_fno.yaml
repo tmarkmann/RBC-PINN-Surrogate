@@ -13,7 +13,7 @@ data:
   end: 600    # t=300
   train_length: 6
   train_shift: 3
-  test_length: 25
+  test_length: 100
   test_shift: 25
   stride: 1
   nr_episodes_train: null # this means all of them
