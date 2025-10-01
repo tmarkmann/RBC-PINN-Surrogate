@@ -30,7 +30,7 @@ model:
   input_channel: 4
   base_filters: 64
   kernel_size: 5
-  ae_ckpt: ${paths.model_dir}/autoencoder3D/ra${data.ra}.ckpt
+  ae_ckpt: ${paths.model_dir}/3d_lran/ra${data.ra}.ckpt
   lambda_id: 1
   lambda_fwd: 1
   lambda_hid: 5

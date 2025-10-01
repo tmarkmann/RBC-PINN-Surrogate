@@ -24,15 +24,16 @@ data:
   pin_memory: True
   persistent_workers: True
   pressure: False
+  normalize: True
 
 model:
-  latent_dimension: 1024
+  latent_dimension: 128
   input_channel: 4
   base_filters: 64
   kernel_size: 5
   lr: 0.001
 
 algo:
-  epochs: 100
+  epochs: 50
 
 task_name: 3d_ae

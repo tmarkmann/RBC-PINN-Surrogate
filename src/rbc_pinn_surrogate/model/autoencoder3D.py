@@ -60,12 +60,6 @@ class Autoencoder3DModule(LightningModule):
         self.log(f"{stage}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log(f"{stage}/RMSE", torch.sqrt(loss), on_step=False, on_epoch=True)
 
-        # Apply inverse transform
-        if self.denormalize is not None:
-            with torch.no_grad():
-                x = self.denormalize(x.detach())
-                x_hat = self.denormalize(x_hat.detach())
-
         return {
             "loss": loss,
         }

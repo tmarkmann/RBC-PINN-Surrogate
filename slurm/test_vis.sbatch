@@ -1,6 +1,6 @@
 #!/bin/bash
 
-#SBATCH --job-name=fno3d_test
+#SBATCH --job-name=vis_test
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
@@ -12,4 +12,4 @@ source ~/miniforge3/etc/profile.d/conda.sh
 conda activate rbcpinn
 
 cd ~/RBC-PINN-Surrogate
-srun uv run python scripts/test_vis.py
+srun uv run python scripts/test_vis.py task_name=vis_test

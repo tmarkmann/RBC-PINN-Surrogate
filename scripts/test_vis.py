@@ -1,18 +1,24 @@
 import hydra
+import torch
 from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.utils.vis3D import animation_3d
 
 
-@hydra.main(version_base="1.3", config_path="../configs", config_name="fno3D")
+@hydra.main(version_base="1.3", config_path="../configs", config_name="3d_fno")
 def main(config):
     dm = RBCDatamodule3D(**config.data)
     dm.setup(stage="test")
-
+    denorm = dm.datasets["test"].denormalize_batch
+    
     idx = 0
-    for inputs, ground_truth in dm.test_dataloader():
+    for _, ground_truth in dm.test_dataloader():
+        state = denorm(ground_truth).cpu()
+        noise = torch.randn_like(state) * 0.01
+        fake = state + noise
+
         animation_3d(
-            gt=ground_truth[0].cpu().numpy(),
-            pred=ground_truth[0].cpu().numpy() * 0.9,
+            gt=state[0].numpy(),
+            pred=fake[0].numpy(),
             feature="T",
             anim_dir=config.paths.output_dir + "/animations",
             anim_name=f"test_{idx}.mp4",

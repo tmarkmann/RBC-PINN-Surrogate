@@ -68,10 +68,11 @@ class LRAN3DModule(pl.LightningModule):
         return x_hat
 
     def predict(self, input: Tensor, length) -> Tensor:
+        self.eval()
         with torch.no_grad():
             pred = []
             # autoregressive model steps
-            out = input.squeeze(dim=2)
+            out = input.squeeze(dim=2).to(self.device)
             for _ in range(length):
                 out = self.forward(out)
                 if self.denormalize is not None:
@@ -89,23 +90,22 @@ class LRAN3DModule(pl.LightningModule):
 
         # Get ground truth for observables
         with torch.no_grad():
-            g0 = self.autoencoder.encode(input.squeeze(dim=2)).detach()
-            for t in range(0, seq_length):
-                gt = self.autoencoder.encode(target[:, :, t]).detach()
-                g.append(gt)
+            g0 = self.autoencoder.encode(x).detach()
+            g = [
+                self.autoencoder.encode(y[:, :, t]).detach() for t in range(seq_length)
+            ]
 
         # Reconstruction
         x_hat = self.autoencoder.decode(g0)
 
-        # Predict sequence
-        g0_hat = self.operator(g0)
-        g_hat.append(g0_hat)
-        for t in range(seq_length):
-            # predict
-            yt_hat = self.autoencoder.decode(g_hat[t])
-            y_hat.append(yt_hat)
-            # next g_hat
-            g_hat.append(self.operator(g_hat[t]))
+        # Predict sequence in latent space
+        g_hat, y_hat = [], []
+        g_prev = g0
+        for _ in range(seq_length):
+            g_next = self.operator(g_prev)
+            y_hat.append(self.autoencoder.decode(g_next))
+            g_hat.append(g_next)
+            g_prev = g_next
 
         # To tensor
         g = torch.stack(g, dim=1)
@@ -123,10 +123,20 @@ class LRAN3DModule(pl.LightningModule):
         )
 
         # compute Metrics for each t
-        rmse = [metrics.rmse(y_hat[:, :, t], y[:, :, t]) for t in range(seq_length)]
-        nrsse = [metrics.nrsse(y_hat[:, :, t], y[:, :, t]) for t in range(seq_length)]
-        rmse = (torch.stack(rmse).detach().cpu(),)
-        nrsse = (torch.stack(nrsse).detach().cpu(),)
+        rmse = (
+            torch.stack(
+                [metrics.rmse(y_hat[:, :, t], y[:, :, t]) for t in range(seq_length)]
+            )
+            .detach()
+            .cpu()
+        )
+        nrsse = (
+            torch.stack(
+                [metrics.nrsse(y_hat[:, :, t], y[:, :, t]) for t in range(seq_length)]
+            )
+            .detach()
+            .cpu()
+        )
 
         # Log
         self.log(f"{stage}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
@@ -149,16 +159,16 @@ class LRAN3DModule(pl.LightningModule):
         }
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
-        _, y = batch
-        return self.model_step(y, stage="train")
+        x, y = batch
+        return self.model_step(x, y, stage="train")
 
     def validation_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
-        _, y = batch
-        return self.model_step(y, stage="val")
+        x, y = batch
+        return self.model_step(x, y, stage="val")
 
     def test_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
-        _, y = batch
-        return self.model_step(y, stage="test")
+        x, y = batch
+        return self.model_step(x, y, stage="test")
 
     def configure_optimizers(self) -> Dict[str, Any]:
         optimizer = torch.optim.Adam(
