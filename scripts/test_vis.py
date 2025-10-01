@@ -9,7 +9,7 @@ def main(config):
     dm = RBCDatamodule3D(**config.data)
     dm.setup(stage="test")
     denorm = dm.datasets["test"].denormalize_batch
-    
+
     idx = 0
     for _, ground_truth in dm.test_dataloader():
         state = denorm(ground_truth).cpu()

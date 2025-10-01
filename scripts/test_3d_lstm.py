@@ -1,13 +1,14 @@
 import hydra
+from matplotlib import pyplot as plt
 from tqdm import tqdm
 from omegaconf import DictConfig
 import pandas as pd
 import wandb
 import torch
 import h5py
+import seaborn as sns
 from rbc_pinn_surrogate.utils.vis3D import animation_3d
 import rbc_pinn_surrogate.callbacks.metrics_3D as metrics
-from .test_3d import plot_metric, compute_q
 
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="3d_test")
@@ -35,9 +36,9 @@ def main(config: DictConfig):
             # prepare data
             pred = torch.as_tensor(ds_pred[idx], dtype=torch.float32)
             target = torch.as_tensor(ds_target[idx], dtype=torch.float32)
-            # reorder to # [C,T,H,W,D]
-            pred = torch.permute(4, 0, 3, 1, 2)
-            target = torch.permute(4, 0, 3, 1, 2)
+            # reorder to # [1,C,T,H,W,D]
+            pred = pred.permute(4, 0, 3, 1, 2).unsqueeze(0)
+            target = target.permute(4, 0, 3, 1, 2).unsqueeze(0)
 
             # 1) Sequence Metrics NRSSE and RMSE
             seq_len = pred.shape[2]
@@ -55,22 +56,23 @@ def main(config: DictConfig):
                     }
                 )
 
-            # 2) Visualize samples from first batch element
-            path = animation_3d(
-                gt=target[0].numpy(),
-                pred=pred[0].numpy(),
-                feature="T",
-                anim_dir=config.paths.output_dir + "/animations",
-                anim_name=f"test_{idx}.mp4",
-            )
-            video = wandb.Video(path, format="mp4", caption=f"Batch {idx}")
-            wandb.log({"test/video": video})
+            # 2) Visualize samples from first batch element (only every 10th)
+            if idx % 10 == 0:
+                path = animation_3d(
+                    gt=target[0].numpy(),
+                    pred=pred[0].numpy(),
+                    feature="T",
+                    anim_dir=config.paths.output_dir + "/animations",
+                    anim_name=f"test_{idx}.mp4",
+                )
+                video = wandb.Video(path, format="mp4", caption=f"Batch {idx}")
+                wandb.log({"test/video": video})
 
             # 3) Nusselt Number: mean q
             T_mean_ref = target[0, 0].mean()
             for t in range(seq_len):
-                nu_pred = compute_q(pred[0, :, t], T_mean_ref)
-                nu_target = compute_q(target[0, :, t], T_mean_ref)
+                nu_pred = metrics.compute_q(pred[0, :, t], T_mean_ref)
+                nu_target = metrics.compute_q(target[0, :, t], T_mean_ref)
                 list_nusselt.append(
                     {
                         "idx": idx,
@@ -83,8 +85,12 @@ def main(config: DictConfig):
             # 4) Profile of mean q and q' (area-avg over time)
             for t in range(seq_len):
                 # q profile
-                q_profile_pred = compute_q(pred[0, :, t], T_mean_ref, profile=True)
-                q_profile_target = compute_q(target[0, :, t], T_mean_ref, profile=True)
+                q_profile_pred = metrics.compute_q(
+                    pred[0, :, t], T_mean_ref, profile=True
+                )
+                q_profile_target = metrics.compute_q(
+                    target[0, :, t], T_mean_ref, profile=True
+                )
 
                 # q' profile
                 # rms_qp_pred_ts = compute_qprime_rms_timeseries(pred[0], T_mean_ref)
@@ -134,6 +140,20 @@ def main(config: DictConfig):
                 "test/Plot-NRSSE": im_nrsse,
             }
         )
+
+
+def plot_metric(df: pd.DataFrame, metric: str):
+    fig = plt.figure()
+    sns.set_theme()
+    ax = sns.lineplot(data=df, x="step", y=metric)
+    ax.set_title(metric)
+    ax.set_ylabel(metric)
+    ax.set_xlabel("Time Step")
+    ax.set_ylim(bottom=0, top=0.8)
+    # save as image
+    im = wandb.Image(fig, caption=metric)
+    plt.close(fig)
+    return im
 
 
 if __name__ == "__main__":

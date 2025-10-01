@@ -230,3 +230,4 @@ models/
 artifacts
 figs
 notebooks/results
+data/*.h5

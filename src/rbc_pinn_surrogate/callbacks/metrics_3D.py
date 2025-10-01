@@ -69,3 +69,15 @@ def nrsse(pred: Tensor, target: Tensor) -> Tensor:
     denom = torch.linalg.vector_norm(target, dim=[0, 2, 3, 4]) + eps
     # return mean across channels for scalar metric
     return (num / denom).mean()
+
+
+def compute_q(state, T_mean_ref, profile=False):
+    T = state[0]
+    uz = state[3]
+    theta = T - T_mean_ref
+    q = uz * theta
+
+    if profile:
+        return q.mean(dim=(1, 2)).numpy()
+    else:
+        return q.mean().numpy()
