@@ -18,4 +18,4 @@ conda activate rbcpinn
 cd ~/RBC-PINN-Surrogate
 
 # Run training with this RA
-srun uv run python scripts/train_3d_ae.py data.ra=2500 model.latent_dimension=256 seed=$SLURM_ARRAY_TASK_ID
+srun uv run python scripts/train_3d_ae.py data.ra=10000 model.latent_dimension=256 seed=$SLURM_ARRAY_TASK_ID

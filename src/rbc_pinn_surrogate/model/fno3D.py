@@ -60,7 +60,7 @@ class FNO3DModule(L.LightningModule):
             return torch.stack(pred, dim=2)
 
     def model_step(
-        self, input: Tensor, target: Tensor, stage: str, return_pred: bool = False
+        self, input: Tensor, target: Tensor, stage: str
     ) -> Dict[str, Tensor]:
         loss = []
         rmse_ts = []
@@ -79,8 +79,8 @@ class FNO3DModule(L.LightningModule):
 
         # log
         loss = torch.stack(loss).mean()
-        rmse = (torch.stack(rmse_ts).detach().cpu(),)
-        nrsse = (torch.stack(nrsse_ts).detach().cpu(),)
+        rmse = torch.stack(rmse_ts).detach().cpu()
+        nrsse = torch.stack(nrsse_ts).detach().cpu()
         self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
         self.log(f"{stage}/RMSE", rmse.mean(), prog_bar=True, logger=True)
         self.log(f"{stage}/NRSSE", nrsse.mean(), prog_bar=True, logger=True)

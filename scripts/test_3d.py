@@ -7,20 +7,21 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import wandb
 import torch
-from torch.nn.functional import mse_loss
 from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import FNO3DModule, LRAN3DModule
 from rbc_pinn_surrogate.utils.vis3D import animation_3d
+import rbc_pinn_surrogate.callbacks.metrics_3D as metrics
 
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="3d_test")
 def main(config: DictConfig):
     # device
-    device = "cpu"  # best_device()
+    device = best_device()
 
     # data
     dm = RBCDatamodule3D(**config.data)
     dm.setup("test")
+    denorm = dm.datasets["test"].denormalize_batch
 
     # model
     if config.model == "fno":
@@ -38,141 +39,125 @@ def main(config: DictConfig):
     )
 
     # loop
-    metrics = []
+    list_metrics = []
+    list_nusselt = []
+    list_profile = []
     for batch, (x, y) in enumerate(tqdm(dm.test_dataloader(), desc="Testing")):
+        # compute predictions and denormalize data
         with torch.no_grad():
-            pred = model.predict(x.to(device), y.shape[2]).cpu()
+            y_hat = model.predict(x.to(device), y.shape[2]).cpu()
+        pred = denorm(y_hat)
+        target = denorm(y)
 
-        # loop through each sample in the batch
-        batch_size = pred.shape[0]
+        # 1) Sequence Metrics NRSSE and RMSE
         seq_len = pred.shape[2]
-        for idx in range(batch_size):
+        for t in range(seq_len):
             # metrics per sample and time step
-            loss = model.loss(pred[idx], y[idx])
-            rmse = compute_rmse(pred[idx], y[idx])
-            nmse = compute_nmse(pred[idx], y[idx])
+            loss = model.loss(pred[:, :, t], target[:, :, t])
+            rmse = metrics.rmse(pred[:, :, t], target[:, :, t])
+            nrsse = metrics.nrsse(pred[:, :, t], target[:, :, t])
 
-            for t in range(seq_len):
-                metrics.append(
-                    {
-                        "idx": batch * batch_size + idx,
-                        "batch_idx": batch,
-                        "sample_idx": idx,
-                        "step": t,
-                        "rmse": rmse[t].item(),
-                        "nmse": nmse[t].item(),
-                    }
-                )
-            wandb.log(
+            list_metrics.append(
                 {
-                    "test/loss": loss,
-                    "test/RMSE": rmse.mean(),
-                    "test/NMSE": nmse.mean(),
+                    "batch_idx": batch,
+                    "step": t,
+                    "rmse": rmse.item(),
+                    "nrsse": nrsse.item(),
+                    "loss": loss.item(),
                 }
             )
 
-            # vis
-            if idx == 0:  # only first sample in batch
-                # animation
-                path = animation_3d(
-                    gt=y[idx].cpu().numpy(),
-                    pred=pred[idx].cpu().numpy(),
-                    feature="T",
-                    anim_dir=config.paths.output_dir + "/animations",
-                    anim_name=f"test_{batch}_{idx}.mp4",
-                )
-                video = wandb.Video(path, format="mp4", caption=f"Test {batch}.{idx}")
-                wandb.log({"test/video": video})
+        # 2) Visualize samples from first batch element
+        path = animation_3d(
+            gt=target[0].numpy(),
+            pred=pred[0].numpy(),
+            feature="T",
+            anim_dir=config.paths.output_dir + "/animations",
+            anim_name=f"test_{batch}.mp4",
+        )
+        video = wandb.Video(path, format="mp4", caption=f"Batch {batch}")
+        wandb.log({"test/video": video})
 
-                # nusselt number plot (use single spatio-temporal mean ⟨T⟩ over target sequence)
-                T_mean_ref = y[idx, 0].mean()  # scalar mean over (t, h, w, d)
-                nu_pred = [
-                    compute_mean_q(pred[idx, :, t], T_mean_ref) for t in range(seq_len)
-                ]
-                nu_target = [
-                    compute_mean_q(y[idx, :, t], T_mean_ref) for t in range(seq_len)
-                ]
-                im_nu = plot_nusselt(nu_pred, nu_target)
-                wandb.log({f"test/Plot-Nusselt-{batch}": wandb.Image(im_nu)})
+        # 3) Nusselt Number: mean q
+        T_mean_ref = target[0, 0].mean()
+        for t in range(seq_len):
+            nu_pred = compute_q(pred[0, :, t], T_mean_ref)
+            nu_target = compute_q(target[0, :, t], T_mean_ref)
+            list_nusselt.append(
+                {
+                    "batch_idx": batch,
+                    "step": t,
+                    "nu_pred": nu_pred.item(),
+                    "nu_target": nu_target.item(),
+                }
+            )
 
-                # mean profile of q (area-avg) over time
-                q_profile_pred = [
-                    compute_profile_q(pred[idx, :, t], T_mean_ref)
-                    for t in range(seq_len)
-                ]
-                q_profile_target = [
-                    compute_profile_q(y[idx, :, t], T_mean_ref) for t in range(seq_len)
-                ]
-                im_q_profile = plot_mean_profile(q_profile_pred, q_profile_target)
-                wandb.log({f"test/Plot-ProfileQ-{batch}": im_q_profile})
+        # 4) Profile of mean q and q' (area-avg over time)
+        for t in range(seq_len):
+            # q profile
+            q_profile_pred = compute_q(pred[0, :, t], T_mean_ref, profile=True)
+            q_profile_target = compute_q(target[0, :, t], T_mean_ref, profile=True)
 
-                # RMS over space of q' per time step
-                rms_qp_pred_ts = compute_qprime_rms_timeseries(pred[idx], T_mean_ref)
-                rms_qp_target_ts = compute_qprime_rms_timeseries(y[idx], T_mean_ref)
-                im_qp_rms_ts = plot_rms_timeseries(
-                    rms_qp_pred_ts,
-                    rms_qp_target_ts,
-                    title="RMS of q' over Space vs Time",
-                )
-                wandb.log({f"test/Plot-ProfileQPrime-{batch}": im_qp_rms_ts})
+            # q' profile
+            # rms_qp_pred_ts = compute_qprime_rms_timeseries(pred[0], T_mean_ref)
+            # rms_qp_target_ts = compute_qprime_rms_timeseries(target[0], T_mean_ref)
 
-                # PDF over q' field across space and time
-                qp_pred_flat = compute_qprime_flat(pred[idx], T_mean_ref)
-                qp_target_flat = compute_qprime_flat(y[idx], T_mean_ref)
-                im_qp_pdf = plot_pdf_qprime(
-                    qp_pred_flat,
-                    qp_target_flat,
-                    bins=201,
-                    title="PDF of q' (space–time)",
+            for z, (p, q) in enumerate(zip(q_profile_pred, q_profile_target)):
+                list_profile.append(
+                    {
+                        "batch_idx": batch,
+                        "step": t,
+                        "height": z,
+                        "q_pred": p,
+                        "q_target": q,
+                    }
                 )
-                wandb.log({f"test/Plot-QPrime-PDF-{batch}": im_qp_pdf})
 
-                # PDF over q' at selected heights (z at 1/4, 1/2, 3/4 of HEIGHT)
-                H = pred[idx].shape[2]  # HEIGHT dimension in [C,T,H,W,D]
-                z_sel = [H // 4, H // 2, (3 * H) // 4]
-                qp_pred_by_z = compute_qprime_flat_at_heights(
-                    pred[idx], T_mean_ref, z_sel
-                )
-                qp_target_by_z = compute_qprime_flat_at_heights(
-                    y[idx], T_mean_ref, z_sel
-                )
-                im_qp_panels = plot_pdf_qprime_panels(qp_pred_by_z, qp_target_by_z, H)
-                wandb.log({f"test/Plot-QPrime-PDF-Panels-{batch}": im_qp_panels})
+        # 5) PDF over q' at selected heights
+        # PDF over q' at selected heights (z at 1/4, 1/2, 3/4 of HEIGHT)
+        # H = pred[0].shape[2]  # HEIGHT dimension in [C,T,H,W,D]
+        # z_sel = [H // 4, H // 2, (3 * H) // 4]
+        # qp_pred_by_z = compute_qprime_flat_at_heights(pred[0], T_mean_ref, z_sel)
+        # qp_target_by_z = compute_qprime_flat_at_heights(y[0], T_mean_ref, z_sel)
+        # im_qp_panels = plot_pdf_qprime_panels(qp_pred_by_z, qp_target_by_z, H)
+        # wandb.log({f"test/Plot-QPrime-PDF-Panels-{batch}": im_qp_panels})
 
     # log metrics
-    df = pd.DataFrame(metrics)
-    im1 = plot_metric(df, "rmse")
-    im2 = plot_metric(df, "nmse")
+    df_metrics = pd.DataFrame(list_metrics)
+    df_nusselt = pd.DataFrame(list_nusselt)
+    df_profile = pd.DataFrame(list_profile)
+
+    # overall metrics
+    rmse = df_metrics["rmse"].mean()
+    nrsse = df_metrics["nrsse"].mean()
+
+    # plots
+    im_rmse = plot_metric(df_metrics, "rmse")
+    im_nrsse = plot_metric(df_metrics, "nrsse")
+
     wandb.log(
         {
-            "test/Plot-RMSE": wandb.Image(im1),
-            "test/Plot-NMSE": wandb.Image(im2),
-            "test/Table-Metrics": wandb.Table(dataframe=df),
+            "test/RMSE": rmse,
+            "test/NRSSE": nrsse,
+            "test/Table-Metrics": wandb.Table(dataframe=df_metrics),
+            "test/Table-Nusselt": wandb.Table(dataframe=df_nusselt),
+            "test/Table-Profile": wandb.Table(dataframe=df_profile),
+            "test/Plot-RMSE": im_rmse,
+            "test/Plot-NRSSE": im_nrsse,
         }
     )
 
 
-def compute_nmse(pred, target):
-    eps = torch.finfo(pred.dtype).eps
-    diff = pred - target
-    # sum over C,H,W,D, keep batch dimension
-    nom = (diff * diff).sum(dim=(0, 2, 3, 4))
-    denom = (target * target).sum(dim=(0, 2, 3, 4))
-    denom = torch.clamp(denom, min=eps)
-    return nom / denom
-
-
-def compute_rmse(pred, target):
-    rmse = torch.sqrt(mse_loss(pred, target, reduction="none"))
-    return rmse.mean(dim=(0, 2, 3, 4))
-
-
-def compute_mean_q(state, T_mean_ref):
+def compute_q(state, T_mean_ref, profile=False):
     T = state[0]
     uz = state[3]
     theta = T - T_mean_ref
     q = uz * theta
-    return q.mean().item()
+
+    if profile:
+        return q.mean(dim=(1, 2)).numpy()  
+    else:
+        return q.mean().numpy()  
 
 
 def compute_profile_q(state, T_mean_ref):
@@ -273,7 +258,7 @@ def plot_metric(df: pd.DataFrame, metric: str):
     ax.set_title(metric)
     ax.set_ylabel(metric)
     ax.set_xlabel("Time Step")
-    ax.set_ylim(bottom=0, top=0.5)
+    ax.set_ylim(bottom=0, top=0.8)
     # save as image
     im = wandb.Image(fig, caption=metric)
     plt.close(fig)
