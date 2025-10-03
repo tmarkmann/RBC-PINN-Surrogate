@@ -13,7 +13,7 @@ def set_size(width_pt=455, fraction=1, aspect=0.62):
     return (fig_width_in, fig_height_in)
 
 
-def plot_paper(gt, pred, anim_dir: str):
+def plot_paper(gt, pred, anim_dir: str, index: str):
     import matplotlib as mpl
 
     mpl.rcParams.update(
@@ -94,7 +94,7 @@ def plot_paper(gt, pred, anim_dir: str):
             gt[0, t_idx, :, :, :],
             ax,
             dims=dims,
-            contour_levels=60,
+            contour_levels=50,
             show_back_faces=False,
             vmin=vmin,
             vmax=vmax,
@@ -120,7 +120,7 @@ def plot_paper(gt, pred, anim_dir: str):
             pred[0, t_idx, :, :, :],
             ax,
             dims=dims,
-            contour_levels=60,
+            contour_levels=50,
             show_back_faces=False,
             vmin=vmin,
             vmax=vmax,
@@ -145,7 +145,7 @@ def plot_paper(gt, pred, anim_dir: str):
             (pred - gt)[0, t_idx, :, :, :],
             ax,
             dims=dims,
-            contour_levels=60,
+            contour_levels=50,
             show_back_faces=False,
             vmin=dvmin,
             vmax=dvmax,
@@ -204,7 +204,7 @@ def plot_paper(gt, pred, anim_dir: str):
 
     # ---- Save ----
     os.makedirs(anim_dir, exist_ok=True)
-    out_path = os.path.join(anim_dir, "paper_panel.pdf")
+    out_path = os.path.join(anim_dir, f"paper_panel_{index}.pdf")
     fig.savefig(out_path, bbox_inches="tight")
     plt.close(fig)
     return out_path

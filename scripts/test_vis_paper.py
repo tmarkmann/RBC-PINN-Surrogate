@@ -18,7 +18,7 @@ def main():
             pred = pred.permute(4, 0, 3, 1, 2)
             target = target.permute(4, 0, 3, 1, 2)
 
-            plot_paper(target.numpy(), pred.numpy(), "logs/vis_paper")
+            plot_paper(target.numpy(), pred.numpy(), "logs/vis_paper", idx)
 
             break
 
