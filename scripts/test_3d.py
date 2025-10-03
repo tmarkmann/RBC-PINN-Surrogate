@@ -9,7 +9,7 @@ import wandb
 import torch
 from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import FNO3DModule, LRAN3DModule
-from rbc_pinn_surrogate.utils.vis3D import animation_3d
+from rbc_pinn_surrogate.utils.vis3D import animation_3d, plot_paper
 import rbc_pinn_surrogate.callbacks.metrics_3D as metrics
 
 
@@ -75,14 +75,17 @@ def main(config: DictConfig):
             anim_dir=config.paths.output_dir + "/animations",
             anim_name=f"test_{batch}.mp4",
         )
+        plot_paper(
+            target[0].numpy(), pred[0].numpy(), config.paths.output_dir + "/vis_paper"
+        )
         video = wandb.Video(path, format="mp4", caption=f"Batch {batch}")
         wandb.log({"test/video": video})
 
         # 3) Nusselt Number: mean q
         T_mean_ref = target[0, 0].mean()
         for t in range(seq_len):
-            nu_pred = compute_q(pred[0, :, t], T_mean_ref)
-            nu_target = compute_q(target[0, :, t], T_mean_ref)
+            nu_pred = metrics.compute_q(pred[0, :, t], T_mean_ref)
+            nu_target = metrics.compute_q(target[0, :, t], T_mean_ref)
             list_nusselt.append(
                 {
                     "batch_idx": batch,
@@ -95,8 +98,10 @@ def main(config: DictConfig):
         # 4) Profile of mean q and q' (area-avg over time)
         for t in range(seq_len):
             # q profile
-            q_profile_pred = compute_q(pred[0, :, t], T_mean_ref, profile=True)
-            q_profile_target = compute_q(target[0, :, t], T_mean_ref, profile=True)
+            q_profile_pred = metrics.compute_q(pred[0, :, t], T_mean_ref, profile=True)
+            q_profile_target = metrics.compute_q(
+                target[0, :, t], T_mean_ref, profile=True
+            )
 
             # q' profile
             # rms_qp_pred_ts = compute_qprime_rms_timeseries(pred[0], T_mean_ref)
@@ -146,18 +151,6 @@ def main(config: DictConfig):
             "test/Plot-NRSSE": im_nrsse,
         }
     )
-
-
-def compute_q(state, T_mean_ref, profile=False):
-    T = state[0]
-    uz = state[3]
-    theta = T - T_mean_ref
-    q = uz * theta
-
-    if profile:
-        return q.mean(dim=(1, 2)).numpy()  
-    else:
-        return q.mean().numpy()  
 
 
 def compute_profile_q(state, T_mean_ref):

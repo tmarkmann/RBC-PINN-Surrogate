@@ -34,9 +34,9 @@ def get_sweep_results(sweep, method):
 
 # config
 sweeps = [
-    "sail-project/RBC-2D-FNO/x3gjotyi",
-    "sail-project/RBC-2D-FNO/gatjv0w2",
-    "sail-project/RBC-2D-LRAN/ghj1n17v",
+    "sail-project/RBC-2D-FNO/fifkw3tu",
+    "sail-project/RBC-2D-FNO/jg6h5fco",
+    "sail-project/RBC-2D-LRAN/mzly1064",
 ]
 methods = [
     "2d-fno2d",
