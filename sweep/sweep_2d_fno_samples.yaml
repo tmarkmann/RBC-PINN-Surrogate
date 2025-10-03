@@ -1,5 +1,5 @@
 program: scripts/train_2d_fno.py
-name: FNO_Params
+name: FNO_Samples
 
 method: grid
 metric:
