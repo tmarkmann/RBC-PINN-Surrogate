@@ -49,7 +49,7 @@ def main(config: DictConfig):
 
                 list_metrics.append(
                     {
-                        "idx": idx,
+                        "batch_idx": idx,
                         "step": t,
                         "rmse": rmse.item(),
                         "nrsse": nrsse.item(),

@@ -6,6 +6,205 @@ import os
 from tqdm.auto import tqdm
 
 
+def set_size(width_pt=455, fraction=1, aspect=0.62):
+    inches_per_pt = 1 / 72.27  # Convert pt to inch
+    fig_width_in = width_pt * inches_per_pt * fraction  # width in inches
+    fig_height_in = fig_width_in * aspect  # height in inches
+    return (fig_width_in, fig_height_in)
+
+
+def plot_paper(gt, pred, anim_dir: str):
+    import matplotlib as mpl
+
+    mpl.rcParams.update(
+        {
+            "text.usetex": False,
+            "mathtext.fontset": "cm",
+            "axes.formatter.use_mathtext": True,
+            "axes.unicode_minus": False,
+            "font.family": "serif",
+            "font.serif": ["Latin Modern Roman", "DejaVu Serif", "CMU Serif", "Times New Roman"],
+            "axes.labelsize": 9,
+            "font.size": 9,
+            "legend.fontsize": 8,
+            "xtick.labelsize": 8,
+            "ytick.labelsize": 8,
+        }
+    )
+
+    C, T, H, W, D = gt.shape
+
+    dims = (2 * np.pi, 2 * np.pi, 2)
+
+    # choose time indices (kept explicit as per your edit)
+    ncols = 4
+    times_idx = [0, 9, 49, 99]
+    times_lbl = [1, 10, 50, 100]
+
+    # channel-dependent color limits for the field
+    vmin, vmax = 0.0, 1.0
+    cmap = "rainbow"
+
+    # compute diff color limits symmetrically over the selected frames
+    diff = pred - gt
+    # stack the selected frames for robust range computation
+    diff_stack = np.stack([diff[0, ti, :, :, :] for ti in times_idx], axis=0)
+    diff_abs_max = float(np.nanmax(np.abs(diff_stack)))
+    diff_abs_max = max(diff_abs_max, 1e-8)  # avoid zero range
+    dvmin, dvmax = -diff_abs_max, diff_abs_max
+    cmap_diff = "RdBu_r"
+
+    # figure layout: 3 rows of data (GT, Pred, Diff) × ncols, plus 1 column for colorbars
+    from matplotlib.gridspec import GridSpec
+
+    fig = plt.figure(figsize=set_size(455, fraction=1, aspect=0.62), dpi=300)
+    gs = GridSpec(
+        3,
+        ncols + 1,
+        width_ratios=[1] * ncols + [0.1],
+        wspace=0.05,
+        hspace=-0.25,
+        figure=fig,
+    )
+
+    axes_gt, axes_pred, axes_diff = [], [], []
+    last_faces_field = None
+    last_faces_diff = None
+
+    elev = 15
+    azim = -45
+
+    # ---- Row 1: Ground truth ----
+    for ci, t_idx in enumerate(times_idx):
+        ax = fig.add_subplot(gs[0, ci], projection="3d")
+        ax.set_xlim(0, dims[0])
+        ax.set_ylim(0, dims[1])
+        ax.set_zlim(0, dims[2])
+        try:
+            ax.set_box_aspect(dims)
+        except Exception:
+            pass
+        ax.set_axis_off()
+        faces = plot_cube_faces(
+            gt[0, t_idx, :, :, :],
+            ax,
+            dims=dims,
+            contour_levels=60,
+            show_back_faces=False,
+            vmin=vmin,
+            vmax=vmax,
+            cmap=cmap,
+        )
+        ax.view_init(elev=elev, azim=azim)
+        ax.set_title(rf"$t={times_lbl[ci]}$", pad=4)
+        axes_gt.append(ax)
+        last_faces_field = faces  # for field colorbar
+
+    # ---- Row 2: Prediction ----
+    for ci, t_idx in enumerate(times_idx):
+        ax = fig.add_subplot(gs[1, ci], projection="3d")
+        ax.set_xlim(0, dims[0])
+        ax.set_ylim(0, dims[1])
+        ax.set_zlim(0, dims[2])
+        try:
+            ax.set_box_aspect(dims)
+        except Exception:
+            pass
+        ax.set_axis_off()
+        faces = plot_cube_faces(
+            pred[0, t_idx, :, :, :],
+            ax,
+            dims=dims,
+            contour_levels=60,
+            show_back_faces=False,
+            vmin=vmin,
+            vmax=vmax,
+            cmap=cmap,
+        )
+        ax.view_init(elev=elev, azim=azim)
+        axes_pred.append(ax)
+        last_faces_field = faces  # keep last for field colorbar
+
+    # ---- Row 3: Difference (pred - gt) ----
+    for ci, t_idx in enumerate(times_idx):
+        ax = fig.add_subplot(gs[2, ci], projection="3d")
+        ax.set_xlim(0, dims[0])
+        ax.set_ylim(0, dims[1])
+        ax.set_zlim(0, dims[2])
+        try:
+            ax.set_box_aspect(dims)
+        except Exception:
+            pass
+        ax.set_axis_off()
+        faces = plot_cube_faces(
+            (pred - gt)[0, t_idx, :, :, :],
+            ax,
+            dims=dims,
+            contour_levels=60,
+            show_back_faces=False,
+            vmin=dvmin,
+            vmax=dvmax,
+            cmap=cmap_diff,
+        )
+        ax.view_init(elev=elev, azim=azim)
+        axes_diff.append(ax)
+        last_faces_diff = faces  # for diff colorbar
+
+    # ---- Row labels on the left ----
+    if axes_gt:
+        axes_gt[0].annotate(
+            "Ground Truth",
+            xy=(-0.05, 0.5),
+            xycoords="axes fraction",
+            va="center",
+            ha="right",
+            fontsize=9,
+            rotation=90,
+        )
+    if axes_pred:
+        axes_pred[0].annotate(
+            "Prediction",
+            xy=(-0.05, 0.5),
+            xycoords="axes fraction",
+            va="center",
+            ha="right",
+            fontsize=9,
+            rotation=90,
+        )
+    if axes_diff:
+        axes_diff[0].annotate(
+            "Difference",
+            xy=(-0.05, 0.5),
+            xycoords="axes fraction",
+            va="center",
+            ha="right",
+            fontsize=9,
+            rotation=90,
+        )
+
+    # ---- Shared colorbars on the right ----
+    # Field colorbar aligned with GT and Pred rows (top two rows), but shorter vertically
+    cax_field = fig.add_axes([0.89, 0.49, 0.015, 0.24])  # [left, bottom, width, height]
+    mappable_field = last_faces_field[0]
+    fig.colorbar(
+        mappable_field, cax=cax_field, orientation="vertical", ticks=[0.0, 0.5, 1]
+    )
+
+    # Diff colorbar aligned with Diff row (bottom row), but shorter vertically
+    cax_diff = fig.add_axes([0.89, 0.2, 0.015, 0.12])  # [left, bottom, width, height]
+    mappable_diff = last_faces_diff[0]
+    fig.colorbar(
+        mappable_diff, cax=cax_diff, orientation="vertical", ticks=[-0.2, 0, 0.2]
+    )
+
+    # ---- Save ----
+    os.makedirs(anim_dir, exist_ok=True)
+    out_path = os.path.join(anim_dir, "paper_panel.pdf")
+    fig.savefig(out_path, bbox_inches="tight")
+    plt.close(fig)
+    return out_path
+
+
 def animation_3d(
     gt,
     pred,
@@ -180,10 +379,10 @@ def plot_cube_faces(
     x, y, z = np.meshgrid(x0, y0, z0)
 
     xmax, ymax, zmax = max(x0), max(y0), max(z0)
-    _vmin, _vmax = np.min(arr), np.max(arr)
-    if not vmin:
+    _vmin, _vmax = float(np.nanmin(arr)), float(np.nanmax(arr))
+    if vmin is None:
         vmin = _vmin
-    if not vmax:
+    if vmax is None:
         vmax = _vmax
     levels = np.linspace(vmin, vmax, contour_levels)
 
