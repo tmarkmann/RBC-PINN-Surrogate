@@ -3,6 +3,7 @@ from tqdm import tqdm
 import torch
 from rbc_pinn_surrogate.utils.vis3D import plot_paper
 
+
 def main():
     with h5py.File("data/thorben.h5", "r") as f:
         ds_pred = f["forecasts"]
@@ -18,7 +19,7 @@ def main():
             target = target.permute(4, 0, 3, 1, 2)
 
             plot_paper(target.numpy(), pred.numpy(), "logs/vis_paper")
-            
+
             break
 
 

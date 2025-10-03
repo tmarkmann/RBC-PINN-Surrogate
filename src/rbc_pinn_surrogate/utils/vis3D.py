@@ -23,7 +23,12 @@ def plot_paper(gt, pred, anim_dir: str):
             "axes.formatter.use_mathtext": True,
             "axes.unicode_minus": False,
             "font.family": "serif",
-            "font.serif": ["Latin Modern Roman", "DejaVu Serif", "CMU Serif", "Times New Roman"],
+            "font.serif": [
+                "Latin Modern Roman",
+                "DejaVu Serif",
+                "CMU Serif",
+                "Times New Roman",
+            ],
             "axes.labelsize": 9,
             "font.size": 9,
             "legend.fontsize": 8,

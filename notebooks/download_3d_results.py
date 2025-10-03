@@ -21,7 +21,7 @@ def get_sweep_results(project, method, tag):
                 table_dir = artifact.download(root=f"{root}/artifacts/{run.id}")
                 table_path = f"{table_dir}/test/Table-Metrics.table.json"
                 table_type = "metrics"
-            elif artifact.type == "run_table" and "Table-Nusselt" in artifact.name:    
+            elif artifact.type == "run_table" and "Table-Nusselt" in artifact.name:
                 table_dir = artifact.download(root=f"{root}/artifacts/{run.id}")
                 table_path = f"{table_dir}/test/Table-Nusselt.table.json"
                 table_type = "nusselt"
@@ -39,7 +39,11 @@ def get_sweep_results(project, method, tag):
 
 
 # config
-sweeps = ["sail-project/RBC-3D-FNO", "sail-project/RBC-3D-LRAN", "sail-project/RBC-3D-LSTM"]
+sweeps = [
+    "sail-project/RBC-3D-FNO",
+    "sail-project/RBC-3D-LRAN",
+    "sail-project/RBC-3D-LSTM",
+]
 methods = ["3d-fno", "3d-lran", "3d-lstm"]
 
 for sweep, method in zip(sweeps, methods):

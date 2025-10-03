@@ -9,7 +9,7 @@ import wandb
 import torch
 from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import FNO3DModule, LRAN3DModule
-from rbc_pinn_surrogate.utils.vis3D import animation_3d,plot_paper
+from rbc_pinn_surrogate.utils.vis3D import animation_3d, plot_paper
 import rbc_pinn_surrogate.callbacks.metrics_3D as metrics
 
 
@@ -75,7 +75,9 @@ def main(config: DictConfig):
             anim_dir=config.paths.output_dir + "/animations",
             anim_name=f"test_{batch}.mp4",
         )
-        plot_paper(target[0].numpy(), pred[0].numpy(), config.paths.output_dir + "/vis_paper")
+        plot_paper(
+            target[0].numpy(), pred[0].numpy(), config.paths.output_dir + "/vis_paper"
+        )
         video = wandb.Video(path, format="mp4", caption=f"Batch {batch}")
         wandb.log({"test/video": video})
 
