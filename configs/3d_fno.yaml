@@ -6,13 +6,13 @@ defaults:
 seed: 42
 
 data:
-  data_dir: /vol/cfd/rbc/3D
+  data_dir: /vol/cfd/rbc/3D_
   ra: 2500
   batch_size: 8
-  start: 200  # t=100
-  end: 600    # t=300
+  start: 600    # t=100   300
+  end: 1000     # t=300   500
   train_length: 8
-  train_shift: 2
+  train_shift: 4
   test_length: 100
   test_shift: 50
   stride: 1
@@ -30,7 +30,7 @@ model:
   n_modes_width: 16
   n_modes_height: 8
   n_modes_depth: 16
-  hidden_channels: 16
+  hidden_channels: 40
   in_channels: 4
   out_channels: 4
   lifting_channels: 16
