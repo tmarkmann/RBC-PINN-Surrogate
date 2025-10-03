@@ -76,7 +76,7 @@ def main(config: DictConfig):
             anim_name=f"test_{batch}.mp4",
         )
         plot_paper(
-            target[0].numpy(), pred[0].numpy(), config.paths.output_dir + "/vis_paper"
+            target[0].numpy(), pred[0].numpy(), config.paths.output_dir + "/vis_paper", batch
         )
         video = wandb.Video(path, format="mp4", caption=f"Batch {batch}")
         wandb.log({"test/video": video})
