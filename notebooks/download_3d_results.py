@@ -25,6 +25,10 @@ def get_sweep_results(project, method, tag):
                 table_dir = artifact.download(root=f"{root}/artifacts/{run.id}")
                 table_path = f"{table_dir}/test/Table-Nusselt.table.json"
                 table_type = "nusselt"
+            elif artifact.type == "run_table" and "Table-Profile" in artifact.name:
+                table_dir = artifact.download(root=f"{root}/artifacts/{run.id}")
+                table_path = f"{table_dir}/test/Table-Profile.table.json"
+                table_type = "profile"
             else:
                 continue
 
