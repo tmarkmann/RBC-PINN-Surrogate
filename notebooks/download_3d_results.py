@@ -25,10 +25,18 @@ def get_sweep_results(project, method, tag):
                 table_dir = artifact.download(root=f"{root}/artifacts/{run.id}")
                 table_path = f"{table_dir}/test/Table-Nusselt.table.json"
                 table_type = "nusselt"
-            elif artifact.type == "run_table" and "Table-Profile" in artifact.name:
+            elif artifact.type == "run_table" and "Table-Q-Profile" in artifact.name:
                 table_dir = artifact.download(root=f"{root}/artifacts/{run.id}")
-                table_path = f"{table_dir}/test/Table-Profile.table.json"
-                table_type = "profile"
+                table_path = f"{table_dir}/test/Table-Q-Profile.table.json"
+                table_type = "q-profile"
+            elif artifact.type == "run_table" and "Table-QP-Profile" in artifact.name:
+                table_dir = artifact.download(root=f"{root}/artifacts/{run.id}")
+                table_path = f"{table_dir}/test/Table-QP-Profile.table.json"
+                table_type = "qp-profile"
+            elif artifact.type == "run_table" and "Table-QP-Histogram" in artifact.name:
+                table_dir = artifact.download(root=f"{root}/artifacts/{run.id}")
+                table_path = f"{table_dir}/test/Table-QP-Histogram.table.json"
+                table_type = "qp-histogram"
             else:
                 continue
 
@@ -51,4 +59,4 @@ sweeps = [
 methods = ["3d-fno", "3d-lran", "3d-lstm"]
 
 for sweep, method in zip(sweeps, methods):
-    get_sweep_results(sweep, method, tag="results2")
+    get_sweep_results(sweep, method, tag="resultsTest")

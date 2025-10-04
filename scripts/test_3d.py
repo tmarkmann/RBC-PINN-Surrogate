@@ -12,6 +12,15 @@ from rbc_pinn_surrogate.model import FNO3DModule, LRAN3DModule
 from rbc_pinn_surrogate.utils.vis3D import animation_3d, plot_paper
 import rbc_pinn_surrogate.callbacks.metrics_3D as metrics
 
+HIST_XLIM = (-0.5, 0.5)
+HIST_BINS = 100
+
+
+def pdf_edges_and_centers(xlim=HIST_XLIM, bins=HIST_BINS):
+    edges = np.linspace(xlim[0], xlim[1], bins + 1)
+    centers = 0.5 * (edges[1:] + edges[:-1])
+    return edges, centers
+
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="3d_test")
 def main(config: DictConfig):
@@ -29,6 +38,7 @@ def main(config: DictConfig):
     elif config.model == "lran":
         model = LRAN3DModule.load_from_checkpoint(config.checkpoint)
     model.to(device)
+    model.eval()
 
     # wandb run
     wandb.init(
@@ -43,7 +53,7 @@ def main(config: DictConfig):
     list_nusselt = []
     list_profile_q = []
     list_profile_qp = []
-    list_hist_qp = []
+    hist_qp = []
     for batch, (x, y) in enumerate(tqdm(dm.test_dataloader(), desc="Testing")):
         # compute predictions and denormalize data
         with torch.no_grad():
@@ -121,39 +131,66 @@ def main(config: DictConfig):
         # 5) Profile of q'
         qp_pred = compute_profile_qprime_rms(pred[0], T_mean_ref)
         qp_target = compute_profile_qprime_rms(target[0], T_mean_ref)
-        list_profile_qp.append(
-            {
-                "batch_idx": batch,
-                "qp_pred": qp_pred,
-                "qp_target": qp_target,
-            }
-        )
+        for z, (p, q) in enumerate(zip(qp_pred, qp_target)):
+            list_profile_qp.append(
+                {
+                    "batch_idx": batch,
+                    "height": z,
+                    "qp_pred": p,
+                    "qp_target": q,
+                }
+            )
 
         # 6) PDF over q' at selected heights
         H = pred[0].shape[2]  # HEIGHT dimension in [C,T,H,W,D]
         zs = [H // 6, H // 2, (5 * H) // 6]
+        # lazy-init aggregator once we know H and zs
+        if hist_qp is None:
+            hist_qp = {
+                int(z): {
+                    "sum_pred": np.zeros(HIST_BINS, dtype=float),
+                    "sum_target": np.zeros(HIST_BINS, dtype=float),
+                    "n_items": 0,
+                }
+                for z in zs
+            }
+
         for z in zs:
             qp_pred_z = compute_qprime_z(pred[0], T_mean_ref, z)
-            hist_pred = compute_histogram(qp_pred_z)
+            qp_targ_z = compute_qprime_z(target[0], T_mean_ref, z)
 
-            qp_target_z = compute_qprime_z(target[0], T_mean_ref, z)
-            hist_target = compute_histogram(qp_target_z)
-
-            list_hist_qp.append(
-                {
-                    "batch_idx": batch,
-                    "height": z,
-                    "hist_pred": hist_pred,
-                    "hist_target": hist_target,
-                }
+            hist_pred, _ = np.histogram(
+                qp_pred_z, bins=HIST_BINS, range=HIST_XLIM, density=True
             )
+            hist_targ, _ = np.histogram(
+                qp_targ_z, bins=HIST_BINS, range=HIST_XLIM, density=True
+            )
+
+            hist_qp[int(z)]["sum_pred"] += hist_pred
+            hist_qp[int(z)]["sum_target"] += hist_targ
+            hist_qp[int(z)]["n_items"] += 1
 
     # log metrics
     df_metrics = pd.DataFrame(list_metrics)
     df_nusselt = pd.DataFrame(list_nusselt)
     df_profile_q = pd.DataFrame(list_profile_q)
     df_profile_qp = pd.DataFrame(list_profile_qp)
-    df_hist = pd.DataFrame(list_hist_qp)
+
+    # aggregated mean PDFs per height
+    edges, centers = pdf_edges_and_centers()
+    rows = []
+    for z, rec in hist_qp.items():
+        n = max(1, rec["n_items"])  # guard
+        rows.append(
+            {
+                "height": z,
+                "centers": centers,  # store centers for convenience
+                "pdf_pred": rec["sum_pred"] / n,
+                "pdf_target": rec["sum_target"] / n,
+                "n_items": n,
+            }
+        )
+    df_pdf = pd.DataFrame(rows)
 
     # overall metrics
     rmse = df_metrics["rmse"].mean()
@@ -171,21 +208,11 @@ def main(config: DictConfig):
             "test/Table-Nusselt": wandb.Table(dataframe=df_nusselt),
             "test/Table-Q-Profile": wandb.Table(dataframe=df_profile_q),
             "test/Table-QP-Profile": wandb.Table(dataframe=df_profile_qp),
-            "test/Table-QP-Histogram": wandb.Table(dataframe=df_hist),
+            "test/Table-QP-Histogram": wandb.Table(dataframe=df_pdf),
             "test/Plot-RMSE": im_rmse,
             "test/Plot-NRSSE": im_nrsse,
         }
     )
-
-
-def compute_profile_q(state, T_mean_ref):
-    T = state[0]
-    uz = state[3]
-    theta = T - T_mean_ref
-    q = uz * theta
-    # area-average over (x,y) to get a profile along height
-    q_profile = torch.mean(q, dim=(1, 2))  # mean over horizontal (x, y)
-    return q_profile.numpy()  # shape (D,)
 
 
 def compute_profile_qprime_rms(state_seq, T_mean_ref):
