@@ -12,7 +12,7 @@ from rbc_pinn_surrogate.model import FNO3DModule, LRAN3DModule
 from rbc_pinn_surrogate.utils.vis3D import animation_3d, plot_paper
 import rbc_pinn_surrogate.callbacks.metrics_3D as metrics
 
-HIST_XLIM = (-0.5, 0.5)
+HIST_XLIM = (-0.2, 0.2)
 HIST_BINS = 100
 
 
