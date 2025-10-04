@@ -53,7 +53,7 @@ def main(config: DictConfig):
     list_nusselt = []
     list_profile_q = []
     list_profile_qp = []
-    hist_qp = []
+    hist_qp = None
     for batch, (x, y) in enumerate(tqdm(dm.test_dataloader(), desc="Testing")):
         # compute predictions and denormalize data
         with torch.no_grad():
