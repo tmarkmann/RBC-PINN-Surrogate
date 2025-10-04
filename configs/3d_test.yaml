@@ -5,12 +5,12 @@ defaults:
 
 task_name: 3d_test
 
-model: lran # fno or lran
+model: fno # fno or lran
 seed: 0
 checkpoint: ${paths.model_dir}/3d_${model}/ra${data.ra}-${seed}.ckpt
 
 data:
-  data_dir: /vol/cfd/rbc/3D_
+  data_dir: /vol/cfd/rbc/3D
   ra: 2500
   pressure: False
   normalize: True
@@ -22,7 +22,7 @@ data:
   stride: 1
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null
-  nr_episodes_test: 1
+  nr_episodes_test: null
   # Data efficiency settings
   num_workers: 2
   pin_memory: True

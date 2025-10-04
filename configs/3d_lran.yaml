@@ -9,12 +9,12 @@ data:
   data_dir: /vol/cfd/rbc/3D
   ra: 2500
   batch_size: 8
-  start: 200  # t=100
-  end: 600    # t=300
-  train_length: 6
-  train_shift: 3
-  test_length: 25
-  test_shift: 25
+  start: 600    # t=300
+  end: 1000     # t=500
+  train_length: 8
+  train_shift: 4
+  test_length: 100
+  test_shift: 50
   stride: 1
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null
@@ -38,6 +38,6 @@ model:
   lr_autoencoder: 0.001
 
 algo:
-  epochs: 35
+  epochs: 50
 
 task_name: 3d_lran
