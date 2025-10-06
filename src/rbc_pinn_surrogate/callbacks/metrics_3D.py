@@ -1,4 +1,5 @@
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from lightning.pytorch.callbacks import Callback
@@ -81,3 +82,39 @@ def compute_q(state, T_mean_ref, profile=False):
         return q.mean(dim=(1, 2)).numpy()
     else:
         return q.mean().numpy()
+
+
+def compute_profile_qprime_rms(state_seq, T_mean_ref):
+    # [T,H,W,D]
+    T = state_seq[0]
+    uz = state_seq[3]
+
+    theta = T - T_mean_ref
+    q = uz * theta
+
+    q_mean_th = q.mean(dim=(0, 2, 3), keepdim=True)
+    q_prime = q - q_mean_th
+
+    profile = torch.sqrt(torch.mean(q_prime**2, dim=(0, 2, 3))).cpu().numpy()
+    return profile  # shape (H,)
+
+
+def compute_qprime_z(state_seq, T_mean_ref, z):
+    # fields: [T, H, W, D]
+    T = state_seq[0]
+    uz = state_seq[3]
+
+    theta = T - T_mean_ref
+    q = uz * theta  # [T, H, W, D]
+
+    # time–horizontal mean per height for q
+    q_mean_th = q.mean(dim=(0, 2, 3), keepdim=True)  # [1, H, 1, 1]
+    q_prime = q - q_mean_th  # [T, H, W, D]
+
+    return q_prime[:, z, :, :].reshape(-1).detach().cpu().numpy()
+
+
+def compute_histogram(qprime, xlim=(-1, 1)):
+    bins = 100
+    hist, _ = np.histogram(qprime, bins=bins, range=xlim, density=True)
+    return hist

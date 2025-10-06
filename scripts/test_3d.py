@@ -12,7 +12,7 @@ from rbc_pinn_surrogate.model import FNO3DModule, LRAN3DModule
 from rbc_pinn_surrogate.utils.vis3D import animation_3d, plot_paper
 import rbc_pinn_surrogate.callbacks.metrics_3D as metrics
 
-HIST_XLIM = (-0.2, 0.2)
+HIST_XLIM = (-0.15, 0.15)
 HIST_BINS = 100
 
 
@@ -129,8 +129,8 @@ def main(config: DictConfig):
                 )
 
         # 5) Profile of q'
-        qp_pred = compute_profile_qprime_rms(pred[0], T_mean_ref)
-        qp_target = compute_profile_qprime_rms(target[0], T_mean_ref)
+        qp_pred = metrics.compute_profile_qprime_rms(pred[0], T_mean_ref)
+        qp_target = metrics.compute_profile_qprime_rms(target[0], T_mean_ref)
         for z, (p, q) in enumerate(zip(qp_pred, qp_target)):
             list_profile_qp.append(
                 {
@@ -156,8 +156,8 @@ def main(config: DictConfig):
             }
 
         for z in zs:
-            qp_pred_z = compute_qprime_z(pred[0], T_mean_ref, z)
-            qp_targ_z = compute_qprime_z(target[0], T_mean_ref, z)
+            qp_pred_z = metrics.compute_qprime_z(pred[0], T_mean_ref, z)
+            qp_targ_z = metrics.compute_qprime_z(target[0], T_mean_ref, z)
 
             hist_pred, _ = np.histogram(
                 qp_pred_z, bins=HIST_BINS, range=HIST_XLIM, density=True
@@ -213,42 +213,6 @@ def main(config: DictConfig):
             "test/Plot-NRSSE": im_nrsse,
         }
     )
-
-
-def compute_profile_qprime_rms(state_seq, T_mean_ref):
-    # [T,H,W,D]
-    T = state_seq[0]
-    uz = state_seq[3]
-
-    theta = T - T_mean_ref
-    q = uz * theta
-
-    q_mean_th = q.mean(dim=(0, 2, 3), keepdim=True)
-    q_prime = q - q_mean_th
-
-    profile = torch.sqrt(torch.mean(q_prime**2, dim=(0, 2, 3))).cpu().numpy()
-    return profile  # shape (H,)
-
-
-def compute_qprime_z(state_seq, T_mean_ref, z):
-    # fields: [T, H, W, D]
-    T = state_seq[0]
-    uz = state_seq[3]
-
-    theta = T - T_mean_ref
-    q = uz * theta  # [T, H, W, D]
-
-    # time–horizontal mean per height for q
-    q_mean_th = q.mean(dim=(0, 2, 3), keepdim=True)  # [1, H, 1, 1]
-    q_prime = q - q_mean_th  # [T, H, W, D]
-
-    return q_prime[:, z, :, :].reshape(-1).detach().cpu().numpy()
-
-
-def compute_histogram(qprime, xlim=(-1, 1)):
-    bins = 100
-    hist, _ = np.histogram(qprime, bins=bins, range=xlim, density=True)
-    return hist
 
 
 def plot_metric(df: pd.DataFrame, metric: str):
