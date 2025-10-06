@@ -1,15 +1,17 @@
 program: scripts/train_3d_fno.py
-name: FNO_params
+name: FNO_Samples
+
 method: grid
 metric:
   goal: minimize
-  name: val/RMSE
+  name: val/loss
+
 parameters:
   seed:
     values: [0, 1, 2]
   
   data.nr_episodes_train:
-    values: [3, 7, 15, 30, 60]
+    values: [3, 7, 15, 30, 50]
 
 command:
   - ${env}

@@ -198,8 +198,9 @@ def plot_paper(gt, pred, anim_dir: str, index: str):
     # Diff colorbar aligned with Diff row (bottom row), but shorter vertically
     cax_diff = fig.add_axes([0.89, 0.2, 0.015, 0.12])  # [left, bottom, width, height]
     mappable_diff = last_faces_diff[0]
+    mappable_diff.set_clim(-0.4, 0.4)
     fig.colorbar(
-        mappable_diff, cax=cax_diff, orientation="vertical", ticks=[-0.2, 0, 0.2]
+        mappable_diff, cax=cax_diff, orientation="vertical", ticks=[-0.4, 0, 0.4]
     )
 
     # ---- Save ----

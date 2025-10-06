@@ -7,10 +7,10 @@ task_name: 3d_test
 
 model: fno # fno or lran
 seed: 0
-checkpoint: ${paths.model_dir}/3d_${model}/new/ra${data.ra}-${seed}.ckpt
+checkpoint: ${paths.model_dir}/3d_${model}/ra${data.ra}-${seed}.ckpt
 
 data:
-  data_dir: /vol/cfd/rbc/3D_
+  data_dir: /vol/cfd/rbc/3D
   ra: 2500
   pressure: False
   normalize: True
