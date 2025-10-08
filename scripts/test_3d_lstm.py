@@ -24,7 +24,7 @@ def pdf_edges_and_centers(xlim=HIST_XLIM, bins=HIST_BINS):
 @hydra.main(version_base="1.3", config_path="../configs", config_name="3d_test")
 def main(config: DictConfig):
     # load data
-    with h5py.File("data/thorben.h5", "r") as f:
+    with h5py.File("data/thorben_1.h5", "r") as f:
         ds_pred = f["forecasts"]
         ds_target = f["ground_truth"]
 
@@ -43,7 +43,7 @@ def main(config: DictConfig):
         list_nusselt = []
         list_profile_q = []
         list_profile_qp = []
-        hist_qp = []
+        hist_qp = None
         for batch in tqdm(range(samples), desc="Testing"):
             # prepare data
             pred = torch.as_tensor(ds_pred[batch], dtype=torch.float32)
