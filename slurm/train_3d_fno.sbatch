@@ -14,4 +14,4 @@ conda activate rbcpinn
 cd ~/RBC-PINN-Surrogate
 
 # Directly use task ID as seed
-srun uv run python scripts/train_3d_fno.py seed=$SLURM_ARRAY_TASK_ID
+srun uv run python scripts/train_3d_fno.py seed=$SLURM_ARRAY_TASK_ID algo.epochs=100

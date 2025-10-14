@@ -8,13 +8,13 @@ seed: 42
 data:
   data_dir: /vol/cfd/rbc/3D
   ra: 2500
-  batch_size: 8
-  start: 200  # t=100
-  end: 600    # t=300
+  batch_size: 16
+  start: 600  # t=300
+  end: 1000    # t=500
   train_length: 1
-  train_shift: 3
+  train_shift: 5
   test_length: 1
-  test_shift: 25
+  test_shift: 5
   stride: 1
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null
@@ -27,13 +27,13 @@ data:
   normalize: True
 
 model:
-  latent_dimension: 128
+  latent_dimension: 256
   input_channel: 4
   base_filters: 64
   kernel_size: 5
   lr: 0.001
 
 algo:
-  epochs: 50
+  epochs: 100
 
 task_name: 3d_ae

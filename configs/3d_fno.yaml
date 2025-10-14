@@ -6,13 +6,13 @@ defaults:
 seed: 42
 
 data:
-  data_dir: /vol/cfd/rbc/3D
+  data_dir: /vol/cfd/rbc/3D_
   ra: 2500
   batch_size: 8
-  start: 600    # t=300
-  end: 1000     # t=500
-  train_length: 8
-  train_shift: 4
+  start: 200    # t=100
+  end: 600     # t=300
+  train_length: 10
+  train_shift: 6
   test_length: 100
   test_shift: 50
   stride: 1

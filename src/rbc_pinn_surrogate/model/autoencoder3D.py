@@ -78,6 +78,7 @@ class Autoencoder3DModule(LightningModule):
 
     def configure_optimizers(self) -> Dict[str, Any]:
         optimizer = torch.optim.Adam(
-            params=self.trainer.model.parameters(), lr=self.hparams.lr
+            params=self.autoencoder.parameters(),
+            lr=self.hparams.lr,
         )
         return {"optimizer": optimizer}
