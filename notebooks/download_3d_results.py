@@ -59,4 +59,4 @@ sweeps = [
 methods = ["3d-fno", "3d-lran", "3d-lstm"]
 
 for sweep, method in zip(sweeps, methods):
-    get_sweep_results(sweep, method, tag="resultsTest")
+    get_sweep_results(sweep, method, tag="final_result")
