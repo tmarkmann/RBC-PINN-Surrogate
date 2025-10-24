@@ -1,8 +1,7 @@
 import h5py
 from matplotlib import pyplot as plt
-import numpy as np
 from tqdm import tqdm
-from rbc_pinn_surrogate.utils.vis import RBCLiveVisualizer
+from rbc_pinn_surrogate.utils.vis_2d import RBCLiveVisualizer
 import argparse
 
 

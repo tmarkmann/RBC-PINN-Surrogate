@@ -1,21 +1,19 @@
-from .fno import FNOModule
-from .pino import PINOModule
-from .fno3D import FNO3DModule
-from .cfno import cFNOModule
-from .ar_fno import AutoRegressiveFNOModule
-from .lran import LRANModule
-from .lran3D import LRAN3DModule
-from .autoencoder import AutoencoderModule
-from .autoencoder3D import Autoencoder3DModule
+from .fno2d import FNO2DModule
+from .pino2d import PINO2DModule
+from .fno3d import FNO3DModule
+from .cfno2d import cFNO2DModule
+from .lran2d import LRAN2DModule
+from .lran3d import LRAN3DModule
+from .ae2d import Autoencoder2DModule
+from .ae3d import Autoencoder3DModule
 
 __all__ = [
-    "FNOModule",
-    "PINOModule",
+    "FNO2DModule",
+    "PINO2DModule",
     "FNO3DModule",
-    "cFNOModule",
-    "AutoRegressiveFNOModule",
-    "LRANModule",
+    "cFNO2DModule",
+    "LRAN2DModule",
     "LRAN3DModule",
-    "AutoencoderModule",
+    "Autoencoder2DModule",
     "Autoencoder3DModule",
 ]

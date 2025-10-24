@@ -10,7 +10,7 @@ from matplotlib import animation
 from matplotlib import pyplot as plt
 
 
-class ExamplesCallback(Callback):
+class Examples2DCallback(Callback):
     def __init__(self, train_freq: int = 5):
         self.train_freq = train_freq
 
@@ -37,8 +37,8 @@ class ExamplesCallback(Callback):
 
     def log_output(self, outputs: dict, idx: int, stage: str, logger: Logger):
         # unpack sequence
-        y = outputs["y"][idx].detach().cpu()
-        y_hat = outputs["y_hat"][idx].detach().cpu()
+        y = outputs["ground_truth"][idx].detach().cpu()
+        y_hat = outputs["prediction"][idx].detach().cpu()
 
         # generate videos
         videos = []

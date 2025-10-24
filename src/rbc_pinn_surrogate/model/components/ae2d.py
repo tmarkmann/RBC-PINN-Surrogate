@@ -4,7 +4,7 @@ import torch.nn as nn
 from torch import Tensor
 
 
-class Autoencoder(nn.Module):
+class Autoencoder2D(nn.Module):
     def __init__(
         self,
         latent_dimension: int,

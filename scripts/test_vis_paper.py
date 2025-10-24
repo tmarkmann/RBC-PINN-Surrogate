@@ -1,7 +1,7 @@
 import h5py
 from tqdm import tqdm
 import torch
-from rbc_pinn_surrogate.utils.vis3D import plot_paper
+from rbc_pinn_surrogate.utils.vis_3d import plot_paper
 
 
 def main():

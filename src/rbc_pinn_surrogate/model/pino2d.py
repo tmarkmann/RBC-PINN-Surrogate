@@ -8,7 +8,7 @@ import neuralop as no
 from rbc_pinn_surrogate.callbacks import OperatorFinetuneCallback
 
 
-class PINOModule(L.LightningModule):
+class PINO2DModule(L.LightningModule):
     def __init__(
         self,
         pino_loss: nn.Module,

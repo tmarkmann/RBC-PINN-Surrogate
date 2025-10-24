@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple, Callable
+from typing import Any, Dict, Tuple, Callable, List, Literal
 
 import torch
 import torch.nn as nn
@@ -6,44 +6,58 @@ from torch import Tensor
 from torch.nn.functional import mse_loss
 from lightning.pytorch import LightningModule
 
-from rbc_pinn_surrogate.model.components import Autoencoder3D
+from rbc_pinn_surrogate.model.components import Autoencoder3Dv2, Autoencoder3D
 
 
 class Autoencoder3DModule(LightningModule):
     def __init__(
         self,
+        version: Literal["v1", "v2"],
         latent_dimension: int,
-        input_channel: int,
-        base_filters: int,
+        latent_channels: int,
+        channels: List[int],
+        pooling: List[bool],
         kernel_size: int,
-        input_shape: Tuple[int, int, int],
+        latent_kernel_size: int,
+        drop_rate: float,
+        batch_norm: bool,
         lr: float,
         inv_transform: Callable = None,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["inv_transform"])
+        self.example_input_array = torch.zeros(1, 4, 32, 48, 48)
 
         # model
-        self.autoencoder = Autoencoder3D(
-            latent_dimension=latent_dimension,
-            input_channel=input_channel,
-            base_filters=base_filters,
-            kernel_size=kernel_size,
-            activation=nn.GELU,
-            input_shape=input_shape,
-        )
+        if version == "v1":
+            self.autoencoder = Autoencoder3D(
+                latent_dimension=latent_dimension,
+                input_size=(4, 32, 48, 48),
+                channels=channels,
+                pooling=pooling,
+                kernel_size=kernel_size,
+                drop_rate=drop_rate,
+                batch_norm=batch_norm,
+            )
+        else:
+            self.autoencoder = Autoencoder3Dv2(
+                rb_dims=(48, 48, 32),
+                encoder_channels=channels,
+                latent_channels=latent_channels,
+                v_kernel_size=kernel_size,
+                h_kernel_size=kernel_size,
+                latent_v_kernel_size=latent_kernel_size,
+                latent_h_kernel_size=latent_kernel_size,
+                drop_rate=drop_rate,
+                pool_layers=pooling,
+                nonlinearity=nn.ELU,
+            )
 
         # Denormalize
         self.denormalize = inv_transform
 
-        # Debugging
-        D, H, W = input_shape
-        self.example_input_array = torch.zeros(1, input_channel, D, H, W)
-
     def forward(self, x: Tensor) -> Tensor:
-        # forward
-        x_hat, _ = self.autoencoder(x)
-        return x_hat
+        return self.autoencoder(x)
 
     def model_step(self, x: Tensor, stage: str) -> Tuple[Tensor, Tensor, Tensor]:
         # check input dimensions
@@ -81,4 +95,18 @@ class Autoencoder3DModule(LightningModule):
             params=self.autoencoder.parameters(),
             lr=self.hparams.lr,
         )
-        return {"optimizer": optimizer}
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="min",
+            factor=0.5,
+            patience=5,
+            min_lr=1e-6,
+        )
+
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "val/loss",
+            },
+        }

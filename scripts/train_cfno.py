@@ -12,7 +12,7 @@ from lightning.pytorch.callbacks import (
 from rbc_pinn_surrogate.data import RBCDatamodule2DControl
 from rbc_pinn_surrogate.model import cFNOModule
 from rbc_pinn_surrogate.callbacks import (
-    ExamplesCallback,
+    Examples2DCallback,
 )
 
 
@@ -41,7 +41,7 @@ def main(config: DictConfig):
         #    mode="min",
         #    patience=7,
         # ),
-        ExamplesCallback(train_freq=5),
+        Examples2DCallback(train_freq=5),
     ]
 
     # trainer

@@ -25,7 +25,6 @@ def main(config: DictConfig):
     denormalize = dm.datasets["train"].denormalize_batch
     model = Autoencoder3DModule(
         **config.model,
-        input_shape=[32, 48, 48],
         inv_transform=denormalize,
     )
 
@@ -41,11 +40,12 @@ def main(config: DictConfig):
     # callbacks
     callbacks = [
         RichProgressBar(),
-        RichModelSummary(),
+        RichModelSummary(max_depth=3),
         EarlyStopping(
             monitor="val/loss",
             mode="min",
-            patience=15,
+            patience=20,
+            min_delta=1e-5,
         ),
         ModelCheckpoint(
             dirpath=f"{config.paths.output_dir}/checkpoints/",
@@ -59,10 +59,10 @@ def main(config: DictConfig):
     # trainer
     trainer = L.Trainer(
         logger=logger,
-        accelerator="auto",
+        accelerator=config.trainer.device,
         default_root_dir=config.paths.output_dir,
-        check_val_every_n_epoch=2,
-        max_epochs=config.algo.epochs,
+        max_epochs=config.trainer.epochs,
+        detect_anomaly=config.trainer.detect_anomaly,
         callbacks=callbacks,
     )
 

@@ -1,7 +1,7 @@
 from lightning.pytorch.callbacks import Callback
 from lightning.pytorch.loggers import WandbLogger
 
-from rbc_pinn_surrogate.utils.vis3D import animation_3d
+from rbc_pinn_surrogate.utils.vis_3d import animation_3d
 
 
 class Example3DCallback(Callback):

@@ -10,7 +10,7 @@ seed: 0
 checkpoint: ${paths.model_dir}/2d_${model}/ra${data.ra}-${seed}.ckpt
 
 data:
-  data_dir: data/datasets/2D
+  data_dir: data/2D
   ra: 1000000
   batch_size: 8
   start: 200

@@ -1,0 +1,16 @@
+# @package _global_
+
+trainer:
+  epochs: 1
+  device: cpu
+  detect_anomaly: true
+
+data:
+  num_workers: 0
+  pin_memory: False
+  persistent_workers: False
+  nr_episodes_train: 20
+  nr_episodes_val: 20
+  nr_episodes_test: 2
+  train_shift: 100
+  test_shift: 100

@@ -230,4 +230,5 @@ models/
 artifacts
 figs
 notebooks/results
-data/*.h5
+data/
+!data/.gitkeep

@@ -1,39 +1,48 @@
 defaults:
+  - _self_
   - paths: default
   - hydra: default
-  - _self_
+  - experiment: null
 
 seed: 42
 
 data:
-  data_dir: /vol/cfd/rbc/3D
+  data_dir: data/3D
   ra: 2500
-  batch_size: 16
-  start: 600  # t=300
-  end: 1000    # t=500
+  pressure: False
+  normalize: True
+  batch_size: 32
+  # Data slicing settings
+  start: 200 # t=300
+  end: 600 # t=500
   train_length: 1
-  train_shift: 5
   test_length: 1
+  train_shift: 5
   test_shift: 5
   stride: 1
-  nr_episodes_train: null # this means all of them
-  nr_episodes_val: null
-  nr_episodes_test: null
+  nr_episodes_train: 50
+  nr_episodes_val: 20
+  nr_episodes_test: 20
   # Data efficiency settings
   num_workers: 2
   pin_memory: True
   persistent_workers: True
-  pressure: False
-  normalize: True
 
 model:
+  version: v1
   latent_dimension: 256
-  input_channel: 4
-  base_filters: 64
+  latent_channels: 32
+  channels: [21, 42, 42, 82, 82]
+  pooling: [true, false, true, false, true]
+  drop_rate: 0.2
+  batch_norm: True
   kernel_size: 5
+  latent_kernel_size: 3
   lr: 0.001
 
-algo:
-  epochs: 100
+trainer:
+  epochs: 500
+  device: auto
+  detect_anomaly: false
 
 task_name: 3d_ae

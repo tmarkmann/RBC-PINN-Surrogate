@@ -1,17 +1,17 @@
-from .examples import ExamplesCallback
+from .examples_2d import Examples2DCallback
 from .sequence_metrics import SequenceMetricsCallback
-from .metrics import MetricsCallback
+from .metrics_2d import Metrics2DCallback
 from .memory_callback import MemoryCallback
 from .timer_callback import TimerCallback
 from .clear_memory import ClearMemoryCallback
 from .pino_finetuning import OperatorFinetuneCallback
-from .examples_3D import Example3DCallback
-from .metrics_3D import Metrics3DCallback
+from .examples_3d import Example3DCallback
+from .metrics_3d import Metrics3DCallback
 
 __all__ = [
-    "ExamplesCallback",
+    "Examples2DCallback",
     "SequenceMetricsCallback",
-    "MetricsCallback",
+    "Metrics2DCallback",
     "MemoryCallback",
     "TimerCallback",
     "ClearMemoryCallback",

@@ -10,7 +10,7 @@ from rbc_pinn_surrogate.model.components import (
     Autoencoder3D,
     KoopmanOperator,
 )
-import rbc_pinn_surrogate.callbacks.metrics_3D as metrics
+import rbc_pinn_surrogate.callbacks.metrics_3d as metrics
 
 
 class LRAN3DModule(pl.LightningModule):
@@ -40,7 +40,7 @@ class LRAN3DModule(pl.LightningModule):
         activation = nn.GELU
         self.autoencoder = Autoencoder3D(
             latent_dimension=latent_dimension,
-            input_channel=input_channel,
+            input_size=input_channel,
             base_filters=base_filters,
             kernel_size=kernel_size,
             activation=activation,

@@ -6,7 +6,7 @@ import lightning as L
 import neuralop as no
 
 
-class cFNOModule(L.LightningModule):
+class cFNO2DModule(L.LightningModule):
     def __init__(
         self,
         control_mask: bool = False,

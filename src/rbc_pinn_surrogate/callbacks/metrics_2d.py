@@ -6,7 +6,7 @@ import torch
 from torch.nn.functional import mse_loss
 
 
-class MetricsCallback(Callback):
+class Metrics2DCallback(Callback):
     def __init__(self, key_groundtruth: str, key_prediction: str):
         self.key_gt = key_groundtruth
         self.key_pred = key_prediction

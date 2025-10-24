@@ -8,8 +8,8 @@ import wandb
 import torch
 import h5py
 import seaborn as sns
-from rbc_pinn_surrogate.utils.vis3D import animation_3d, plot_paper
-import rbc_pinn_surrogate.callbacks.metrics_3D as metrics
+from rbc_pinn_surrogate.utils.vis_3d import animation_3d, plot_paper
+import rbc_pinn_surrogate.callbacks.metrics_3d as metrics
 
 HIST_XLIM = (-0.15, 0.15)
 HIST_BINS = 100

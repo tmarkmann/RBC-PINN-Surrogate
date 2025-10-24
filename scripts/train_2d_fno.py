@@ -9,11 +9,11 @@ from lightning.pytorch.callbacks import (
 from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig
 from rbc_pinn_surrogate.data import RBCDatamodule2D
-from rbc_pinn_surrogate.model import FNOModule, AutoRegressiveFNOModule
+from rbc_pinn_surrogate.model import FNO2DModule
 from rbc_pinn_surrogate.callbacks import (
     SequenceMetricsCallback,
-    ExamplesCallback,
-    MetricsCallback,
+    Examples2DCallback,
+    Metrics2DCallback,
     ClearMemoryCallback,
 )
 
@@ -29,13 +29,7 @@ def main(config: DictConfig):
 
     # model
     denormalize = dm.datasets["train"].denormalize_batch
-
-    if config.model.type == "3d":
-        model = FNOModule(denormalize=denormalize, **config.model)
-    elif config.model.type == "2d":
-        model = AutoRegressiveFNOModule(denormalize=denormalize, **config.model)
-    else:
-        raise ValueError(f"Unknown model type: {config.model.type}")
+    model = FNO2DModule(denormalize=denormalize, **config.model)
 
     # logger
     logger = WandbLogger(
@@ -54,16 +48,16 @@ def main(config: DictConfig):
             mode="min",
             patience=15,
         ),
-        MetricsCallback(
-            key_groundtruth="y",
-            key_prediction="y_hat",
+        Metrics2DCallback(
+            key_groundtruth="ground_truth",
+            key_prediction="prediction",
         ),
-        ExamplesCallback(
+        Examples2DCallback(
             train_freq=20,
         ),
         SequenceMetricsCallback(
-            key_groundtruth="y",
-            key_prediction="y_hat",
+            key_groundtruth="ground_truth",
+            key_prediction="prediction",
         ),
         ModelCheckpoint(
             dirpath=f"{config.paths.output_dir}/checkpoints/",
@@ -80,7 +74,6 @@ def main(config: DictConfig):
         logger=logger,
         accelerator="auto",
         default_root_dir=config.paths.output_dir,
-        check_val_every_n_epoch=1,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,
     )

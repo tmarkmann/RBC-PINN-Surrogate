@@ -4,7 +4,7 @@ from torch import Tensor
 import lightning as L
 import neuralop as no
 
-import rbc_pinn_surrogate.callbacks.metrics_3D as metrics
+import rbc_pinn_surrogate.callbacks.metrics_3d as metrics
 
 
 class FNO3DModule(L.LightningModule):
@@ -46,6 +46,8 @@ class FNO3DModule(L.LightningModule):
 
     def forward(self, x):
         return self.model(x)
+
+    # TODO vereinheitlichen
 
     def predict(self, input: Tensor, length) -> Tensor:
         with torch.no_grad():
@@ -109,9 +111,22 @@ class FNO3DModule(L.LightningModule):
             self.model.parameters(),
             lr=self.hparams.lr,
         )
-        return {"optimizer": optimizer}
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="min",
+            factor=0.5,
+            patience=5,
+            min_lr=1e-6,
+        )
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "val/loss",
+            },
+        }
 
     def load_state_dict(self, state_dict, strict: bool = True):
-        # Remove metadat from neuralop library TODO check if useful
+        # Remove metadata from neuralop library TODO check if useful
         state_dict.pop("_metadata", None)
         return super().load_state_dict(state_dict, strict)

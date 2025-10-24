@@ -11,8 +11,8 @@ from omegaconf import DictConfig
 from rbc_pinn_surrogate.data import RBCDatamodule2D
 from rbc_pinn_surrogate.model import LRANModule
 from rbc_pinn_surrogate.callbacks import (
-    ExamplesCallback,
-    MetricsCallback,
+    Examples2DCallback,
+    Metrics2DCallback,
     ClearMemoryCallback,
     SequenceMetricsCallback,
 )
@@ -48,11 +48,11 @@ def main(config: DictConfig):
             mode="min",
             patience=15,
         ),
-        MetricsCallback(
+        Metrics2DCallback(
             key_groundtruth="y",
             key_prediction="y_hat",
         ),
-        ExamplesCallback(
+        Examples2DCallback(
             train_freq=20,
         ),
         SequenceMetricsCallback(

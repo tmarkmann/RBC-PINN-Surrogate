@@ -7,10 +7,10 @@ from torch.nn.functional import mse_loss
 
 from lightning.pytorch import LightningModule
 
-from rbc_pinn_surrogate.model.components import Autoencoder
+from rbc_pinn_surrogate.model.components import Autoencoder2D
 
 
-class AutoencoderModule(LightningModule):
+class Autoencoder2DModule(LightningModule):
     def __init__(
         self,
         latent_dimension: int,
@@ -25,7 +25,7 @@ class AutoencoderModule(LightningModule):
 
         # model
         self.activation = nn.GELU
-        self.autoencoder = Autoencoder(
+        self.autoencoder = Autoencoder2D(
             latent_dimension, input_channel, base_filters, kernel_size, self.activation
         )
 

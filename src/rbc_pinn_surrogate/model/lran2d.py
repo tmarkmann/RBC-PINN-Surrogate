@@ -5,11 +5,11 @@ import torch.nn as nn
 import torch
 from torch import Tensor
 
-from rbc_pinn_surrogate.model.components import Autoencoder, KoopmanOperator
+from rbc_pinn_surrogate.model.components import Autoencoder2D, KoopmanOperator
 from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError
 
 
-class LRANModule(pl.LightningModule):
+class LRAN2DModule(pl.LightningModule):
     def __init__(
         self,
         # Autoencoder params
@@ -34,7 +34,7 @@ class LRANModule(pl.LightningModule):
 
         # Model
         activation = nn.GELU
-        self.autoencoder = Autoencoder(
+        self.autoencoder = Autoencoder2D(
             latent_dimension, input_channel, base_filters, kernel_size, activation
         )
         if ae_ckpt is not None:

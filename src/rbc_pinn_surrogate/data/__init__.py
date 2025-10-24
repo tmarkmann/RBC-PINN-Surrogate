@@ -1,6 +1,6 @@
 from .dataset import RBCDataset, RBCDataset2D, RBCDataset3D
-from .datamodule3D import RBCDatamodule3D
-from .datamodule2D import RBCDatamodule2D
+from .datamodule_3d import RBCDatamodule3D
+from .datamodule_2d import RBCDatamodule2D
 from .dataset_control import RBCDataset2DControl
 from .datamodule_control import RBCDatamodule2DControl
 

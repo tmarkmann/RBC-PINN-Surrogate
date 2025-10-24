@@ -6,7 +6,7 @@ defaults:
 seed: 42
 
 data:
-  data_dir: data/datasets/2D
+  data_dir: data/2D
   ra: 1000000
   batch_size: 32
   start: 200
@@ -21,24 +21,24 @@ data:
   nr_episodes_test: null
   # Data efficiency settings
   num_workers: 2
-  pin_memory: True
+  pin_memory: False
   persistent_workers: True
   pressure: False
   normalize: True
 
 model:
-  type: 3d # options: 2d, 3d
+  dim: 3d # options: 2d, 3d
   loss: H1
   lr: 3e-3
   weight_decay: 1e-3
   n_modes_time: 16
   n_modes_space: 16
-  hidden_channels: 32
+  hidden_channels: 16
   in_channels: 3
   out_channels: 3
   lifting_channels: 16
   projection_channels: 16
-  n_layers: 6
+  n_layers: 4
 
 algo:
   epochs: 75

@@ -9,8 +9,8 @@ import wandb
 import torch
 from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import FNO3DModule, LRAN3DModule
-from rbc_pinn_surrogate.utils.vis3D import animation_3d, plot_paper
-import rbc_pinn_surrogate.callbacks.metrics_3D as metrics
+from rbc_pinn_surrogate.utils.vis_3d import animation_3d, plot_paper
+import rbc_pinn_surrogate.callbacks.metrics_3d as metrics
 
 HIST_XLIM = (-0.15, 0.2)
 HIST_BINS = 100
