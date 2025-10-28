@@ -25,12 +25,19 @@ data:
   persistent_workers: True
   pressure: False
 
-model:
-  latent_dimension: 256
-  input_channel: 4
-  base_filters: 64
+ae:
+  ckpt: ${paths.model_dir}/3d_ae/ra${data.ra}.ckpt
+  version: v1
+  latent_channels: 32
+  channels: [21, 42, 42, 82, 82]
+  pooling: [true, false, true, false, true]
+  drop_rate: 0.2
+  batch_norm: True
   kernel_size: 5
-  ae_ckpt: ${paths.model_dir}/3d_ae/ra${data.ra}.ckpt
+  latent_kernel_size: 3
+
+model:
+  latent_dimension: 11.808
   lambda_id: 1
   lambda_fwd: 1
   lambda_hid: 5

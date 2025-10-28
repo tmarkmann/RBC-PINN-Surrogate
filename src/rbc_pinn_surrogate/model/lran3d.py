@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple, Callable
+from typing import Any, Dict, List, Callable
 
 import lightning.pytorch as pl
 import torch.nn as nn
@@ -17,13 +17,16 @@ class LRAN3DModule(pl.LightningModule):
     def __init__(
         self,
         # Autoencoder params
-        latent_dimension: int,
-        input_channel: int,
-        base_filters: int,
+        input_size: int,
+        channels: List[int],
+        pooling: List[bool],
+        latent_channels: int,
         kernel_size: int,
-        input_shape: Tuple[int, int, int],
+        drop_rate: float,
+        batch_norm: bool,
         ae_ckpt: str,
-        # Loss params
+        # LRAN params
+        latent_dimension: int,
         lambda_id: float,
         lambda_fwd: float,
         lambda_hid: float,
@@ -37,18 +40,20 @@ class LRAN3DModule(pl.LightningModule):
         self.save_hyperparameters(ignore=["denormalize"])
 
         # Model
-        activation = nn.GELU
         self.autoencoder = Autoencoder3D(
-            latent_dimension=latent_dimension,
-            input_size=input_channel,
-            base_filters=base_filters,
+            input_size=input_size,
+            latent_channels=latent_channels,
+            channels=channels,
+            pooling=pooling,
             kernel_size=kernel_size,
-            activation=activation,
-            input_shape=input_shape,
+            drop_rate=drop_rate,
+            batch_norm=batch_norm,
+            activation=nn.GELU
         )
         if ae_ckpt is not None:
             ckpt = torch.load(ae_ckpt, map_location=self.device)
             self.autoencoder.load_weights(ckpt, freeze=False)
+        
         self.operator = KoopmanOperator(latent_dimension)
 
         # Loss
@@ -58,8 +63,8 @@ class LRAN3DModule(pl.LightningModule):
         self.denormalize = denormalize
 
         # Debugging
-        D, H, W = input_shape
-        self.example_input_array = torch.zeros(1, input_channel, D, H, W)
+        C, D, H, W = input_size
+        self.example_input_array = torch.zeros(1, C, D, H, W)
 
     def forward(self, x: Tensor) -> Tensor:
         g = self.autoencoder.encode(x)

@@ -37,6 +37,7 @@ class Autoencoder3DModule(LightningModule):
                 kernel_size=kernel_size,
                 drop_rate=drop_rate,
                 batch_norm=batch_norm,
+                activation=nn.GELU,
             )
         else:
             self.autoencoder = Autoencoder3Dv2(

@@ -5,6 +5,7 @@ from lightning.pytorch.callbacks import (
     RichModelSummary,
     RichProgressBar,
     ModelCheckpoint,
+    LearningRateMonitor,
 )
 from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig
@@ -41,6 +42,7 @@ def main(config: DictConfig):
     callbacks = [
         RichProgressBar(),
         RichModelSummary(max_depth=3),
+        LearningRateMonitor(logging_interval="epoch"),
         EarlyStopping(
             monitor="val/loss",
             mode="min",

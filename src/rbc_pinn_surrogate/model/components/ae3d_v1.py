@@ -15,13 +15,14 @@ class Autoencoder3D(nn.Module):
         kernel_size: int,
         drop_rate: float,
         batch_norm: bool,
+        activation: nn.Module,
     ):
         super().__init__()
         self.input_channel = input_size[0]
         self.kernel_size = kernel_size
         self.drop_rate = drop_rate
         self.batch_norm = batch_norm
-        self.activation = nn.GELU
+        self.activation = activation
         self.padding = 2
 
         # Build models
@@ -36,7 +37,7 @@ class Autoencoder3D(nn.Module):
                 kernel_size=self.kernel_size,
                 padding=self.padding,
             ),
-            self.activation(),
+            activation(),
         )
         self.decoder_latent = nn.Sequential(
             nn.Conv3d(
@@ -45,7 +46,7 @@ class Autoencoder3D(nn.Module):
                 kernel_size=self.kernel_size,
                 padding=self.padding,
             ),
-            self.activation(),
+            activation(),
         )
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
@@ -132,3 +133,27 @@ class Autoencoder3D(nn.Module):
             inp = ch
 
         return nn.Sequential(layer)
+
+    @classmethod
+    def from_checkpoint(cls, ckpt: dict):
+        # Check hyperparameters
+        params = ckpt["hyper_parameters"]
+        print("Loading Autoencoder3D with params:")
+        for k, v in params.items():
+            print(f"  {k}: {v}")
+
+        # Load weights
+        #state = ckpt["state_dict"]
+        #encoder_weights = {
+        #    k.replace("autoencoder.encoder.", ""): v
+        #    for k, v in state.items()
+        #    if k.startswith("autoencoder.encoder.")
+        #}
+        #decoder_weights = {
+        #    k.replace("autoencoder.decoder.", ""): v
+        #    for k, v in state.items()
+        #    if k.startswith("autoencoder.decoder.")
+        #}
+        #self.encoder.load_state_dict(encoder_weights, strict=False)
+        #self.decoder.load_state_dict(decoder_weights, strict=False)
+        
