@@ -1,8 +1,8 @@
 # @package _global_
 
 trainer:
-  epochs: 1
-  device: cpu
+  max_epochs: 1
+  accelerator: cpu
   detect_anomaly: true
 
 data:

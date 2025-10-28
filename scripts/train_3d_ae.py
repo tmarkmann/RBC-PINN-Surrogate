@@ -8,24 +8,28 @@ from lightning.pytorch.callbacks import (
     LearningRateMonitor,
 )
 from lightning.pytorch.loggers import WandbLogger
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import Autoencoder3DModule
 
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="3d_ae")
 def main(config: DictConfig):
+    # config convert
+    config = OmegaConf.to_container(config, resolve=True)
+    output_dir = config["paths"]["output_dir"]
+
     # seed
-    L.seed_everything(config.seed, workers=True)
+    L.seed_everything(config["seed"], workers=True)
 
     # data
-    dm = RBCDatamodule3D(**config.data)
+    dm = RBCDatamodule3D(**config["data"])
     dm.setup("fit")
 
     # model
     denormalize = dm.datasets["train"].denormalize_batch
     model = Autoencoder3DModule(
-        **config.model,
+        **config["model"],
         inv_transform=denormalize,
     )
 
@@ -33,15 +37,15 @@ def main(config: DictConfig):
     logger = WandbLogger(
         entity="sail-project",
         project="RBC-3D-AE",
-        save_dir=config.paths.output_dir,
+        save_dir=output_dir,
         log_model=False,
-        config=dict(config),
+        config=config,
     )
 
     # callbacks
     callbacks = [
         RichProgressBar(),
-        RichModelSummary(max_depth=3),
+        RichModelSummary(max_depth=2),
         LearningRateMonitor(logging_interval="epoch"),
         EarlyStopping(
             monitor="val/loss",
@@ -50,7 +54,7 @@ def main(config: DictConfig):
             min_delta=1e-5,
         ),
         ModelCheckpoint(
-            dirpath=f"{config.paths.output_dir}/checkpoints/",
+            dirpath=f"{output_dir}/checkpoints/",
             save_top_k=1,
             save_weights_only=True,
             monitor="val/loss",
@@ -60,11 +64,9 @@ def main(config: DictConfig):
 
     # trainer
     trainer = L.Trainer(
+        **config["trainer"],
         logger=logger,
-        accelerator=config.trainer.device,
-        default_root_dir=config.paths.output_dir,
-        max_epochs=config.trainer.epochs,
-        detect_anomaly=config.trainer.detect_anomaly,
+        default_root_dir=output_dir,
         callbacks=callbacks,
     )
 

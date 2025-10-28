@@ -16,16 +16,9 @@ import rbc_pinn_surrogate.callbacks.metrics_3d as metrics
 class LRAN3DModule(pl.LightningModule):
     def __init__(
         self,
-        # Autoencoder params
-        input_size: int,
-        channels: List[int],
-        pooling: List[bool],
-        latent_channels: int,
-        kernel_size: int,
-        drop_rate: float,
-        batch_norm: bool,
-        ae_ckpt: str,
         # LRAN params
+        input_size: int,
+        ae_ckpt: str,
         latent_dimension: int,
         lambda_id: float,
         lambda_fwd: float,
@@ -40,19 +33,8 @@ class LRAN3DModule(pl.LightningModule):
         self.save_hyperparameters(ignore=["denormalize"])
 
         # Model
-        self.autoencoder = Autoencoder3D(
-            input_size=input_size,
-            latent_channels=latent_channels,
-            channels=channels,
-            pooling=pooling,
-            kernel_size=kernel_size,
-            drop_rate=drop_rate,
-            batch_norm=batch_norm,
-            activation=nn.GELU
-        )
-        if ae_ckpt is not None:
-            ckpt = torch.load(ae_ckpt, map_location=self.device)
-            self.autoencoder.load_weights(ckpt, freeze=False)
+        ckpt = torch.load(ae_ckpt, map_location=self.device)
+        self.autoencoder = Autoencoder3D.from_checkpoint(ckpt)
         
         self.operator = KoopmanOperator(latent_dimension)
 

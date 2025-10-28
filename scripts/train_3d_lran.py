@@ -7,7 +7,7 @@ from lightning.pytorch.callbacks import (
     ModelCheckpoint,
 )
 from lightning.pytorch.loggers import WandbLogger
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import LRAN3DModule
 from rbc_pinn_surrogate.callbacks import (
@@ -17,28 +17,32 @@ from rbc_pinn_surrogate.callbacks import (
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="3d_lran")
 def main(config: DictConfig):
+    # config convert
+    config = OmegaConf.to_container(config, resolve=True)
+    output_dir = config["paths"]["output_dir"]
+
     # seed
-    L.seed_everything(config.seed, workers=True)
+    L.seed_everything(config["seed"], workers=True)
 
     # data
-    dm = RBCDatamodule3D(**config.data)
+    dm = RBCDatamodule3D(**config["data"])
     dm.setup("fit")
 
     # model
     denormalize = dm.datasets["train"].denormalize_batch
     model = LRAN3DModule(
-        input_shape=[32, 48, 48],
+        input_size=(4, 32, 48, 48),
         denormalize=denormalize,
-        **config.model,
+        **config["model"],
     )
 
     # logger
     logger = WandbLogger(
         entity="sail-project",
         project="RBC-3D-LRAN",
-        save_dir=config.paths.output_dir,
+        save_dir=output_dir,
         log_model=False,
-        config=dict(config),
+        config=config,
     )
 
     # callbacks
@@ -52,7 +56,7 @@ def main(config: DictConfig):
         ),
         Metrics3DCallback(),
         ModelCheckpoint(
-            dirpath=f"{config.paths.output_dir}/checkpoints/",
+            dirpath=f"{output_dir}/checkpoints/",
             save_top_k=1,
             monitor="val/loss",
             mode="min",
@@ -61,12 +65,10 @@ def main(config: DictConfig):
 
     # trainer
     trainer = L.Trainer(
+        **config["trainer"],
         logger=logger,
-        accelerator="auto",
-        default_root_dir=config.paths.output_dir,
-        max_epochs=config.algo.epochs,
+        default_root_dir=output_dir,
         callbacks=callbacks,
-        check_val_every_n_epoch=2,
     )
 
     # training

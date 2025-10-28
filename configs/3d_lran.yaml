@@ -1,42 +1,35 @@
 defaults:
+  - _self_
   - paths: default
   - hydra: default
-  - _self_
+  - experiment: null
 
 seed: 42
 
 data:
-  data_dir: /vol/cfd/rbc/3D
+  data_dir: data/3D
   ra: 2500
+  pressure: False
+  normalize: True
   batch_size: 8
-  start: 600    # t=300
-  end: 1000     # t=500
+  # Data slicing settings
+  start: 200 # t=300
+  end: 600 # t=500
   train_length: 8
   train_shift: 4
   test_length: 100
   test_shift: 50
   stride: 1
-  nr_episodes_train: null # this means all of them
-  nr_episodes_val: null
-  nr_episodes_test: null
+  nr_episodes_train: 50
+  nr_episodes_val: 20
+  nr_episodes_test: 20
   # Data efficiency settings
   num_workers: 2
   pin_memory: True
   persistent_workers: True
-  pressure: False
-
-ae:
-  ckpt: ${paths.model_dir}/3d_ae/ra${data.ra}.ckpt
-  version: v1
-  latent_channels: 32
-  channels: [21, 42, 42, 82, 82]
-  pooling: [true, false, true, false, true]
-  drop_rate: 0.2
-  batch_norm: True
-  kernel_size: 5
-  latent_kernel_size: 3
 
 model:
+  ae_ckpt: ${paths.model_dir}/3d_ae/ra${data.ra}.ckpt
   latent_dimension: 11.808
   lambda_id: 1
   lambda_fwd: 1
@@ -44,7 +37,10 @@ model:
   lr_operator: 0.0001
   lr_autoencoder: 0.001
 
-algo:
-  epochs: 50
+trainer:
+  max_epochs: 500
+  accelerator: auto
+  detect_anomaly: false
+  check_val_every_n_epoch: 2
 
 task_name: 3d_lran

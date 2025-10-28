@@ -40,8 +40,8 @@ model:
   lr: 0.001
 
 trainer:
-  epochs: 500
-  device: auto
+  max_epochs: 500
+  accelerator: auto
   detect_anomaly: false
 
 task_name: 3d_ae

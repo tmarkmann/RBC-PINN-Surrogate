@@ -142,6 +142,8 @@ class Autoencoder3D(nn.Module):
         for k, v in params.items():
             print(f"  {k}: {v}")
 
+        #TODO create object
+
         # Load weights
         #state = ckpt["state_dict"]
         #encoder_weights = {
