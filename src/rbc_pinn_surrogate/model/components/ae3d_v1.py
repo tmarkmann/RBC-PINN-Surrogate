@@ -1,7 +1,6 @@
 from collections import OrderedDict
 from typing import Tuple, List
 
-import torch
 import torch.nn as nn
 from torch import Tensor
 
@@ -12,7 +11,7 @@ class Autoencoder3D(nn.Module):
         input_size: int,
         channels: List[int],
         pooling: List[bool],
-        latent_dimension: int,
+        latent_channels: int,
         kernel_size: int,
         drop_rate: float,
         batch_norm: bool,
@@ -29,23 +28,24 @@ class Autoencoder3D(nn.Module):
         self.encoder = self.build_encoder(channels, pooling)
         self.decoder = self.build_decoder(channels, pooling)
 
-        # Compute encoder output shape
-        with torch.no_grad():
-            dummy = torch.zeros(1, *input_size)
-            enc_out = self.encoder(dummy)
-            spatial_dim = enc_out.shape[1:]
-            flatten_dim = enc_out.numel()
-
         # Latent layers
-        self.encoder_linear = nn.Sequential(
-            nn.Flatten(),
-            nn.Linear(flatten_dim, latent_dimension),
+        self.encoder_latent = nn.Sequential(
+            nn.Conv3d(
+                channels[-1],
+                latent_channels,
+                kernel_size=self.kernel_size,
+                padding=self.padding,
+            ),
             self.activation(),
         )
-        self.decoder_linear = nn.Sequential(
-            nn.Linear(latent_dimension, flatten_dim),
+        self.decoder_latent = nn.Sequential(
+            nn.Conv3d(
+                latent_channels,
+                channels[-1],
+                kernel_size=self.kernel_size,
+                padding=self.padding,
+            ),
             self.activation(),
-            nn.Unflatten(1, spatial_dim),
         )
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
@@ -54,10 +54,10 @@ class Autoencoder3D(nn.Module):
     def encode(self, x: Tensor) -> Tensor:
         # Pass through encoder convs and flatten
         f = self.encoder(x)
-        return self.encoder_linear(f)
+        return self.encoder_latent(f)
 
     def decode(self, z: Tensor) -> Tensor:
-        f = self.decoder_linear(z)
+        f = self.decoder_latent(z)
         return self.decoder(f)
 
     def build_encoder(
@@ -75,18 +75,18 @@ class Autoencoder3D(nn.Module):
                 s = (1, 1, 1)
 
             # Build layers
-            layer[f"conv3d{i}"] = nn.Conv3d(
+            layer[f"conv3d_{i}"] = nn.Conv3d(
                 inp,
                 ch,
                 kernel_size=self.kernel_size,
                 padding=self.padding,
                 stride=s,
             )
-            layer[f"activation{i}"] = self.activation()
+            layer[f"activation_{i}"] = self.activation()
             if self.drop_rate > 0:
-                layer[f"dropout{i}"] = nn.Dropout3d(p=self.drop_rate)
+                layer[f"dropout_{i}"] = nn.Dropout3d(p=self.drop_rate)
             if self.batch_norm:
-                layer[f"batch_norm{i}"] = nn.BatchNorm3d(ch)
+                layer[f"batch_norm_{i}"] = nn.BatchNorm3d(ch)
             inp = ch
 
         return nn.Sequential(layer)
@@ -98,6 +98,7 @@ class Autoencoder3D(nn.Module):
     ) -> nn.Module:
         layer = OrderedDict()
         inp = channels[-1]
+        length = len(channels)
         channels = reversed([self.input_channel] + channels[:-1])
         pooling = reversed(pooling)
         for i, (ch, pool) in enumerate(zip(channels, pooling)):
@@ -110,7 +111,7 @@ class Autoencoder3D(nn.Module):
                 op = 0
 
             # Build layers
-            layer[f"convtrans3d{i}"] = nn.ConvTranspose3d(
+            layer[f"convtrans3d_{i}"] = nn.ConvTranspose3d(
                 inp,
                 ch,
                 kernel_size=self.kernel_size,
@@ -118,11 +119,16 @@ class Autoencoder3D(nn.Module):
                 stride=s,
                 output_padding=op,
             )
-            layer[f"activation{i}"] = self.activation()
+
+            # no addtional layers after last conv
+            if i == length - 1:
+                break
+
+            layer[f"activation_{i}"] = self.activation()
             if self.drop_rate > 0:
-                layer[f"dropout{i}"] = nn.Dropout3d(p=self.drop_rate)
+                layer[f"dropout_{i}"] = nn.Dropout3d(p=self.drop_rate)
             if self.batch_norm:
-                layer[f"batch_norm{i}"] = nn.BatchNorm3d(ch)
+                layer[f"batch_norm_{i}"] = nn.BatchNorm3d(ch)
             inp = ch
 
         return nn.Sequential(layer)

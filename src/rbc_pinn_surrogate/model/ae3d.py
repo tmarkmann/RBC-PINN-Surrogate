@@ -13,7 +13,6 @@ class Autoencoder3DModule(LightningModule):
     def __init__(
         self,
         version: Literal["v1", "v2"],
-        latent_dimension: int,
         latent_channels: int,
         channels: List[int],
         pooling: List[bool],
@@ -31,7 +30,7 @@ class Autoencoder3DModule(LightningModule):
         # model
         if version == "v1":
             self.autoencoder = Autoencoder3D(
-                latent_dimension=latent_dimension,
+                latent_channels=latent_channels,
                 input_size=(4, 32, 48, 48),
                 channels=channels,
                 pooling=pooling,
