@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Callable
+from typing import Any, Dict, Callable
 
 import lightning.pytorch as pl
 import torch.nn as nn

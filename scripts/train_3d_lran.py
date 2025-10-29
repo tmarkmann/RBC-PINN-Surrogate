@@ -48,7 +48,7 @@ def main(config: DictConfig):
     # callbacks
     callbacks = [
         RichProgressBar(),
-        RichModelSummary(max_depth=4),
+        RichModelSummary(max_depth=2),
         EarlyStopping(
             monitor="val/loss",
             mode="min",
