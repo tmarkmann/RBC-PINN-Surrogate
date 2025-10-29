@@ -91,7 +91,7 @@ class Autoencoder3D(nn.Module):
             drop_rate=drop_rate,
             activation=activation,
         )
-        
+
         self.decoder_out = Conv3DBlock(
             index="out",
             in_channels=channels[0],
@@ -154,12 +154,8 @@ class Autoencoder3D(nn.Module):
         channels = reversed(channels)
         upsampling = reversed(pooling)
         for i, (ch, up) in enumerate(zip(channels, upsampling)):
-            # Upsampling
-            if up:
-                layer[f"upsample_{i}"] = nn.Upsample(scale_factor=(2, 2, 2), mode="trilinear", align_corners=False)
-
-            # Build layers
-            layer[f"convtrans3d_{i}"] = Conv3DBlock(
+            # conv block
+            layer[f"block_{i}"] = Conv3DBlock(
                 index=i,
                 in_channels=inp,
                 out_channels=ch,
@@ -169,6 +165,12 @@ class Autoencoder3D(nn.Module):
                 batch_norm=self.batch_norm,
                 activation=self.activation,
             )
+
+            # Upsampling
+            if up:
+                layer[f"upsample_{i}"] = nn.Upsample(
+                    scale_factor=(2, 2, 2), mode="trilinear", align_corners=False
+                )
 
             inp = ch
 
