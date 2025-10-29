@@ -131,7 +131,7 @@ class RBCDataset(Dataset[Tensor]):
             y = y[:, :-2]
 
         # change channel and time dimension for neuraloperator package
-        # tensor size [C, T, A] (A spatial dimensions)
+        #  [T, C, A] -> [C, T, A] (A spatial dimensions)
         x = torch.from_numpy(x).permute(1, 0, *range(2, x.ndim))
         y = torch.from_numpy(y).permute(1, 0, *range(2, y.ndim))
 

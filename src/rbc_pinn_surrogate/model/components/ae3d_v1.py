@@ -6,6 +6,55 @@ from torch import Tensor
 from torch.nn.modules.utils import _triple
 
 
+class Conv3DBlock(nn.Module):
+    def __init__(
+        self,
+        index: int | str,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: Union[int, Sequence[int]],
+        stride: Union[int, Sequence[int]] = (1, 1, 1),
+        drop_rate: float = 0,
+        batch_norm: bool = False,
+        activation: Type[nn.Module] = None,
+    ):
+        super().__init__()
+
+        layers = OrderedDict()
+        kH, kW, kD = _triple(kernel_size)
+        pH, pW, pD = (kH // 2, kW // 2, kD // 2)
+
+        # vertical zero padding for vertical direction
+        layers[f"pad_{index}"] = nn.ConstantPad3d((0, 0, 0, 0, pH, pH), 0)
+
+        # convolution with periodic horizontal padding
+        layers[f"conv3d_{index}"] = nn.Conv3d(
+            in_channels,
+            out_channels,
+            kernel_size=(kH, kW, kD),
+            stride=stride,
+            padding=(0, pW, pD),
+            padding_mode="circular",
+        )
+
+        # activation function
+        if activation is not None:
+            layers[f"activation_{index}"] = activation()
+
+        # drop layer
+        if drop_rate > 0:
+            layers[f"dropout_{index}"] = nn.Dropout3d(p=drop_rate)
+
+        # batch norm layer
+        if batch_norm:
+            layers[f"batch_norm_{index}"] = nn.BatchNorm3d(out_channels)
+
+        self.block = nn.Sequential(layers)
+
+    def forward(self, x: Tensor) -> Tensor:
+        return self.block(x)
+
+
 class Autoencoder3D(nn.Module):
     def __init__(
         self,
@@ -21,10 +70,9 @@ class Autoencoder3D(nn.Module):
     ):
         super().__init__()
         self.input_channel = input_size[0]
-        self.kernel_size = _triple(kernel_size)
-        self.latent_kernel_size = _triple(latent_kernel_size)
-        self.kernel_padding = tuple(k // 2 for k in self.kernel_size)
-        self.latent_padding = tuple(k // 2 for k in self.latent_kernel_size)
+        self.latent_channels = latent_channels
+        self.kernel_size = kernel_size
+        self.latent_kernel_size = latent_kernel_size
         self.drop_rate = drop_rate
         self.batch_norm = batch_norm
         self.activation = activation
@@ -34,23 +82,24 @@ class Autoencoder3D(nn.Module):
         self.decoder = self.build_decoder(channels, pooling)
 
         # Latent layers
-        self.encoder_latent = nn.Sequential(
-            nn.Conv3d(
-                channels[-1],
-                latent_channels,
-                kernel_size=self.latent_kernel_size,
-                padding=self.latent_padding,
-            ),
-            activation(),
+        self.encoder_latent = Conv3DBlock(
+            index="latent",
+            in_channels=channels[-1],
+            out_channels=latent_channels,
+            kernel_size=self.latent_kernel_size,
+            batch_norm=batch_norm,
+            drop_rate=drop_rate,
+            activation=activation,
         )
-        self.decoder_latent = nn.Sequential(
-            nn.Conv3d(
-                latent_channels,
-                channels[-1],
-                kernel_size=self.latent_kernel_size,
-                padding=self.latent_padding,
-            ),
-            activation(),
+        
+        self.decoder_out = Conv3DBlock(
+            index="out",
+            in_channels=channels[0],
+            out_channels=input_size[0],
+            kernel_size=self.latent_kernel_size,
+            batch_norm=batch_norm,
+            drop_rate=drop_rate,
+            activation=None,
         )
 
     def forward(self, x: Tensor) -> Tensor:
@@ -62,8 +111,8 @@ class Autoencoder3D(nn.Module):
         return self.encoder_latent(f)
 
     def decode(self, z: Tensor) -> Tensor:
-        f = self.decoder_latent(z)
-        return self.decoder(f)
+        f = self.decoder(z)
+        return self.decoder_out(f)
 
     def build_encoder(
         self,
@@ -75,23 +124,22 @@ class Autoencoder3D(nn.Module):
         for i, (ch, pool) in enumerate(zip(channels, pooling)):
             # Downsampling learned by strided conv
             if pool:
-                s = (2, 2, 2)
+                stride = (2, 2, 2)
             else:
-                s = (1, 1, 1)
+                stride = (1, 1, 1)
 
-            # Build layers
-            layer[f"conv3d_{i}"] = nn.Conv3d(
-                inp,
-                ch,
+            # build conv block
+            layer[f"block_{i}"] = Conv3DBlock(
+                index=i,
+                in_channels=inp,
+                out_channels=ch,
                 kernel_size=self.kernel_size,
-                padding=self.kernel_padding,
-                stride=s,
+                stride=stride,
+                drop_rate=self.drop_rate,
+                batch_norm=self.batch_norm,
+                activation=self.activation,
             )
-            layer[f"activation_{i}"] = self.activation()
-            if self.drop_rate > 0:
-                layer[f"dropout_{i}"] = nn.Dropout3d(p=self.drop_rate)
-            if self.batch_norm:
-                layer[f"batch_norm_{i}"] = nn.BatchNorm3d(ch)
+
             inp = ch
 
         return nn.Sequential(layer)
@@ -102,38 +150,26 @@ class Autoencoder3D(nn.Module):
         pooling: List[bool],
     ) -> nn.Module:
         layer: "OrderedDict[str, nn.Module]" = OrderedDict()
-        inp = channels[-1]
-        length = len(channels)
-        channels = reversed([self.input_channel] + channels[:-1])
-        pooling = reversed(pooling)
-        for i, (ch, pool) in enumerate(zip(channels, pooling)):
-            # Upsampling learned by strided conv transpose
-            if pool:
-                s = (2, 2, 2)
-                op = 1
-            else:
-                s = (1, 1, 1)
-                op = 0
+        inp = self.latent_channels
+        channels = reversed(channels)
+        upsampling = reversed(pooling)
+        for i, (ch, up) in enumerate(zip(channels, upsampling)):
+            # Upsampling
+            if up:
+                layer[f"upsample_{i}"] = nn.Upsample(scale_factor=(2, 2, 2), mode="trilinear", align_corners=False)
 
             # Build layers
-            layer[f"convtrans3d_{i}"] = nn.ConvTranspose3d(
-                inp,
-                ch,
+            layer[f"convtrans3d_{i}"] = Conv3DBlock(
+                index=i,
+                in_channels=inp,
+                out_channels=ch,
                 kernel_size=self.kernel_size,
-                padding=self.kernel_padding,
-                stride=s,
-                output_padding=op,
+                stride=(1, 1, 1),
+                drop_rate=self.drop_rate,
+                batch_norm=self.batch_norm,
+                activation=self.activation,
             )
 
-            # no addtional layers after last conv
-            if i == length - 1:
-                break
-
-            layer[f"activation_{i}"] = self.activation()
-            if self.drop_rate > 0:
-                layer[f"dropout_{i}"] = nn.Dropout3d(p=self.drop_rate)
-            if self.batch_norm:
-                layer[f"batch_norm_{i}"] = nn.BatchNorm3d(ch)
             inp = ch
 
         return nn.Sequential(layer)
