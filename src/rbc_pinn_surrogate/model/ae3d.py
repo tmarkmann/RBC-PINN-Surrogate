@@ -36,6 +36,7 @@ class Autoencoder3DModule(LightningModule):
                 channels=channels,
                 pooling=pooling,
                 kernel_size=kernel_size,
+                latent_kernel_size=latent_kernel_size,
                 drop_rate=drop_rate,
                 batch_norm=batch_norm,
                 activation=nn.GELU,

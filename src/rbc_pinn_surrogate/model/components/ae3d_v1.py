@@ -1,29 +1,33 @@
 from collections import OrderedDict
-from typing import Tuple, List
+from typing import List, Sequence, Type, Union
 
 import torch.nn as nn
 from torch import Tensor
+from torch.nn.modules.utils import _triple
 
 
 class Autoencoder3D(nn.Module):
     def __init__(
         self,
-        input_size: int,
+        input_size: Sequence[int],
         channels: List[int],
         pooling: List[bool],
         latent_channels: int,
-        kernel_size: int,
+        kernel_size: Union[int, Sequence[int]],
+        latent_kernel_size: Union[int, Sequence[int]],
         drop_rate: float,
         batch_norm: bool,
-        activation: nn.Module,
+        activation: Type[nn.Module],
     ):
         super().__init__()
         self.input_channel = input_size[0]
-        self.kernel_size = kernel_size
+        self.kernel_size = _triple(kernel_size)
+        self.latent_kernel_size = _triple(latent_kernel_size)
+        self.kernel_padding = tuple(k // 2 for k in self.kernel_size)
+        self.latent_padding = tuple(k // 2 for k in self.latent_kernel_size)
         self.drop_rate = drop_rate
         self.batch_norm = batch_norm
         self.activation = activation
-        self.padding = 2
 
         # Build models
         self.encoder = self.build_encoder(channels, pooling)
@@ -34,8 +38,8 @@ class Autoencoder3D(nn.Module):
             nn.Conv3d(
                 channels[-1],
                 latent_channels,
-                kernel_size=self.kernel_size,
-                padding=self.padding,
+                kernel_size=self.latent_kernel_size,
+                padding=self.latent_padding,
             ),
             activation(),
         )
@@ -43,13 +47,13 @@ class Autoencoder3D(nn.Module):
             nn.Conv3d(
                 latent_channels,
                 channels[-1],
-                kernel_size=self.kernel_size,
-                padding=self.padding,
+                kernel_size=self.latent_kernel_size,
+                padding=self.latent_padding,
             ),
             activation(),
         )
 
-    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
+    def forward(self, x: Tensor) -> Tensor:
         return self.decode(self.encode(x))
 
     def encode(self, x: Tensor) -> Tensor:
@@ -64,9 +68,9 @@ class Autoencoder3D(nn.Module):
     def build_encoder(
         self,
         channels: List[int],
-        pooling: List[int],
+        pooling: List[bool],
     ) -> nn.Module:
-        layer = OrderedDict()
+        layer: "OrderedDict[str, nn.Module]" = OrderedDict()
         inp = self.input_channel
         for i, (ch, pool) in enumerate(zip(channels, pooling)):
             # Downsampling learned by strided conv
@@ -80,7 +84,7 @@ class Autoencoder3D(nn.Module):
                 inp,
                 ch,
                 kernel_size=self.kernel_size,
-                padding=self.padding,
+                padding=self.kernel_padding,
                 stride=s,
             )
             layer[f"activation_{i}"] = self.activation()
@@ -95,9 +99,9 @@ class Autoencoder3D(nn.Module):
     def build_decoder(
         self,
         channels: List[int],
-        pooling: List[int],
+        pooling: List[bool],
     ) -> nn.Module:
-        layer = OrderedDict()
+        layer: "OrderedDict[str, nn.Module]" = OrderedDict()
         inp = channels[-1]
         length = len(channels)
         channels = reversed([self.input_channel] + channels[:-1])
@@ -116,7 +120,7 @@ class Autoencoder3D(nn.Module):
                 inp,
                 ch,
                 kernel_size=self.kernel_size,
-                padding=self.padding,
+                padding=self.kernel_padding,
                 stride=s,
                 output_padding=op,
             )
@@ -148,6 +152,7 @@ class Autoencoder3D(nn.Module):
             pooling=params["pooling"],
             latent_channels=params["latent_channels"],
             kernel_size=params["kernel_size"],
+            latent_kernel_size=params["latent_kernel_size"],
             drop_rate=params["drop_rate"],
             batch_norm=params["batch_norm"],
             activation=nn.GELU,
