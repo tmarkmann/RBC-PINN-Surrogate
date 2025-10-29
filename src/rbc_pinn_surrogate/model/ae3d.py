@@ -13,6 +13,7 @@ class Autoencoder3DModule(LightningModule):
     def __init__(
         self,
         version: Literal["v1", "v2"],
+        input_size: Tuple[int, int, int, int],
         latent_channels: int,
         channels: List[int],
         pooling: List[bool],
@@ -25,13 +26,13 @@ class Autoencoder3DModule(LightningModule):
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["inv_transform"])
-        self.example_input_array = torch.zeros(1, 4, 32, 48, 48)
+        self.example_input_array = torch.zeros(1, *input_size)
 
         # model
         if version == "v1":
             self.autoencoder = Autoencoder3D(
                 latent_channels=latent_channels,
-                input_size=(4, 32, 48, 48),
+                input_size=input_size,
                 channels=channels,
                 pooling=pooling,
                 kernel_size=kernel_size,

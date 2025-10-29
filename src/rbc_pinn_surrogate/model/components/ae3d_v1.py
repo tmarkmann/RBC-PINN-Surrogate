@@ -136,26 +136,30 @@ class Autoencoder3D(nn.Module):
 
     @classmethod
     def from_checkpoint(cls, ckpt: dict):
-        # Check hyperparameters
+        # Initialize model from loaded params
         params = ckpt["hyper_parameters"]
         print("Loading Autoencoder3D with params:")
         for k, v in params.items():
             print(f"  {k}: {v}")
 
-        #TODO create object
+        model = cls(
+            input_size=params["input_size"],
+            channels=params["channels"],
+            pooling=params["pooling"],
+            latent_channels=params["latent_channels"],
+            kernel_size=params["kernel_size"],
+            drop_rate=params["drop_rate"],
+            batch_norm=params["batch_norm"],
+            activation=nn.GELU,
+        )
 
         # Load weights
-        #state = ckpt["state_dict"]
-        #encoder_weights = {
-        #    k.replace("autoencoder.encoder.", ""): v
-        #    for k, v in state.items()
-        #    if k.startswith("autoencoder.encoder.")
-        #}
-        #decoder_weights = {
-        #    k.replace("autoencoder.decoder.", ""): v
-        #    for k, v in state.items()
-        #    if k.startswith("autoencoder.decoder.")
-        #}
-        #self.encoder.load_state_dict(encoder_weights, strict=False)
-        #self.decoder.load_state_dict(decoder_weights, strict=False)
-        
+        state = ckpt["state_dict"]
+        weights = {
+            k.replace("autoencoder.", ""): v
+            for k, v in state.items()
+            if k.startswith("autoencoder.")
+        }
+        model.load_state_dict(weights)
+
+        return model

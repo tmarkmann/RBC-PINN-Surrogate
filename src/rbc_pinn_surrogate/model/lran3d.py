@@ -32,11 +32,23 @@ class LRAN3DModule(pl.LightningModule):
         super().__init__()
         self.save_hyperparameters(ignore=["denormalize"])
 
-        # Model
+        # Debugging
+        self.example_input_array = torch.zeros(1, *input_size)
+
+        # Autoencoder
         ckpt = torch.load(ae_ckpt, map_location=self.device)
         self.autoencoder = Autoencoder3D.from_checkpoint(ckpt)
-        
-        self.operator = KoopmanOperator(latent_dimension)
+
+        # Get latent spatial dimensions
+        with torch.no_grad():
+            dummy = self.autoencoder.encode(self.example_input_array)
+            latent_shape = dummy.shape[1:]
+
+        self.operator = nn.Sequential(
+            nn.Flatten(),
+            KoopmanOperator(latent_dimension),
+            nn.Unflatten(1, latent_shape),
+        )
 
         # Loss
         self.loss = mse_loss
@@ -44,11 +56,8 @@ class LRAN3DModule(pl.LightningModule):
         # Denormalize
         self.denormalize = denormalize
 
-        # Debugging
-        C, D, H, W = input_size
-        self.example_input_array = torch.zeros(1, C, D, H, W)
-
     def forward(self, x: Tensor) -> Tensor:
+        # Encode input
         g = self.autoencoder.encode(x)
         g_next = self.operator(g)
         x_hat = self.autoencoder.decode(g_next)

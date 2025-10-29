@@ -30,6 +30,7 @@ data:
 
 model:
   version: v1
+  input_size: [4, 32, 48, 48]
   latent_channels: 32
   channels: [21, 42, 42, 82, 82]
   pooling: [true, false, true, false, true]
