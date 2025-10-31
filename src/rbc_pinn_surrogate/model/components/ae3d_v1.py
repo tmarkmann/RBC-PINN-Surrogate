@@ -26,12 +26,9 @@ class Conv3DBlock(nn.Module):
         kD, kH, kW = _triple(kernel_size)
         pD, pH, pW = (kD // 2, kH // 2, kW // 2)
 
-        # drop layer
-        if drop_rate > 0:
-            layers[f"dropout_{index}"] = nn.Dropout3d(p=drop_rate)
-
         # vertical zero padding for vertical direction
         layers[f"pad_{index}"] = nn.ConstantPad3d((0, 0, pH, pH, 0, 0), 0)
+        print("padding \t\t vertical")
 
         # convolution with periodic horizontal padding
         layers[f"conv3d_{index}"] = nn.Conv3d(
@@ -43,14 +40,22 @@ class Conv3DBlock(nn.Module):
             padding_mode="circular",
             bias=not batch_norm,
         )
+        print(f"conv3d \t\t kernel_size=({kD}, {kH}, {kW}), stride={stride}, padding=({pD}, {pW}, {pW})")
 
         # batch norm layer
         if batch_norm:
             layers[f"batch_norm_{index}"] = nn.BatchNorm3d(out_channels)
+            print("batch_norm \t\t ")
 
         # activation function
         if activation is not None:
             layers[f"activation_{index}"] = activation()
+            print("activation \t\t ")
+        
+        # drop layer
+        if drop_rate > 0:
+            layers[f"dropout_{index}"] = nn.Dropout3d(p=drop_rate)
+            print(f"dropout \t\t rate={drop_rate}")
 
         self.block = nn.Sequential(layers)
 
@@ -108,7 +113,7 @@ class Autoencoder3D(nn.Module):
                 out_channels=ch,
                 kernel_size=self.kernel_size,
                 stride=(1, 1, 1),
-                drop_rate=0 if i == 0 else self.drop_rate,
+                drop_rate=self.drop_rate,
                 batch_norm=self.batch_norm,
                 activation=self.activation,
             )
@@ -117,14 +122,15 @@ class Autoencoder3D(nn.Module):
 
             if pool:
                 layer[f"pool_{i}"] = nn.MaxPool3d(kernel_size=(2, 2, 2))
+                print("pooling \t\t scale_factor=(2, 2, 2)")
 
         layer["block_latent"] = Conv3DBlock(
             index="latent",
             in_channels=inp,
             out_channels=self.latent_channels,
             kernel_size=self.latent_kernel_size,
-            batch_norm=self.batch_norm,
-            drop_rate=self.drop_rate,
+            batch_norm=False,
+            drop_rate=0,
             activation=self.activation,
         )
 
@@ -141,6 +147,13 @@ class Autoencoder3D(nn.Module):
         channels = reversed(channels)
         upsampling = reversed(pooling)
         for i, (ch, up) in enumerate(zip(channels, upsampling)):
+            # Upsampling
+            if up:
+                layer[f"upsample_{i}"] = nn.Upsample(
+                    scale_factor=(2, 2, 2), mode="trilinear", align_corners=False
+                )
+                print("upscaling \t\t scale_factor=(2, 2, 2)")
+
             # conv block
             layer[f"block_{i}"] = Conv3DBlock(
                 index=i,
@@ -153,12 +166,6 @@ class Autoencoder3D(nn.Module):
                 activation=self.activation,
             )
 
-            # Upsampling
-            if up:
-                layer[f"upsample_{i}"] = nn.Upsample(
-                    scale_factor=(2, 2, 2), mode="trilinear"
-                )
-
             inp = ch
 
         layer["block_out"] = Conv3DBlock(
@@ -167,7 +174,7 @@ class Autoencoder3D(nn.Module):
             out_channels=self.input_channel,
             kernel_size=self.kernel_size,
             batch_norm=False,
-            drop_rate=self.drop_rate,
+            drop_rate=0,
             activation=None,
         )
 

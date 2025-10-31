@@ -52,7 +52,7 @@ class Autoencoder3DModule(LightningModule):
                 latent_h_kernel_size=latent_kernel_size,
                 drop_rate=drop_rate,
                 pool_layers=pooling,
-                nonlinearity=nn.ELU,
+                nonlinearity=nn.GELU,
             )
 
         # Denormalize
@@ -61,7 +61,7 @@ class Autoencoder3DModule(LightningModule):
     def forward(self, x: Tensor) -> Tensor:
         return self.autoencoder(x)
 
-    def model_step(self, x: Tensor, stage: str) -> Tuple[Tensor, Tensor, Tensor]:
+    def model_step(self, x: Tensor, stage: str, examples: bool = False) -> Tuple[Tensor, Tensor, Tensor]:
         # check input dimensions
         assert x.shape[2] == 1, (
             f"Expect sequence length of 1 for autoencoder training, got {x.shape}"
@@ -76,6 +76,14 @@ class Autoencoder3DModule(LightningModule):
         self.log(f"{stage}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log(f"{stage}/RMSE", torch.sqrt(loss), on_step=False, on_epoch=True)
 
+        # return first batch sample
+        if examples:
+            return {
+                "loss": loss,
+                "ground_truth": self.denormalize(x)[0],
+                "prediction": self.denormalize(x_hat)[0],
+            }   
+        
         return {
             "loss": loss,
         }
@@ -86,11 +94,11 @@ class Autoencoder3DModule(LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, _ = batch
-        return self.model_step(x, stage="val")
+        return self.model_step(x, stage="val", examples=True)
 
     def test_step(self, batch, batch_idx):
         x, _ = batch
-        return self.model_step(x, stage="test")
+        return self.model_step(x, stage="test", examples=True)
 
     def configure_optimizers(self) -> Dict[str, Any]:
         optimizer = torch.optim.Adam(

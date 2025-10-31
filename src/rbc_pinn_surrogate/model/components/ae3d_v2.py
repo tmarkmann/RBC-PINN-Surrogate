@@ -55,11 +55,15 @@ class _Conv3DBlock(nn.Sequential):
         layers = []
         if input_drop_rate > 0:
             layers.append(nn.Dropout(p=input_drop_rate))
+            print(f"dropout \t\t rate={input_drop_rate}")
         layers.append(conv)
+        print(f"conv3d \t\t kernel_size=({h_kernel_size}, {v_kernel_size}, {h_kernel_size}), stride={1}")
         if batch_norm:
             layers.append(nn.BatchNorm3d(conv.out_channels))
+            print("batch_norm \t\t ")
         if nonlinearity:
             layers.append(nonlinearity())
+            print("activation \t\t ")
 
         super().__init__(*layers)
 
@@ -129,6 +133,7 @@ class Autoencoder3Dv2(nn.Sequential):
                 pool = RBPooling(
                     in_channels=channels, in_dims=dims, v_kernel_size=2, h_kernel_size=2
                 )
+                print("pooling \t\t scale_factor=(2, 2, 2)")
                 self.encoder_layers[f"Pooling{i}"] = pool
                 dims = pool.out_dims
 
@@ -175,6 +180,7 @@ class Autoencoder3Dv2(nn.Sequential):
                 upsample = RBUpsampling(
                     in_channels=channels, in_dims=dims, v_scale=2, h_scale=2
                 )
+                print("upscaling \t\t scale_factor=(2, 2, 2)")
                 self.decoder_layers[f"Upsampling{i}"] = upsample
                 dims = upsample.out_dims
 

@@ -11,6 +11,7 @@ from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig, OmegaConf
 from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import Autoencoder3DModule
+from rbc_pinn_surrogate.callbacks import Example3DCallback
 
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="3d_ae")
@@ -60,6 +61,7 @@ def main(config: DictConfig):
             monitor="val/loss",
             mode="min",
         ),
+        Example3DCallback(dir=f"{output_dir}/examples/"),
     ]
 
     # trainer

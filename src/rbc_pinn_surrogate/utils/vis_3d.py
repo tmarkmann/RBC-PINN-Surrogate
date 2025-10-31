@@ -377,7 +377,7 @@ def plot_cube_faces(
     **contour_kwargs,
 ) -> list:
     # transpose back to julia order to reuse code TODO
-    arr = np.transpose(arr, (2, 1, 0))
+    arr = np.transpose(arr, (2, 0, 1))
 
     z0 = np.linspace(0, dims[2], arr.shape[2])
     x0 = np.linspace(0, dims[0], arr.shape[0])
