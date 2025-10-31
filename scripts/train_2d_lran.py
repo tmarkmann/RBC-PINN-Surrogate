@@ -9,7 +9,7 @@ from lightning.pytorch.callbacks import (
 from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig
 from rbc_pinn_surrogate.data import RBCDatamodule2D
-from rbc_pinn_surrogate.model import LRANModule
+from rbc_pinn_surrogate.model import LRAN2DModule
 from rbc_pinn_surrogate.callbacks import (
     Examples2DCallback,
     Metrics2DCallback,
@@ -29,7 +29,7 @@ def main(config: DictConfig):
 
     # model
     denormalize = dm.datasets["train"].denormalize_batch
-    model = LRANModule(**config.model, inv_transform=denormalize)
+    model = LRAN2DModule(**config.model, inv_transform=denormalize)
 
     # logger
     logger = WandbLogger(

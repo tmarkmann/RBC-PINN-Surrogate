@@ -21,33 +21,35 @@ class Conv3DBlock(nn.Module):
         super().__init__()
 
         layers = OrderedDict()
-        kH, kW, kD = _triple(kernel_size)
-        pH, pW, pD = (kH // 2, kW // 2, kD // 2)
 
-        # vertical zero padding for vertical direction
-        layers[f"pad_{index}"] = nn.ConstantPad3d((0, 0, 0, 0, pH, pH), 0)
-
-        # convolution with periodic horizontal padding
-        layers[f"conv3d_{index}"] = nn.Conv3d(
-            in_channels,
-            out_channels,
-            kernel_size=(kH, kW, kD),
-            stride=stride,
-            padding=(0, pW, pD),
-            padding_mode="circular",
-        )
-
-        # activation function
-        if activation is not None:
-            layers[f"activation_{index}"] = activation()
+        # data with dimensions : (D, H, W)
+        kD, kH, kW = _triple(kernel_size)
+        pD, pH, pW = (kD // 2, kH // 2, kW // 2)
 
         # drop layer
         if drop_rate > 0:
             layers[f"dropout_{index}"] = nn.Dropout3d(p=drop_rate)
 
+        # vertical zero padding for vertical direction
+        layers[f"pad_{index}"] = nn.ConstantPad3d((0, 0, pH, pH, 0, 0), 0)
+
+        # convolution with periodic horizontal padding
+        layers[f"conv3d_{index}"] = nn.Conv3d(
+            in_channels,
+            out_channels,
+            kernel_size=(kD, kH, kW),
+            stride=stride,
+            padding=(pD, 0, pW),
+            padding_mode="circular",
+        )
+
         # batch norm layer
         if batch_norm:
             layers[f"batch_norm_{index}"] = nn.BatchNorm3d(out_channels)
+
+        # activation function
+        if activation is not None:
+            layers[f"activation_{index}"] = activation()
 
         self.block = nn.Sequential(layers)
 
@@ -81,38 +83,14 @@ class Autoencoder3D(nn.Module):
         self.encoder = self.build_encoder(channels, pooling)
         self.decoder = self.build_decoder(channels, pooling)
 
-        # Latent layers
-        self.encoder_latent = Conv3DBlock(
-            index="latent",
-            in_channels=channels[-1],
-            out_channels=latent_channels,
-            kernel_size=self.latent_kernel_size,
-            batch_norm=batch_norm,
-            drop_rate=drop_rate,
-            activation=activation,
-        )
-
-        self.decoder_out = Conv3DBlock(
-            index="out",
-            in_channels=channels[0],
-            out_channels=input_size[0],
-            kernel_size=self.latent_kernel_size,
-            batch_norm=batch_norm,
-            drop_rate=drop_rate,
-            activation=None,
-        )
-
     def forward(self, x: Tensor) -> Tensor:
         return self.decode(self.encode(x))
 
     def encode(self, x: Tensor) -> Tensor:
-        # Pass through encoder convs and flatten
-        f = self.encoder(x)
-        return self.encoder_latent(f)
+        return self.encoder(x)
 
     def decode(self, z: Tensor) -> Tensor:
-        f = self.decoder(z)
-        return self.decoder_out(f)
+        return self.decoder(z)
 
     def build_encoder(
         self,
@@ -135,12 +113,22 @@ class Autoencoder3D(nn.Module):
                 out_channels=ch,
                 kernel_size=self.kernel_size,
                 stride=stride,
-                drop_rate=self.drop_rate,
+                drop_rate=0 if i == 0 else self.drop_rate,
                 batch_norm=self.batch_norm,
                 activation=self.activation,
             )
 
             inp = ch
+
+        layer["block_latent"] = Conv3DBlock(
+            index="latent",
+            in_channels=inp,
+            out_channels=self.latent_channels,
+            kernel_size=self.latent_kernel_size,
+            batch_norm=self.batch_norm,
+            drop_rate=self.drop_rate,
+            activation=self.activation,
+        )
 
         return nn.Sequential(layer)
 
@@ -151,6 +139,7 @@ class Autoencoder3D(nn.Module):
     ) -> nn.Module:
         layer: "OrderedDict[str, nn.Module]" = OrderedDict()
         inp = self.latent_channels
+        out = channels[0]
         channels = reversed(channels)
         upsampling = reversed(pooling)
         for i, (ch, up) in enumerate(zip(channels, upsampling)):
@@ -169,10 +158,20 @@ class Autoencoder3D(nn.Module):
             # Upsampling
             if up:
                 layer[f"upsample_{i}"] = nn.Upsample(
-                    scale_factor=(2, 2, 2), mode="trilinear", align_corners=False
+                    scale_factor=(2, 2, 2), mode="trilinear"
                 )
 
             inp = ch
+
+        layer["block_out"] = Conv3DBlock(
+            index="out",
+            in_channels=out,
+            out_channels=self.input_channel,
+            kernel_size=self.kernel_size,
+            batch_norm=False,
+            drop_rate=self.drop_rate,
+            activation=None,
+        )
 
         return nn.Sequential(layer)
 

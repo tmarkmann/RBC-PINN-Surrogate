@@ -132,8 +132,8 @@ class RBCDataset(Dataset[Tensor]):
 
         # change channel and time dimension for neuraloperator package
         #  [T, C, A] -> [C, T, A] (A spatial dimensions)
-        x = torch.from_numpy(x).permute(1, 0, *range(2, x.ndim))
-        y = torch.from_numpy(y).permute(1, 0, *range(2, y.ndim))
+        x = torch.from_numpy(x).permute(self.permute)
+        y = torch.from_numpy(y).permute(self.permute)
 
         # normalize per channel
         x = self.normalize_batch(x)
@@ -145,7 +145,9 @@ class RBCDataset(Dataset[Tensor]):
 class RBCDataset2D(RBCDataset):
     def _set_data_properties(self, file):
         super()._set_data_properties(file)
-        self.height, self.width = file["states0"].shape[2:4]
+
+        # permutation: [T, C, H, W] -> [C, T, H, W]
+        self.permute = (1, 0, 2, 3)
 
         # normalization
         self.means = self.means[: self.nr_channels]
@@ -157,7 +159,9 @@ class RBCDataset2D(RBCDataset):
 class RBCDataset3D(RBCDataset):
     def _set_data_properties(self, file):
         super()._set_data_properties(file)
-        self.depth, self.height, self.width = file["states0"].shape[2:5]
+
+        # permutation: [T, C, H, D, W] -> [C, T, D, H, W]
+        self.permute = (1, 0, 3, 2, 4)
 
         # normalization
         self.means = self.means[: self.nr_channels]

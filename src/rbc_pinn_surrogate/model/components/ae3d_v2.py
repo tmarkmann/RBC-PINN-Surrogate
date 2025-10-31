@@ -256,12 +256,12 @@ class Autoencoder3Dv2(nn.Sequential):
         shape required for this model.
 
         Args:
-            tensor (Tensor): Tensor of shape [batch, channel, height, width, depth].
+            tensor (Tensor): Tensor of shape [batch, channel, depth, height, width].
 
         Returns:
             Tensor: Transformed tensor of shape [batch, channel, width, depth, height]
         """
-        return tensor.permute(0, 1, 3, 4, 2)
+        return tensor.permute(0, 1, 4, 2, 3)
 
     def _to_output_shape(self, tensor: Tensor) -> Tensor:
         """Transforms the output of the model into the desired shape of the output:
@@ -271,9 +271,9 @@ class Autoencoder3Dv2(nn.Sequential):
             tensor (Tensor): Tensor of shape [batch, channel, width, depth, height].
 
         Returns:
-            Tensor: Transformed tensor of shape [batch, channel, height, width, depth]
+            Tensor: Transformed tensor of shape [batch, channel, depth, height, width]
         """
-        return tensor.permute(0, 1, 4, 2, 3)
+        return tensor.permute(0, 1, 3, 4, 2)
 
     def _to_latent_shape(self, tensor: Tensor) -> Tensor:
         """Transforms the output of the encoder model into the desired
@@ -283,18 +283,18 @@ class Autoencoder3Dv2(nn.Sequential):
             tensor (Tensor): Tensor of shape [batch, channel, width, depth, height].
 
         Returns:
-            Tensor: Transformed tensor of shape [batch, channel, height, width, depth]
+            Tensor: Transformed tensor of shape [batch, channel, depth, height, width]
         """
-        return tensor.permute(0, 1, 4, 2, 3)
+        return tensor.permute(0, 1, 3, 4, 2)
 
     def _from_latent_shape(self, tensor: Tensor) -> Tensor:
         """Transforms a latent representation of shape [batch, channel, height, width, depth]
         into the shape required for the decoder model
 
         Args:
-            tensor (Tensor): Tensor of shape [batch, channel, height, width, depth].
+            tensor (Tensor): Tensor of shape [batch, channel, depth, height, width].
 
         Returns:
             Tensor: Transformed tensor of shape [batch, channel, width, depth, height]
         """
-        return tensor.permute(0, 1, 3, 4, 2)
+        return tensor.permute(0, 1, 4, 2, 3)

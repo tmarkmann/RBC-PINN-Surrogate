@@ -7,3 +7,5 @@ model:
   pooling: [true, false, true, false, true]
   drop_rate: 0.1
   batch_norm: False
+  kernel_size: 5
+  latent_kernel_size: 3
