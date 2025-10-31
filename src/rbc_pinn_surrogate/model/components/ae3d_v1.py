@@ -41,6 +41,7 @@ class Conv3DBlock(nn.Module):
             stride=stride,
             padding=(pD, 0, pW),
             padding_mode="circular",
+            bias=not batch_norm,
         )
 
         # batch norm layer
@@ -100,25 +101,22 @@ class Autoencoder3D(nn.Module):
         layer: "OrderedDict[str, nn.Module]" = OrderedDict()
         inp = self.input_channel
         for i, (ch, pool) in enumerate(zip(channels, pooling)):
-            # Downsampling learned by strided conv
-            if pool:
-                stride = (2, 2, 2)
-            else:
-                stride = (1, 1, 1)
-
             # build conv block
             layer[f"block_{i}"] = Conv3DBlock(
                 index=i,
                 in_channels=inp,
                 out_channels=ch,
                 kernel_size=self.kernel_size,
-                stride=stride,
+                stride=(1, 1, 1),
                 drop_rate=0 if i == 0 else self.drop_rate,
                 batch_norm=self.batch_norm,
                 activation=self.activation,
             )
 
             inp = ch
+
+            if pool:
+                layer[f"pool_{i}"] = nn.MaxPool3d(kernel_size=(2, 2, 2))
 
         layer["block_latent"] = Conv3DBlock(
             index="latent",
