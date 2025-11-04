@@ -31,7 +31,6 @@ def main(config: DictConfig):
     # model
     denormalize = dm.datasets["train"].denormalize_batch
     model = LRAN3DModule(
-        input_size=(4, 32, 48, 48),
         denormalize=denormalize,
         **config["model"],
     )
@@ -53,11 +52,13 @@ def main(config: DictConfig):
             monitor="val/loss",
             mode="min",
             patience=15,
+            min_delta=1e-5,
         ),
         Metrics3DCallback(),
         ModelCheckpoint(
             dirpath=f"{output_dir}/checkpoints/",
             save_top_k=1,
+            save_weights_only=True,
             monitor="val/loss",
             mode="min",
         ),

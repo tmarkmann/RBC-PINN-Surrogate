@@ -30,7 +30,8 @@ data:
 
 model:
   ae_ckpt: ${paths.model_dir}/3d_ae/ra${data.ra}.ckpt
-  latent_dimension: 4608
+  input_size: [4, 48, 32, 48]
+  latent_dimension: 256
   lambda_id: 1
   lambda_fwd: 1
   lambda_hid: 5

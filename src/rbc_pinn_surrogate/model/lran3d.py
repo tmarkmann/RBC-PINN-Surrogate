@@ -1,3 +1,4 @@
+from itertools import chain
 from typing import Any, Dict, Callable
 
 import lightning.pytorch as pl
@@ -43,12 +44,22 @@ class LRAN3DModule(pl.LightningModule):
         with torch.no_grad():
             dummy = self.autoencoder.encode(self.example_input_array)
             latent_shape = dummy.shape[1:]
+            latent_flat = dummy[0].numel()
 
-        self.operator = nn.Sequential(
+        # latent layers
+        self.encoder_linear = nn.Sequential(
             nn.Flatten(),
-            KoopmanOperator(latent_dimension),
+            nn.Linear(latent_flat, latent_dimension),
+            nn.GELU(),
+        )
+        self.decoder_linear = nn.Sequential(
+            nn.Linear(latent_dimension, latent_flat),
+            nn.GELU(),
             nn.Unflatten(1, latent_shape),
         )
+
+        # Time dynamics model
+        self.operator = KoopmanOperator(latent_dimension)
 
         # Loss
         self.loss = mse_loss
@@ -58,9 +69,19 @@ class LRAN3DModule(pl.LightningModule):
 
     def forward(self, x: Tensor) -> Tensor:
         # Encode input
-        g = self.autoencoder.encode(x)
+        g = self.encode(x)
         g_next = self.operator(g)
-        x_hat = self.autoencoder.decode(g_next)
+        x_hat = self.decode(g_next)
+        return x_hat
+
+    def encode(self, x: Tensor) -> Tensor:
+        z = self.autoencoder.encode(x)
+        g = self.encoder_linear(z)
+        return g
+
+    def decode(self, g: Tensor) -> Tensor:
+        z = self.decoder_linear(g)
+        x_hat = self.autoencoder.decode(z)
         return x_hat
 
     def predict(self, input: Tensor, length) -> Tensor:
@@ -86,20 +107,18 @@ class LRAN3DModule(pl.LightningModule):
 
         # Get ground truth for observables
         with torch.no_grad():
-            g0 = self.autoencoder.encode(x).detach()
-            g = [
-                self.autoencoder.encode(y[:, :, t]).detach() for t in range(seq_length)
-            ]
+            g0 = self.encode(x).detach()
+            g = [self.encode(y[:, :, t]).detach() for t in range(seq_length)]
 
         # Reconstruction
-        x_hat = self.autoencoder.decode(g0)
+        x_hat = self.decode(g0)
 
         # Predict sequence in latent space
         g_hat, y_hat = [], []
         g_prev = g0
         for _ in range(seq_length):
             g_next = self.operator(g_prev)
-            y_hat.append(self.autoencoder.decode(g_next))
+            y_hat.append(self.decode(g_next))
             g_hat.append(g_next)
             g_prev = g_next
 
@@ -169,10 +188,16 @@ class LRAN3DModule(pl.LightningModule):
     def configure_optimizers(self) -> Dict[str, Any]:
         optimizer = torch.optim.Adam(
             params=[
+                # autoencoder weights
                 {
-                    "params": self.autoencoder.parameters(),
+                    "params": chain(
+                        self.autoencoder.parameters(),
+                        self.encoder_linear.parameters(),
+                        self.decoder_linear.parameters(),
+                    ),
                     "lr": self.hparams.lr_autoencoder,
                 },
+                # operator weights
                 {
                     "params": self.operator.parameters(),
                     "lr": self.hparams.lr_operator,
