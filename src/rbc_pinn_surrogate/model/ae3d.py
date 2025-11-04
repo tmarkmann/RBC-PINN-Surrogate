@@ -61,7 +61,9 @@ class Autoencoder3DModule(LightningModule):
     def forward(self, x: Tensor) -> Tensor:
         return self.autoencoder(x)
 
-    def model_step(self, x: Tensor, stage: str, examples: bool = False) -> Tuple[Tensor, Tensor, Tensor]:
+    def model_step(
+        self, x: Tensor, stage: str, examples: bool = False
+    ) -> Tuple[Tensor, Tensor, Tensor]:
         # check input dimensions
         assert x.shape[2] == 1, (
             f"Expect sequence length of 1 for autoencoder training, got {x.shape}"
@@ -82,8 +84,8 @@ class Autoencoder3DModule(LightningModule):
                 "loss": loss,
                 "ground_truth": self.denormalize(x)[0],
                 "prediction": self.denormalize(x_hat)[0],
-            }   
-        
+            }
+
         return {
             "loss": loss,
         }

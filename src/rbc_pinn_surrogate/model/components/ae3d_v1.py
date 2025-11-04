@@ -28,7 +28,6 @@ class Conv3DBlock(nn.Module):
 
         # vertical zero padding for vertical direction
         layers[f"pad_{index}"] = nn.ConstantPad3d((0, 0, pH, pH, 0, 0), 0)
-        print("padding \t\t vertical")
 
         # convolution with periodic horizontal padding
         layers[f"conv3d_{index}"] = nn.Conv3d(
@@ -40,22 +39,18 @@ class Conv3DBlock(nn.Module):
             padding_mode="circular",
             bias=not batch_norm,
         )
-        print(f"conv3d \t\t kernel_size=({kD}, {kH}, {kW}), stride={stride}, padding=({pD}, {pW}, {pW})")
 
         # batch norm layer
         if batch_norm:
             layers[f"batch_norm_{index}"] = nn.BatchNorm3d(out_channels)
-            print("batch_norm \t\t ")
 
         # activation function
         if activation is not None:
             layers[f"activation_{index}"] = activation()
-            print("activation \t\t ")
-        
+
         # drop layer
         if drop_rate > 0:
             layers[f"dropout_{index}"] = nn.Dropout3d(p=drop_rate)
-            print(f"dropout \t\t rate={drop_rate}")
 
         self.block = nn.Sequential(layers)
 
@@ -122,7 +117,6 @@ class Autoencoder3D(nn.Module):
 
             if pool:
                 layer[f"pool_{i}"] = nn.MaxPool3d(kernel_size=(2, 2, 2))
-                print("pooling \t\t scale_factor=(2, 2, 2)")
 
         layer["block_latent"] = Conv3DBlock(
             index="latent",
@@ -152,7 +146,6 @@ class Autoencoder3D(nn.Module):
                 layer[f"upsample_{i}"] = nn.Upsample(
                     scale_factor=(2, 2, 2), mode="trilinear", align_corners=False
                 )
-                print("upscaling \t\t scale_factor=(2, 2, 2)")
 
             # conv block
             layer[f"block_{i}"] = Conv3DBlock(
