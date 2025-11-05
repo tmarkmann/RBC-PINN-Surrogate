@@ -1,4 +1,4 @@
-from typing import Dict
+from typing import Callable, Dict, Optional
 import torch
 from torch import Tensor
 from torch.nn.functional import mse_loss
@@ -19,9 +19,11 @@ class cFNO2DModule(L.LightningModule):
         lifting_channels: int = 16,
         projection_channels: int = 16,
         n_layers: int = 4,
+        denormalize: Optional[Callable[[Tensor], Tensor]] = None,
     ):
         super().__init__()
-        self.save_hyperparameters()
+        self.save_hyperparameters(ignore=["denormalize"])
+        self.denormalize = denormalize
 
         # Model parameters
         self.model = no.models.TFNO2d(
@@ -38,11 +40,6 @@ class cFNO2DModule(L.LightningModule):
         # Loss Function
         self.loss = mse_loss  # no.H1Loss(d=2)
 
-        # inverse normalization for visualization
-        self.denorm_mean = torch.tensor([1.5, 0.0, 0.0]).view(1, out_channels, 1, 1, 1)
-        self.denorm_std = torch.tensor([0.25, 0.35, 0.35]).view(
-            1, out_channels, 1, 1, 1
-        )
 
     def control_mask(self, x, a):
         # control mask
@@ -65,74 +62,41 @@ class cFNO2DModule(L.LightningModule):
             x = self.control_mask(x, a)
         return self.model(x)
 
-    def predict(
-        self, input: Tensor, length: int | None = None, actions: Tensor | None = None
-    ) -> Tensor:
-        if actions is not None:
-            T = actions.shape[1]
-        else:
-            assert length is not None and length > 0, (
-                "Provide `length` when `actions` is None"
-            )
-            T = length
+    def multi_step_2d(self, x: Tensor, length: int) -> Tensor:
+        # x has shape [B, C, H, W]
+        xt = x
+        # preds has shape [length, B, C, H, W]
+        preds = x.new_empty(length, *x.shape)
 
-        preds = []
-        out = input
-        for t in range(T):
-            a_t = None if actions is None else actions[:, t]
-            out = self.forward(out, a_t)
-            preds.append(out)
-        return torch.stack(preds, dim=2)
+        # autoregressive prediction
+        for t in range(length):
+            y_next = self.forward(xt)
+            preds[t] = y_next
+            xt = y_next
+
+        # return [B, C, T, H, W]
+        return preds.permute(1, 2, 0, 3, 4)
 
     def model_step(
         self, sequence: Tensor, actions: Tensor, stage: str
     ) -> Dict[str, Tensor]:
-        x0 = sequence[:, 0]  # [B, C, H, W]
-        target = sequence[:, 1:]  # [B, T-1, C, H, W]
+        x0 = sequence[:, :, 0]  # [B, C, H, W]
+        target = sequence[:, :, 1:]  # [B, C, T-1, H, W]
 
-        loss_list: list[Tensor] = []
-        rmse_list: list[Tensor] = []
-        pred_list: list[Tensor] = []
+        preds = self.multi_step_2d(x0, length=target.shape[2])
 
-        out = x0
-        for t in range(target.shape[1]):
-            a_t = actions[:, t]  # [B, A]
-            out = self.forward(out, a_t)  # [B, C, H, W]
-            y_t = target[:, t]  # [B, C, H, W]
-
-            # primary training loss (LpLoss or H1Loss)
-            loss_list.append(self.loss(out, y_t))
-
-            # RMSE metric (no grad to avoid graph bloat)
-            with torch.no_grad():
-                rmse_list.append(torch.sqrt(mse_loss(out, y_t)))
-
-            # store prediction for logging
-            pred_list.append(out)
-
-            # If you want truncated BPTT, uncomment:
-            # out = out.detach()
-
-        loss = torch.stack(loss_list, dim=0).mean()
-        rmse = torch.stack(rmse_list, dim=0).mean()
-
-        y = target.detach().transpose(1, 2)  # [B, T-1, C, H, W] -> [B, C, T-1, H, W]
-        y_hat = torch.stack(pred_list, dim=2)  # [B, C, T-1, H, W]
-
-        # unnormalize for vis
-        y = y * self.denorm_std.to(y.device) + self.denorm_mean.to(y.device)
-        y_hat = y_hat * self.denorm_std.to(y_hat.device) + self.denorm_mean.to(
-            y_hat.device
-        )
-
-        # log metrics
+        #loss
+        loss = self.loss(preds, target)
         self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
-        self.log(f"{stage}/RMSE", rmse, prog_bar=True, logger=True)
+
+        # unnormalize for vis and metrics
+        preds = self.denormalize(preds)
+        target = self.denormalize(target)
+
         return {
             "loss": loss,
-            "rmse": torch.stack(rmse_list),
-            "y": y,
-            "y_hat": y_hat,
+            "ground_truth": target,
+            "prediction": preds,
         }
 
     def training_step(self, batch, batch_idx):
@@ -153,7 +117,21 @@ class cFNO2DModule(L.LightningModule):
             self.model.parameters(),
             lr=self.hparams.lr,
         )
-        return {"optimizer": optimizer}
+        scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            optimizer,
+            mode="min",
+            factor=0.5,
+            patience=5,
+            min_lr=1e-6,
+        )
+
+        return {
+            "optimizer": optimizer,
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "monitor": "val/loss",
+            },
+        }
 
     def load_state_dict(self, state_dict, strict: bool = True):
         # Remove metadata from neuralop library TODO check if useful

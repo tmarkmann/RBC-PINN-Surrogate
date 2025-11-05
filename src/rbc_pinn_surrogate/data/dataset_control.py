@@ -12,6 +12,9 @@ class RBCDataset2DControl(Dataset[Tensor]):
         nr_episodes: int = None,
         horizon: int = 6,
         shift: int = 1,
+        normalize: bool = True,
+        means: list[float] = [1.5, 0.0, 0.0, 0.0],
+        stds: list[float] = [0.25, 0.35, 0.35, 0.35],
     ):
         # parameters
         self.path = path
@@ -31,12 +34,17 @@ class RBCDataset2DControl(Dataset[Tensor]):
                 self._check_validity(nr_episodes)
                 self.used_episodes = nr_episodes
 
-        # data normalization (hardcoded channel-wise mean/std)
-        # shaped for broadcasting over sequences [T, C, H, W]
-        self.mean = torch.tensor([1.5, 0.0, 0.0], dtype=torch.float32).view(1, 3, 1, 1)
-        self.std = torch.tensor([0.25, 0.35, 0.35], dtype=torch.float32).view(
-            1, 3, 1, 1
+        # normalization parameters (z-score standardization)
+        self.normalize = normalize
+        self.means = torch.as_tensor(means[: self.nr_channels]).view(
+            self.nr_channels, 1, 1, 1
         )
+        self.stds = torch.as_tensor(stds[: self.nr_channels]).view(
+            self.nr_channels, 1, 1, 1
+        )
+
+        # permutation: [T, C, H, W] -> [C, T, H, W]
+        self.permute = (1, 0, 2, 3)
 
         # basic parameter sanity checks
         assert self.shift >= 1, "shift must be >= 1"
@@ -50,8 +58,8 @@ class RBCDataset2DControl(Dataset[Tensor]):
 
     def _set_data_properties(self, file):
         # sets general data dimensions properties that are true for all episodes
-        self.nr_channels = file["s-0"].shape[1]
-        self.height, self.width = file["s-0"].shape[2:4]
+        self.nr_channels = file["states0"].shape[1]
+        self.height, self.width = file["states0"].shape[2:4]
 
         # set other properties
         parameters = dict(file.attrs.items())
@@ -60,7 +68,7 @@ class RBCDataset2DControl(Dataset[Tensor]):
         self.shape = tuple(parameters["shape"])
         self.dt = float(parameters["dt"])
         self.episode_length = float(parameters["timesteps"])
-        self.segments = int(parameters["segments"])
+        self.modes = int(parameters["modes"])
         self.limit = float(parameters["limit"])
         self.base_seed = int(parameters["base_seed"])
 
@@ -87,6 +95,18 @@ class RBCDataset2DControl(Dataset[Tensor]):
             self._file.close()
             self._file = None
 
+    def normalize_batch(self, x: Tensor) -> Tensor:
+        """Apply per-channel z-score normalization if enabled."""
+        if not self.normalize:
+            return x
+        return (x - self.means.to(x.device)) / self.stds.to(x.device)
+
+    def denormalize_batch(self, x: Tensor) -> Tensor:
+        """Invert per-channel z-score normalization if enabled."""
+        if not self.normalize:
+            return x
+        return x * self.stds.to(x.device) + self.means.to(x.device)
+
     def __getitem__(self, idx: int) -> tuple[Tensor, Tensor]:
         f = self._require_file()
         # calculate episode and pair index
@@ -98,8 +118,8 @@ class RBCDataset2DControl(Dataset[Tensor]):
                 f"Episode index {episode_idx} out of range (used {self.used_episodes})"
             )
 
-        ds = f[f"s-{episode_idx}"]
-        da = f[f"a-{episode_idx}"]
+        ds = f[f"states{episode_idx}"]
+        da = f[f"actions{episode_idx}"]
 
         start_idx = pair_idx * self.shift
         end_idx = start_idx + self.horizon
@@ -107,11 +127,10 @@ class RBCDataset2DControl(Dataset[Tensor]):
         x_np = ds[start_idx:end_idx]  # [H, C, H, W]
         a_np = da[start_idx : end_idx - 1]  # [H-1, A]
 
-        x = torch.from_numpy(x_np).to(dtype=torch.float32)
+        x = torch.from_numpy(x_np).permute(self.permute)
         a = torch.from_numpy(a_np).to(dtype=torch.float32)
 
-        # Vectorized channel-wise normalization over the sequence
-        # x: [T, C, H, W]; mean/std: [1, C, 1, 1]
-        x = (x - self.mean.to(x.device)) / self.std.to(x.device)
+        # normalize per channel
+        x = self.normalize_batch(x)
 
         return x, a

@@ -20,6 +20,7 @@ class RBCDatamodule2DControl(L.LightningDataModule):
         nr_episodes_train: int | None = None,
         nr_episodes_val: int | None = None,
         nr_episodes_test: int | None = None,
+        normalize: bool = True,
     ) -> None:
         super().__init__()
         # DataModule parameters
@@ -29,7 +30,9 @@ class RBCDatamodule2DControl(L.LightningDataModule):
         self.datasets: dict[str, Dataset] = {}
         self.path: dict[str, List[str]] = {}
         # Transform
-        # TODO
+        self.means = [1.5, 0.0, 0.0, -1.5, 0.0]
+        self.stds = [0.25, 0.35, 0.35, 0.0, 0.0]
+        self.denormalize = None
 
     def get_dataset(self, stage: str, type: str) -> str:
         path = f"{self.hparams.data_dir}/{stage}/ra{int(self.hparams.ra)}/{type}.h5"
@@ -43,12 +46,20 @@ class RBCDatamodule2DControl(L.LightningDataModule):
         else:
             raise ValueError(f"Stage not implemented: {stage}")
 
-        return RBCDataset2DControl(
+        dataset = RBCDataset2DControl(
             path,
             nr_episodes=nr,
             horizon=self.hparams.horizon,
             shift=self.hparams.shift,
+            normalize=self.hparams.normalize,
+            means=self.means,
+            stds=self.stds,
         )
+
+        if self.denormalize is None:
+            self.denormalize = dataset.denormalize_batch
+
+        return dataset
 
     def setup(self, stage: str) -> None:
         # Assign train/val datasets for use in dataloaders

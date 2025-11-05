@@ -3,47 +3,41 @@ defaults:
   - paths: default
   - hydra: default
   - options: null
+  - experiment/cfno: null
 
 seed: 42
 
 data:
-  data_dir: data/2D
-  ra: 1000000
+  data_dir: data/2D-control
+  ra: 10000
+  types: ["ppo", "random", "zero"]
   batch_size: 32
-  start: 200
-  end: 500
-  train_steps: 15
-  test_steps: 100
-  train_shift: 10
-  test_shift: 50
-  stride: 1
-  nr_episodes_train: null # this means all of them
-  nr_episodes_val: null
-  nr_episodes_test: null
+  horizon: 20
+  shift: 20
+  nr_episodes_train: 20
+  nr_episodes_val: 20
+  nr_episodes_test: 20
   # Data efficiency settings
   num_workers: 2
   pin_memory: False
   persistent_workers: True
-  pressure: False
   normalize: True
 
 model:
-  dim: 3d # options: 2d, 3d
-  loss: H1
   lr: 3e-3
-  weight_decay: 1e-3
-  n_modes_time: 16
-  n_modes_space: 16
+  control_mask: False
+  n_modes_width: 16
+  n_modes_height: 16
   hidden_channels: 16
   in_channels: 3
   out_channels: 3
   lifting_channels: 16
   projection_channels: 16
-  n_layers: 4
+  n_layers: 6
 
 trainer:
   max_epochs: 75
   accelerator: auto
   detect_anomaly: false
 
-task_name: 2d_fno
+task_name: 2d_cfno

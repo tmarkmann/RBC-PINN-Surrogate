@@ -7,7 +7,7 @@ from lightning.pytorch.callbacks import (
     ModelCheckpoint,
 )
 from lightning.pytorch.loggers import WandbLogger
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 from rbc_pinn_surrogate.data import RBCDatamodule2D
 from rbc_pinn_surrogate.model import FNO2DModule
 from rbc_pinn_surrogate.callbacks import (
@@ -20,6 +20,10 @@ from rbc_pinn_surrogate.callbacks import (
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="2d_fno")
 def main(config: DictConfig):
+    # config convert
+    config = OmegaConf.to_container(config, resolve=True)
+    output_dir = config["paths"]["output_dir"]
+
     # seed
     L.seed_everything(config.seed, workers=True)
 
@@ -35,8 +39,9 @@ def main(config: DictConfig):
     logger = WandbLogger(
         entity="sail-project",
         project="RBC-2D-FNO",
-        save_dir=config.paths.output_dir,
+        save_dir=output_dir,
         log_model=False,
+        config=config,
     )
 
     # callbacks
@@ -60,7 +65,7 @@ def main(config: DictConfig):
             key_prediction="prediction",
         ),
         ModelCheckpoint(
-            dirpath=f"{config.paths.output_dir}/checkpoints/",
+            dirpath=f"{output_dir}/checkpoints/",
             save_top_k=1,
             save_weights_only=True,
             monitor="val/loss",
@@ -73,7 +78,7 @@ def main(config: DictConfig):
     trainer = L.Trainer(
         logger=logger,
         accelerator="auto",
-        default_root_dir=config.paths.output_dir,
+        default_root_dir=output_dir,
         max_epochs=config.algo.epochs,
         callbacks=callbacks,
     )
@@ -83,6 +88,9 @@ def main(config: DictConfig):
 
     # rollout on test set
     trainer.test(model, datamodule=dm, ckpt_path="best")
+
+    # finish logging
+    logger.experiment.finish()
 
 
 if __name__ == "__main__":

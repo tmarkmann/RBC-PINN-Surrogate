@@ -1,0 +1,12 @@
+# @package _global_
+
+data:
+  data_dir: /vol/cfd/rbc/2D-control
+  types: ["ppo", "random", "zero"]
+  batch_size: 32
+  nr_episodes_train: 50
+  nr_episodes_val: 20
+  nr_episodes_test: 20
+
+model:
+  control_mask: False
