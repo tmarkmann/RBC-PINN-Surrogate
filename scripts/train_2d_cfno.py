@@ -14,6 +14,7 @@ from rbc_pinn_surrogate.data import RBCDatamodule2DControl
 from rbc_pinn_surrogate.model import cFNO2DModule
 from rbc_pinn_surrogate.callbacks import (
     Examples2DCallback,
+    Metrics2DCallback,
 )
 
 
@@ -55,6 +56,7 @@ def main(config: DictConfig):
             min_delta=1e-5,
         ),
         Examples2DCallback(train_freq=10),
+        Metrics2DCallback(key_groundtruth="ground_truth", key_prediction="prediction"),
     ]
 
     # trainer
