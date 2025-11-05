@@ -40,7 +40,6 @@ class cFNO2DModule(L.LightningModule):
         # Loss Function
         self.loss = mse_loss  # no.H1Loss(d=2)
 
-
     def control_mask(self, x, a):
         # control mask
         B, C, H, W = x.shape
@@ -85,7 +84,7 @@ class cFNO2DModule(L.LightningModule):
 
         preds = self.multi_step_2d(x0, length=target.shape[2])
 
-        #loss
+        # loss
         loss = self.loss(preds, target)
         self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
 
