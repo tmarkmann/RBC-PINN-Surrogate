@@ -1,0 +1,23 @@
+program: scripts/train_2d_cfno.py
+name: cFNO_Baseline
+
+method: grid
+metric:
+  goal: minimize
+  name: val/RMSE
+
+parameters:
+  seed:
+    values: [0, 1, 2]
+  data.ra:
+    value: 10_000
+  data.data_dir:
+    value: /vol/cfd/rbc/2D-control
+  data.types:
+    values: [["ppo"], ["random"], ["zero"], ["pd"], ["ppo", "random", "zero", "pd"]]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}

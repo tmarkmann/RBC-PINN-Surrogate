@@ -9,7 +9,7 @@ class RBCDatamodule2DControl(L.LightningDataModule):
     def __init__(
         self,
         data_dir: str,
-        types: List[str] = ["ppo", "random", "zero"],
+        types: List[str] = ["ppo", "random", "zero", "pd"],
         ra: int = 1e4,
         batch_size: int = 64,
         num_workers: int = 0,
