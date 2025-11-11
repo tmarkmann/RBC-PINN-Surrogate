@@ -25,7 +25,8 @@ data:
 
 model:
   lr: 3e-3
-  control_mask: False
+  control_mask: True
+  mask_version: 2
   n_modes_width: 16
   n_modes_height: 16
   hidden_channels: 16

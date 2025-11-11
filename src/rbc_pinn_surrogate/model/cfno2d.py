@@ -2,6 +2,7 @@ from typing import Callable, Dict, Optional
 import torch
 from torch import Tensor
 from torch.nn.functional import mse_loss
+import torch.nn as nn
 import lightning as L
 import neuralop as no
 
@@ -10,6 +11,7 @@ class cFNO2DModule(L.LightningModule):
     def __init__(
         self,
         control_mask: bool = False,
+        mask_version: int = 1,
         lr: float = 1e-3,
         n_modes_width: int = 16,
         n_modes_height: int = 16,
@@ -26,11 +28,12 @@ class cFNO2DModule(L.LightningModule):
         self.denormalize = denormalize
 
         # Model parameters
+        ch = 1 if control_mask else 0
         self.model = no.models.TFNO2d(
             n_modes_width=n_modes_width,
             n_modes_height=n_modes_height,
             hidden_channels=hidden_channels,
-            in_channels=in_channels,
+            in_channels=in_channels + ch,
             out_channels=out_channels,
             lifting_channels=lifting_channels,
             projection_channels=projection_channels,
@@ -40,28 +43,46 @@ class cFNO2DModule(L.LightningModule):
         # Loss Function
         self.loss = mse_loss  # no.H1Loss(d=2)
 
-    def control_mask(self, x, a):
+    def control_mask_v1(self, x: Tensor, a: Tensor):
         # control mask
         B, C, H, W = x.shape
-        mask = torch.zeros((B, 1, H, W), device=x.device)
+        a = a.unsqueeze(1).unsqueeze(2)
 
-        # upsample action to match input shape
-        nh = a.shape[1]
-        ax = a.view(B, 1, 1, nh)
-        ax = torch.nn.functional.interpolate(ax, size=(1, W), mode="nearest")
-        ax = ax.squeeze()
-
-        # write mask on the bottom boundary
-        mask[:, 0, H - 1, :] = ax
+        # Interpolate to W
+        a = nn.functional.interpolate(a, size=(1, W), mode="nearest")
+        mask = a.expand(B, 1, H, W)
 
         return torch.cat([x, mask], dim=1)
 
+    def control_mask_v2(self, x: Tensor, a: Tensor):
+        # control mask
+        B, C, H, W = x.shape
+        a = a.unsqueeze(1).unsqueeze(2)
+
+        # Interpolate to W
+        a = nn.functional.interpolate(a, size=(1, W), mode="nearest")
+
+        # Write to bottom boundary
+        mask = torch.zeros((B, 1, H, W), device=x.device)
+        mask[:, :, -1, :] = a.squeeze(2)
+
+        return torch.cat([x, mask], dim=1)
+
+    def control_mask(self, x: Tensor, a: Tensor):
+        v = self.hparams.mask_version
+        if v == 1:
+            return self.control_mask_v1(x, a)
+        elif v == 2:
+            return self.control_mask_v2(x, a)
+        else:
+            raise ValueError(f"Unknown control mask version: {v}")
+
     def forward(self, x: Tensor, a: Tensor | None = None):
-        if self.hparams.control_mask and a is not None:
+        if self.hparams.control_mask:
             x = self.control_mask(x, a)
         return self.model(x)
 
-    def multi_step_2d(self, x: Tensor, length: int) -> Tensor:
+    def multi_step_2d(self, x: Tensor, actions: Tensor, length: int) -> Tensor:
         # x has shape [B, C, H, W]
         xt = x
         # preds has shape [length, B, C, H, W]
@@ -69,7 +90,8 @@ class cFNO2DModule(L.LightningModule):
 
         # autoregressive prediction
         for t in range(length):
-            y_next = self.forward(xt)
+            at = actions[:, t]
+            y_next = self.forward(xt, at)
             preds[t] = y_next
             xt = y_next
 
@@ -82,7 +104,7 @@ class cFNO2DModule(L.LightningModule):
         x0 = sequence[:, :, 0]  # [B, C, H, W]
         target = sequence[:, :, 1:]  # [B, C, T-1, H, W]
 
-        preds = self.multi_step_2d(x0, length=target.shape[2])
+        preds = self.multi_step_2d(x0, actions, length=target.shape[2])
 
         # loss
         loss = self.loss(preds, target)
