@@ -68,7 +68,6 @@ class RBCDataset2DControl(Dataset[Tensor]):
         self.shape = tuple(parameters["shape"])
         self.dt = float(parameters["dt"])
         self.episode_length = float(parameters["timesteps"])
-        self.modes = int(parameters["modes"])
         self.limit = float(parameters["limit"])
         self.base_seed = int(parameters["base_seed"])
 
