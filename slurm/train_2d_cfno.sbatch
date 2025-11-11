@@ -16,4 +16,4 @@ source ~/miniforge3/etc/profile.d/conda.sh
 conda activate rbcpinn
 
 cd ~/RBC-PINN-Surrogate
-srun uv run python scripts/train_2d_cfno.py seed=$SLURM_ARRAY_TASK_ID experiment/cfno=zero
+srun uv run python scripts/train_2d_cfno.py seed=$SLURM_ARRAY_TASK_ID experiment/cfno=full
