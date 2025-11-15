@@ -10,7 +10,7 @@ parameters:
   seed:
     values: [0, 1, 2]
   model.control_mask:
-    value: False
+    value: True
   model.mask_version:
     value: 1
   data.ra:

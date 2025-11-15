@@ -23,16 +23,19 @@ class RBCDataset2DControl(Dataset[Tensor]):
 
         # retrieve dataset parameters
         self._file = None
-        with h5py.File(path, "r") as file:
-            self._set_data_properties(file)
-            # number of episodes available in the file
-            self.available_episodes = self.nr_episodes
-            # how many episodes this dataset will expose
-            if nr_episodes is None:
-                self.used_episodes = self.available_episodes
-            else:
-                self._check_validity(nr_episodes)
-                self.used_episodes = nr_episodes
+        try:
+            with h5py.File(path, "r") as file:
+                self._set_data_properties(file)
+                # number of episodes available in the file
+                self.available_episodes = self.nr_episodes
+                # how many episodes this dataset will expose
+                if nr_episodes is None:
+                    self.used_episodes = self.available_episodes
+                else:
+                    self._check_validity(nr_episodes)
+                    self.used_episodes = nr_episodes
+        except Exception as e:
+            raise RuntimeError(f"Failed to open HDF5 file '{path}': {e}")
 
         # normalization parameters (z-score standardization)
         self.normalize = normalize
@@ -53,7 +56,10 @@ class RBCDataset2DControl(Dataset[Tensor]):
 
     def _require_file(self):
         if self._file is None:
-            self._file = h5py.File(self.path, "r")
+            try:
+                self._file = h5py.File(self.path, "r")
+            except Exception as e:
+                raise RuntimeError(f"Could not open file {self.path} \n {e}") from e
         return self._file
 
     def _set_data_properties(self, file):
