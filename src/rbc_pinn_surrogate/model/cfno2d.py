@@ -82,9 +82,10 @@ class cFNO2DModule(L.LightningModule):
             x = self.control_mask(x, a)
         return self.model(x)
 
-    def multi_step_2d(self, x: Tensor, actions: Tensor, length: int) -> Tensor:
+    def multi_step_2d(self, x: Tensor, actions: Tensor) -> Tensor:
         # x has shape [B, C, H, W]
         xt = x
+        length=actions.shape[1]
         # preds has shape [length, B, C, H, W]
         preds = x.new_empty(length, *x.shape)
 
@@ -104,7 +105,7 @@ class cFNO2DModule(L.LightningModule):
         x0 = sequence[:, :, 0]  # [B, C, H, W]
         target = sequence[:, :, 1:]  # [B, C, T-1, H, W]
 
-        preds = self.multi_step_2d(x0, actions, length=target.shape[2])
+        preds = self.multi_step_2d(x0, actions)
 
         # loss
         loss = self.loss(preds, target)
@@ -119,6 +120,11 @@ class cFNO2DModule(L.LightningModule):
             "ground_truth": target,
             "prediction": preds,
         }
+
+    def predict(self, x: Tensor, actions: Tensor) -> Tensor:
+        self.eval()
+        with torch.no_grad():
+            return self.multi_step_2d(x.to(self.device), actions.to(self.device))
 
     def training_step(self, batch, batch_idx):
         x, a = batch

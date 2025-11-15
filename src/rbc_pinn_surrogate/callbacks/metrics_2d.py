@@ -7,7 +7,11 @@ from torch.nn.functional import mse_loss
 
 
 class Metrics2DCallback(Callback):
-    def __init__(self, key_groundtruth: str, key_prediction: str):
+    def __init__(
+        self,
+        key_groundtruth: str = "ground_truth",
+        key_prediction: str = "prediction",
+    ):
         self.key_gt = key_groundtruth
         self.key_pred = key_prediction
 
@@ -32,14 +36,32 @@ class Metrics2DCallback(Callback):
         gt = output[self.key_gt].detach().cpu()
         pred = output[self.key_pred].detach().cpu()
 
-        self.log(f"{stage}/RMSE", self.rmse(pred, gt))
-        self.log(f"{stage}/NRSSE", self.nrsse(pred, gt))
+        self.log(f"{stage}/RMSE", rmse(pred, gt))
+        self.log(f"{stage}/NRSSE", nrsse(pred, gt))
 
-    def rmse(self, preds: Tensor, target: Tensor):
-        return torch.sqrt(mse_loss(preds, target))
 
-    def nrsse(self, pred: Tensor, target: Tensor):
-        eps = torch.finfo(pred.dtype).eps
-        num = torch.linalg.vector_norm(pred - target, dim=[0, 2, 3, 4])
-        denom = torch.linalg.vector_norm(target, dim=[0, 2, 3, 4]) + eps
-        return (num / denom).mean()
+def rmse(preds: Tensor, target: Tensor) -> Tensor:
+    return torch.sqrt(mse_loss(preds, target))
+
+
+def nrsse(pred: Tensor, target: Tensor) -> Tensor:
+    eps = torch.finfo(pred.dtype).eps
+    num = torch.linalg.vector_norm(pred - target, dim=[0, 2, 3])
+    denom = torch.linalg.vector_norm(target, dim=[0, 2, 3]) + eps
+    return (num / denom).mean()
+
+
+def compute_q(state, T_mean_ref, profile=False):
+    pass
+
+
+def compute_profile_qprime_rms(state_seq, T_mean_ref):
+    pass
+
+
+def compute_qprime_z(state_seq, T_mean_ref, z):
+    pass
+
+
+def compute_histogram(qprime, xlim=(-1, 1)):
+    pass
