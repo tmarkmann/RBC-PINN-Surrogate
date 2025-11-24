@@ -1,0 +1,18 @@
+# @package _global_
+
+data:
+  data_dir: /vol/cfd/rbc/2D-control
+  types: ["ppo", "random", "zero", "pd"]
+  batch_size: 32
+  nr_episodes_train: 50
+  nr_episodes_val: 20
+  nr_episodes_test: 20
+
+model:
+  control_mask: False
+
+test:
+  horizon: 50
+  shift: 50
+  types: ["ppo", "random", "zero", "pd"]
+  checkpoint: ${paths.model_dir}/2d_cfno/ra10000/fno-full.ckpt
