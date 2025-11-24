@@ -15,7 +15,7 @@ import rbc_pinn_surrogate.callbacks.metrics_2d as metrics
 from rbc_pinn_surrogate.utils.vis_2d import sequence2video
 
 
-@hydra.main(version_base="1.3", config_path="../configs", config_name="2d_cFNO")
+@hydra.main(version_base="1.3", config_path="../configs", config_name="2d_cfno")
 def main(config: DictConfig):
     # config convert
     config = OmegaConf.to_container(config, resolve=True)

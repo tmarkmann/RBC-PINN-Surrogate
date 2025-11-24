@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=3d_cfno
+#SBATCH --job-name=2d_cfno
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
