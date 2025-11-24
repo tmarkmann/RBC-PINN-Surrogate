@@ -1,13 +1,9 @@
 import logging
-import pathlib
-import tempfile
 
-import numpy as np
 import torch
 from lightning.pytorch.callbacks import Callback
-from lightning.pytorch.loggers import Logger, WandbLogger
-from matplotlib import animation
-from matplotlib import pyplot as plt
+from lightning.pytorch.loggers import Logger
+from rbc_pinn_surrogate.utils.vis_2d import sequence2video
 
 
 class Examples2DCallback(Callback):
@@ -37,80 +33,20 @@ class Examples2DCallback(Callback):
 
     def log_output(self, outputs: dict, idx: int, stage: str, logger: Logger):
         # unpack sequence
-        y = outputs["ground_truth"][idx].detach().cpu()
-        y_hat = outputs["prediction"][idx].detach().cpu()
+        y = outputs["ground_truth"][idx].detach().cpu().numpy()
+        y_hat = outputs["prediction"][idx].detach().cpu().numpy()
 
-        # generate videos
+        # generate videos with GT / Prediction / Difference side-by-side
         videos = []
         captions = []
         for field in ["T", "U", "W"]:
-            videos.append(self.sequence2video(y, "Ground Truth", field))
-            captions.append(f"{field} - Ground Truth")
-            videos.append(self.sequence2video(y_hat, "Prediction", field))
-            captions.append(f"{field} - Prediction")
-            videos.append(
-                self.sequence2video(
-                    np.abs(y - y_hat), "Difference", field, colormap="binary"
-                )
-            )
-            captions.append(f"{field} - Difference")
+            videos.append(sequence2video(y, y_hat, field))
+            captions.append(field)
 
         # log to wandb
-        if isinstance(logger, WandbLogger):
-            logger.log_video(
-                f"{stage}/examples",
-                videos,
-                caption=captions,
-                format=["mp4" for i in range(len(videos))],
-            )
-
-    def sequence2video(
-        self,
-        sequence,
-        caption: str,
-        field="T",
-        colormap="rainbow",
-        fps=2,
-    ) -> str:
-        # set up path
-        path = pathlib.Path(f"{tempfile.gettempdir()}/rbcfno").resolve()
-        path.mkdir(parents=True, exist_ok=True)
-        # config fig
-        fig, ax = plt.subplots()
-        ax.set_axis_off()
-
-        if field == "T":
-            vmin, vmax = 1, 2
-            channel = 0
-        elif field == "U":
-            vmin, vmax = None, None
-            channel = 1
-        elif field == "W":
-            vmin, vmax = None, None
-            channel = 2
-        else:
-            raise ValueError(f"Unknown field: {field}")
-
-        # create video
-        artists = []
-        steps = sequence.shape[1]
-        for i in range(steps):
-            artists.append(
-                [
-                    ax.imshow(
-                        sequence[channel][i],
-                        cmap=colormap,
-                        origin="lower",
-                        vmin=vmin,
-                        vmax=vmax,
-                    )
-                ],
-            )
-        ani = animation.ArtistAnimation(fig, artists, blit=True)
-
-        # save as mp4
-        writer = animation.FFMpegWriter(fps=fps, bitrate=1800)
-        path = path / f"video_{field}_{caption}.mp4"
-        ani.save(path, writer=writer)
-        plt.close(fig)
-        return str(path)
+        logger.log_video(
+            f"{stage}/examples",
+            videos,
+            caption=captions,
+            format=["mp4" for i in range(len(videos))],
+        )

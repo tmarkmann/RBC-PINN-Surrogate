@@ -1,6 +1,4 @@
-import pathlib
 import logging
-import tempfile
 import hydra
 from omegaconf import DictConfig, OmegaConf
 from tqdm import tqdm
@@ -9,13 +7,12 @@ import torch
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-from matplotlib import animation
 import wandb
 
 from rbc_pinn_surrogate.data import RBCDatamodule2DControl
 from rbc_pinn_surrogate.model import cFNO2DModule
 import rbc_pinn_surrogate.callbacks.metrics_2d as metrics
-
+from rbc_pinn_surrogate.utils.vis_2d import sequence2video
 
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="2d_cFNO")
@@ -31,6 +28,7 @@ def main(config: DictConfig):
     # data config
     data_cfg = config["data"]
     data_cfg["horizon"] = test_cfg["horizon"]
+    data_cfg["shift"] = test_cfg["shift"]
     data_cfg["types"] = test_cfg["types"]
 
     dm = RBCDatamodule2DControl(**data_cfg)
@@ -81,7 +79,14 @@ def main(config: DictConfig):
             )
 
         # 2) Visualize samples from first batch element
-        log_videos(pred[0].numpy(), target[0].numpy())
+        videos = []
+        for field in ["T"]:  # ["T", "U", "W"]
+            path = sequence2video(target[0], pred[0], field)
+            videos.append(wandb.Video(path, caption=field, format="mp4"))
+        wandb.log({"test/examples": videos})
+
+        # TODO add title to videos with timestep
+        # fix video; rn is only showing first image
 
     # Process overall metrics
     df_metrics = pd.DataFrame(list_metrics)
@@ -118,72 +123,6 @@ def plot_metric(df: pd.DataFrame, metric: str):
     im = wandb.Image(fig, caption=metric)
     plt.close(fig)
     return im
-
-
-def log_videos(preds, targets):
-    # generate videos
-    videos = []
-    for field in ["T", "U", "W"]:
-        # ground truth video
-        vgt = sequence2video(targets, "Ground Truth", field)
-        cgt = f"{field} - Ground Truth"
-        videos.append(wandb.Video(vgt, caption=cgt, format="mp4"))
-        # prediction video
-        vp = sequence2video(preds, "Prediction", field)
-        cp = f"{field} - Prediction"
-        videos.append(wandb.Video(vp, caption=cp, format="mp4"))
-    wandb.log({"test/examples": videos})
-
-
-def sequence2video(
-    sequence,
-    caption: str,
-    field="T",
-    colormap="rainbow",
-    fps=2,
-) -> str:
-    # set up path
-    path = pathlib.Path(f"{tempfile.gettempdir()}/rbcfno").resolve()
-    path.mkdir(parents=True, exist_ok=True)
-    # config fig
-    fig, ax = plt.subplots()
-    ax.set_axis_off()
-
-    if field == "T":
-        vmin, vmax = 1, 2.75
-        channel = 0
-    elif field == "U":
-        vmin, vmax = None, None
-        channel = 1
-    elif field == "W":
-        vmin, vmax = None, None
-        channel = 2
-    else:
-        raise ValueError(f"Unknown field: {field}")
-
-    # create video
-    artists = []
-    steps = sequence.shape[1]
-    for i in range(steps):
-        artists.append(
-            [
-                ax.imshow(
-                    sequence[channel][i],
-                    cmap=colormap,
-                    origin="lower",
-                    vmin=vmin,
-                    vmax=vmax,
-                )
-            ],
-        )
-    ani = animation.ArtistAnimation(fig, artists, blit=True)
-
-    # save as mp4
-    writer = animation.FFMpegWriter(fps=fps, bitrate=1800)
-    path = path / f"video_{field}_{caption}.mp4"
-    ani.save(path, writer=writer)
-    plt.close(fig)
-    return str(path)
 
 
 def best_device() -> torch.device:

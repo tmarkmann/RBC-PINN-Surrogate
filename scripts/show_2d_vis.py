@@ -1,6 +1,7 @@
 import h5py
 from tqdm import tqdm
-from rbc_pinn_surrogate.utils.vis_2d import TemperatureVisualizer
+from rbc_pinn_surrogate.utils.vis_2d import PredictionVisualizer
+import numpy as np
 
 
 def vis(split: str = "train", dataset: str = "zero", ra: int = 10000, episode: int = 0):
@@ -14,13 +15,17 @@ def vis(split: str = "train", dataset: str = "zero", ra: int = 10000, episode: i
         H, W = states.shape[-2], states.shape[-1]
 
         # visualizer
-        vis = TemperatureVisualizer(size=[H, W], vmin=1.0, vmax=2.0, display=True)
+        vis = PredictionVisualizer(size=[H, W], field="T", display=True, fps=10)
+        # vis = TemperatureVisualizer(size=[H, W], vmin=1.0, vmax=2.0, display=True)
 
         for step in tqdm(range(steps - 1)):
             state = states[step]
 
             T = state[0]  # (H, W)
-            vis.update(T)
+            rng = np.random.default_rng()
+            sigma = 0.1 * float(T.max() - T.min() + 1e-8)  # ~2% of dynamic range
+            D = (T + rng.normal(0.0, sigma, size=T.shape)).astype(T.dtype, copy=False)
+            vis.update((T, D, step))
 
 
 if __name__ == "__main__":

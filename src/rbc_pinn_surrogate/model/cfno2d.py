@@ -85,7 +85,7 @@ class cFNO2DModule(L.LightningModule):
     def multi_step_2d(self, x: Tensor, actions: Tensor) -> Tensor:
         # x has shape [B, C, H, W]
         xt = x
-        length=actions.shape[1]
+        length = actions.shape[1]
         # preds has shape [length, B, C, H, W]
         preds = x.new_empty(length, *x.shape)
 
