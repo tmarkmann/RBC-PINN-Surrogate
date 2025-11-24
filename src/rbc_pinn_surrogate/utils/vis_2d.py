@@ -213,15 +213,18 @@ def sequence2video(
     vis = PredictionVisualizer(size=[H, W], field=field, display=False, fps=fps)
     fig = vis.fig
 
-    artists = []
-    for i in range(steps):
+    def animate(i: int):
         target_frame = target[channel, i]
         pred_frame = prediction[channel, i]
         vis.update((target_frame, pred_frame, i))
-        # three artists per frame: GT, Prediction, Difference
-        artists.append([vis.im_gt, vis.im_pred, vis.im_diff])
+        return [vis.im_gt, vis.im_pred, vis.im_diff]
 
-    ani = animation.ArtistAnimation(fig, artists, blit=True)
+    ani = animation.FuncAnimation(
+        fig,
+        animate,
+        frames=steps,
+        blit=True,
+    )
 
     # save as mp4
     writer = animation.FFMpegWriter(fps=fps, bitrate=1800)
