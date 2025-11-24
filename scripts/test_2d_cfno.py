@@ -85,9 +85,6 @@ def main(config: DictConfig):
             videos.append(wandb.Video(path, caption=field, format="mp4"))
         wandb.log({"test/examples": videos})
 
-        # TODO add title to videos with timestep
-        # fix video; rn is only showing first image
-
     # Process overall metrics
     df_metrics = pd.DataFrame(list_metrics)
 
