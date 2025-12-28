@@ -17,6 +17,7 @@ data:
   train_shift: 10
   test_shift: 50
   stride: 1
+  downsample_factor: 1
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null
   nr_episodes_test: null

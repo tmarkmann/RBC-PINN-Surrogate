@@ -1,0 +1,20 @@
+program: scripts/train_3d_fno.py
+name: FNO_Superresolution
+
+method: grid
+metric:
+  goal: minimize
+  name: val/loss
+
+parameters:
+  seed:
+    values: [0, 1, 2]
+  
+  data.downsample_factor:
+    values: [1, 2, 4, 8, 16]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}

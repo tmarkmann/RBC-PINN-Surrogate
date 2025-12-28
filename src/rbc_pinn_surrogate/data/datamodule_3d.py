@@ -25,6 +25,7 @@ class RBCDatamodule3D(L.LightningDataModule):
         nr_episodes_train: int | None = None,
         nr_episodes_val: int | None = None,
         nr_episodes_test: int | None = None,
+        downsample_factor: int = 1,
         normalize: bool = True,
     ) -> None:
         super().__init__()
@@ -49,6 +50,7 @@ class RBCDatamodule3D(L.LightningDataModule):
                 target_steps=self.hparams.test_length,
                 shift=self.hparams.test_shift,
                 stride=self.hparams.stride,
+                downsample_factor=self.hparams.downsample_factor,
                 pressure=self.hparams.pressure,
                 normalize=self.hparams.normalize,
                 means=self.means,
@@ -63,6 +65,7 @@ class RBCDatamodule3D(L.LightningDataModule):
                 target_steps=self.hparams.train_length,
                 shift=self.hparams.train_shift,
                 stride=self.hparams.stride,
+                downsample_factor=self.hparams.downsample_factor,
                 pressure=self.hparams.pressure,
                 normalize=self.hparams.normalize,
                 means=self.means,
@@ -79,6 +82,7 @@ class RBCDatamodule3D(L.LightningDataModule):
                 target_steps=self.hparams.test_length,
                 shift=self.hparams.test_shift,
                 stride=self.hparams.stride,
+                downsample_factor=self.hparams.downsample_factor,
                 pressure=self.hparams.pressure,
                 normalize=self.hparams.normalize,
                 means=self.means,

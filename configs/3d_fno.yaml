@@ -6,7 +6,7 @@ defaults:
 seed: 42
 
 data:
-  data_dir: /vol/cfd/rbc/3D_
+  data_dir: data/3D
   ra: 2500
   batch_size: 8
   start: 200    # t=100
@@ -16,6 +16,7 @@ data:
   test_length: 100
   test_shift: 50
   stride: 1
+  downsample_factor: 1
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null
   nr_episodes_test: null

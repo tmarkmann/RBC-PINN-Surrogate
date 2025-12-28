@@ -17,6 +17,7 @@ class RBCDataset(Dataset[Tensor]):
         shift: int = 1,
         stride: int = 1,
         pressure: bool = False,
+        downsample_factor: int = 1,
         normalize: bool = True,
         means: list[float] = [1.5, 0.0, 0.0, 0.0],
         stds: list[float] = [0.25, 0.35, 0.35, 0.35],
@@ -29,6 +30,7 @@ class RBCDataset(Dataset[Tensor]):
         self.target_steps = target_steps
         self.shift = shift
         self.stride = stride
+        self.downsample_factor = downsample_factor
         self.pressure = pressure
 
         # normalization parameters (z-score standardization)
@@ -79,6 +81,7 @@ class RBCDataset(Dataset[Tensor]):
         ) // self.shift
 
     def _check_validity(self, nr_episodes):
+        assert self.downsample_factor >= 1, "downsample_factor must be >= 1"
         assert (self.end * self.dt) <= self.episode_length, (
             f"End steps {self.end} (={self.end / self.dt}[time]) exceeds episode length [time] {self.episode_length}"
         )
@@ -129,6 +132,16 @@ class RBCDataset(Dataset[Tensor]):
         if not self.pressure:
             x = x[:, :-2]
             y = y[:, :-2]
+
+        # downsample spatial dimension
+        if self.downsample_factor > 1:
+            f = self.downsample_factor
+            if x.ndim == 4:  # [T, C, H, W]
+                x = x[:, :, ::f, ::f]
+                y = y[:, :, ::f, ::f]
+            elif x.ndim == 5:  # [T, C, H, D, W]
+                x = x[:, :, ::f, ::f, ::f]
+                y = y[:, :, ::f, ::f, ::f]
 
         # change channel and time dimension for neuraloperator package
         #  [T, C, A] -> [C, T, A] (A spatial dimensions)
