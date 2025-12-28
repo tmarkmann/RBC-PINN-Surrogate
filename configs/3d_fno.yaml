@@ -2,6 +2,7 @@ defaults:
   - paths: default
   - hydra: default
   - _self_
+  - options: null
 
 seed: 42
 

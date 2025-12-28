@@ -7,9 +7,10 @@ metric:
   name: val/loss
 
 parameters:
+  options:
+    value: gpucluster
   seed:
     values: [0, 1, 2]
-  
   data.downsample_factor:
     values: [1, 2, 4, 8, 16]
 
