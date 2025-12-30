@@ -35,9 +35,9 @@ model:
   data_weight: 1
   operator_weight: 1
 
-algo:
+trainer:
+  max_epochs: 500
   lr: 1e-3
-  epochs: 150
   do_finetuning: False
   start_finetuning_epoch_: 100
 

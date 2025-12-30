@@ -14,8 +14,8 @@ data:
   normalize: True
   batch_size: 32
   # Data slicing settings
-  start: 200 # t=300
-  end: 600 # t=500
+  start: 200 # t=100
+  end: 600 # t=300
   train_length: 1
   test_length: 1
   train_shift: 5
@@ -43,7 +43,7 @@ model:
   lr: 0.001
 
 trainer:
-  max_epochs: 500
+  max_epochs: 200
   accelerator: auto
   detect_anomaly: false
 

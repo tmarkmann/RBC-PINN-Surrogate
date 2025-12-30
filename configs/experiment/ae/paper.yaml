@@ -1,0 +1,14 @@
+# @package _global_
+
+data:
+  data_dir: /vol/cfd/rbc/3D-ld
+
+model:
+  version: v1
+  latent_channels: 8
+  channels: [16, 32, 32, 64, 64]
+  pooling: [true, false, true, false, true]
+  drop_rate: 0.1
+  batch_norm: True
+  kernel_size: 5
+  latent_kernel_size: 3
