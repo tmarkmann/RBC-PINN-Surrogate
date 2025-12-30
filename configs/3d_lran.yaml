@@ -3,6 +3,7 @@ defaults:
   - paths: default
   - hydra: default
   - options: null
+  - experiment/lran: null
 
 seed: 42
 
@@ -42,6 +43,5 @@ trainer:
   max_epochs: 500
   accelerator: auto
   detect_anomaly: false
-  check_val_every_n_epoch: 2
 
 task_name: 3d_lran

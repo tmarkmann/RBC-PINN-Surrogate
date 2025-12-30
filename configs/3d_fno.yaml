@@ -3,6 +3,7 @@ defaults:
   - hydra: default
   - _self_
   - options: null
+  - experiment/fno: null
 
 seed: 42
 
@@ -38,9 +39,6 @@ model:
   lifting_channels: 16
   projection_channels: 16
   n_layers: 6
-
-algo:
-  epochs: 50
 
 trainer:
   max_epochs: 500
