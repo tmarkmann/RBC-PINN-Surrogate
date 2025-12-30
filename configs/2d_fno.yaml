@@ -11,13 +11,14 @@ data:
   ra: 1000000
   batch_size: 32
   start: 200
-  end: 500
+  end: 600
   train_steps: 15
   test_steps: 100
-  train_shift: 10
+  train_shift: 5
   test_shift: 50
   stride: 1
-  downsample_factor: 1
+  train_downsample: 1
+  test_downsample: 1
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null
   nr_episodes_test: null
@@ -35,7 +36,7 @@ model:
   weight_decay: 1e-3
   n_modes_time: 16
   n_modes_space: 16
-  hidden_channels: 16
+  hidden_channels: 32
   in_channels: 3
   out_channels: 3
   lifting_channels: 16

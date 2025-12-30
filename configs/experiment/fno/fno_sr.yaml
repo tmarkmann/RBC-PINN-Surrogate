@@ -1,0 +1,13 @@
+# @package _global_
+
+model: fno
+sr: 1
+seed: 0
+checkpoint: ${paths.model_dir}/3d_fno/sr/sr${sr}-${seed}.ckpt
+tags: 
+  - test
+  - sr${sr}
+
+data:
+  data_dir: /vol/cfd/rbc/3D-ld
+  downsample_factor: 1

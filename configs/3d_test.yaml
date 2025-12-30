@@ -2,21 +2,24 @@ defaults:
   - paths: default
   - hydra: default
   - _self_
+  - experiment/fno: null
 
 task_name: 3d_test
+tags: 
+  - test
 
 model: lran # fno or lran
 seed: 0
 checkpoint: ${paths.model_dir}/3d_${model}/ra${data.ra}-${seed}.ckpt
 
 data:
-  data_dir: /vol/cfd/rbc/3D
+  data_dir: data/3D
   ra: 2500
   pressure: False
   normalize: True
   batch_size: 4
-  start: 600 # t=100
-  end: 1000 # t=300
+  start: 200 # t=100
+  end: 600 # t=300
   test_length: 100
   test_shift: 20
   stride: 1

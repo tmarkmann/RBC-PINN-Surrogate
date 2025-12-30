@@ -80,6 +80,13 @@ class RBCDataset(Dataset[Tensor]):
             self.steps - self.input_steps - self.target_steps + 1
         ) // self.shift
 
+        # print dataset info
+        print(f"RBCDataset loaded from {self.path}:")
+        print(f"  episode shape: {self.shape}")
+        print(f"  episode steps: {self.episode_steps}")
+        print(f"  number of episodes: {self.nr_episodes}")
+        print(f"  number of sequence pairs per episode: {self.nr_pairs}")
+
     def _check_validity(self, nr_episodes):
         assert self.downsample_factor >= 1, "downsample_factor must be >= 1"
         assert (self.end * self.dt) <= self.episode_length, (

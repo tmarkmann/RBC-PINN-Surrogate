@@ -9,8 +9,8 @@ class ClearMemoryCallback(Callback):
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ) -> None:
         # Get tensors
-        pred = outputs["y_hat"].cpu()
-        gt = outputs["y"].cpu()
+        pred = outputs["prediction"].cpu()
+        gt = outputs["ground_truth"].cpu()
 
         # Free memory
         del pred, gt

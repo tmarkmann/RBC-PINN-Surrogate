@@ -1,0 +1,29 @@
+program: scripts/train_2d_fno.py
+name: FNO3D_Superresolution
+
+method: grid
+metric:
+  goal: minimize
+  name: val/loss
+
+parameters:
+  data.ra:
+    value: 3_000_000
+  data.data_dir:
+    value: /vol/cfd/rbc/2D
+  model.dim:
+    value: 3d
+  
+  seed:
+    values: [0, 1, 2]
+  data.train_downsample:
+    values: [1, 2, 4, 8, 16, 32]
+  data.test_downsample:
+    value: 1
+
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}

@@ -25,15 +25,15 @@ def main(config: DictConfig):
     output_dir = config["paths"]["output_dir"]
 
     # seed
-    L.seed_everything(config.seed, workers=True)
+    L.seed_everything(config["seed"], workers=True)
 
     # data
-    dm = RBCDatamodule2D(**config.data)
+    dm = RBCDatamodule2D(**config["data"])
     dm.setup("fit")
 
     # model
     denormalize = dm.datasets["train"].denormalize_batch
-    model = FNO2DModule(denormalize=denormalize, **config.model)
+    model = FNO2DModule(denormalize=denormalize, **config["model"])
 
     # logger
     logger = WandbLogger(
@@ -76,10 +76,9 @@ def main(config: DictConfig):
 
     # trainer
     trainer = L.Trainer(
+        **config["trainer"],
         logger=logger,
-        accelerator="auto",
         default_root_dir=output_dir,
-        max_epochs=config.algo.epochs,
         callbacks=callbacks,
     )
 

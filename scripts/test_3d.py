@@ -1,7 +1,7 @@
 import hydra
 import numpy as np
 from tqdm import tqdm
-from omegaconf import DictConfig
+from omegaconf import DictConfig, OmegaConf
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
@@ -27,25 +27,29 @@ def main(config: DictConfig):
     # device
     device = best_device()
 
+    # config convert
+    config = OmegaConf.to_container(config, resolve=True)
+    output_dir = config["paths"]["output_dir"]
+
     # data
-    dm = RBCDatamodule3D(**config.data)
+    dm = RBCDatamodule3D(**config["data"])
     dm.setup("test")
     denorm = dm.datasets["test"].denormalize_batch
 
     # model
-    if config.model == "fno":
-        model = FNO3DModule.load_from_checkpoint(config.checkpoint)
-    elif config.model == "lran":
-        model = LRAN3DModule.load_from_checkpoint(config.checkpoint)
+    if config["model"] == "fno":
+        model = FNO3DModule.load_from_checkpoint(config["checkpoint"])
+    elif config["model"] == "lran":
+        model = LRAN3DModule.load_from_checkpoint(config["checkpoint"])
     model.to(device)
     model.eval()
 
     # wandb run
     wandb.init(
-        project=f"RBC-3D-{str(config.model).capitalize()}",
-        config=dict(config),
-        dir=config.paths.output_dir,
-        tags=["test"],
+        project=f"RBC-3D-{str(config['model']).capitalize()}",
+        config=config,
+        dir=output_dir,
+        tags=config["tags"],
     )
 
     # loop
@@ -84,13 +88,13 @@ def main(config: DictConfig):
             gt=target[0].numpy(),
             pred=pred[0].numpy(),
             feature="T",
-            anim_dir=config.paths.output_dir + "/animations",
+            anim_dir=output_dir + "/animations",
             anim_name=f"test_{batch}.mp4",
         )
         plot_paper(
             target[0].numpy(),
             pred[0].numpy(),
-            config.paths.output_dir + "/vis_paper",
+            output_dir + "/vis_paper",
             batch,
         )
         video = wandb.Video(path, format="mp4", caption=f"Batch {batch}")
