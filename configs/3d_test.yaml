@@ -2,7 +2,7 @@ defaults:
   - paths: default
   - hydra: default
   - _self_
-  - experiment/fno: null
+  - experiment/test: null
 
 task_name: 3d_test
 tags: 

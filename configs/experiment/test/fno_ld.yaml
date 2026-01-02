@@ -1,0 +1,7 @@
+# @package _global_
+
+model: fno
+checkpoint: ${paths.model_dir}/3d_${model}/ld/ra${data.ra}-${seed}.ckpt
+
+data:
+  data_dir: /vol/cfd/rbc/3D-ld
