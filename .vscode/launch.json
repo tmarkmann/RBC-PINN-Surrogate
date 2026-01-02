@@ -8,7 +8,7 @@
             "name": "Train FNO",
             "type": "debugpy",
             "request": "launch",
-            "program": "scripts/train_3d_fno.py",
+            "program": "notebooks/tm-12-3D-physics.py",
             "console": "integratedTerminal",
             "justMyCode": false,
         }

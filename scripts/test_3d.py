@@ -55,6 +55,8 @@ def main(config: DictConfig):
     # loop
     list_metrics = []
     list_nusselt = []
+    list_kinetic = []
+    list_div = []
     list_profile_q = []
     list_profile_qp = []
     hist_qp = None
@@ -174,9 +176,47 @@ def main(config: DictConfig):
             hist_qp[int(z)]["sum_target"] += hist_targ
             hist_qp[int(z)]["n_items"] += 1
 
+        # 7) kinetic energy
+        for t in range(seq_len):
+            kin_pred = metrics.compute_kinetic_energy(pred[0, :, t])
+            kin_target = metrics.compute_kinetic_energy(target[0, :, t])
+            list_kinetic.append(
+                {
+                    "batch_idx": batch,
+                    "step": t,
+                    "kin_pred": kin_pred.item(),
+                    "kin_target": kin_target.item(),
+                }
+            )
+
+        # 8) incompressibility check
+        DOMAIN = (4 * np.pi, 4 * np.pi, 2.0)  # (Lx, Ly, Lz)
+        for t in range(seq_len):
+            # compute divergence using finited diff and fourier
+            div_pred = metrics.compute_divergence(pred[0, :, t], DOMAIN)
+            div_target = metrics.compute_divergence(target[0, :, t], DOMAIN)
+
+            # RMS values
+            pred_rms = torch.sqrt(torch.mean(div_pred**2)).item()
+            target_rms = torch.sqrt(torch.mean(div_target**2)).item()
+
+            list_div.append(
+                {
+                    "batch_idx": batch,
+                    "step": t,
+                    "div_pred_rms": pred_rms,
+                    "div_target_rms": target_rms,
+                }
+            )
+
+        # 9) conservation of momentum
+        pass
+
     # log metrics
     df_metrics = pd.DataFrame(list_metrics)
     df_nusselt = pd.DataFrame(list_nusselt)
+    df_kinetic = pd.DataFrame(list_kinetic)
+    df_div = pd.DataFrame(list_div)
     df_profile_q = pd.DataFrame(list_profile_q)
     df_profile_qp = pd.DataFrame(list_profile_qp)
 
@@ -210,6 +250,8 @@ def main(config: DictConfig):
             "test/NRSSE": nrsse,
             "test/Table-Metrics": wandb.Table(dataframe=df_metrics),
             "test/Table-Nusselt": wandb.Table(dataframe=df_nusselt),
+            "test/Table-Kinetic-Energy": wandb.Table(dataframe=df_kinetic),
+            "test/Table-Divergence": wandb.Table(dataframe=df_div),
             "test/Table-Q-Profile": wandb.Table(dataframe=df_profile_q),
             "test/Table-QP-Profile": wandb.Table(dataframe=df_profile_qp),
             "test/Table-QP-Histogram": wandb.Table(dataframe=df_pdf),

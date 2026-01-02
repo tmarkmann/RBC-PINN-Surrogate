@@ -6,6 +6,7 @@ from pathlib import Path
 
 ROOT = str(Path(__file__).resolve().parent)
 
+
 def get_superres_results(sweep, method):
     # set your entity and project
     api = wandb.Api()

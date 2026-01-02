@@ -88,7 +88,7 @@ def get_sweep_results(project, method, tag):
 #     "sail-project/RBC-3D-LSTM",
 # ]
 # methods = ["3d-fno", "3d-lran", "3d-lstm"]
-# 
+#
 # for sweep, method in zip(sweeps, methods):
 #     get_sweep_results(sweep, method, tag="final_result")
 

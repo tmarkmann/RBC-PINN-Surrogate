@@ -118,3 +118,48 @@ def compute_histogram(qprime, xlim=(-1, 1)):
     bins = 100
     hist, _ = np.histogram(qprime, bins=bins, range=xlim, density=True)
     return hist
+
+
+def compute_kinetic_energy(state):
+    ux = state[1]
+    uy = state[2]
+    uz = state[3]
+
+    ke = 0.5 * (ux**2 + uy**2 + uz**2)
+    return ke.mean()
+
+
+def compute_divergence(state, domain_size, mode="fd"):
+    # state in [C, D, H, W]
+    u = state[1]
+    v = state[2]
+    w = state[3]
+
+    # grid spacings inferred from tensor shape and physical lengths (Lx, Ly, Lz)
+    Lx, Ly, Lz = domain_size
+    ny, nz, nx = u.shape
+    dx = Lx / nx
+    dy = Ly / ny
+    dz = Lz / nz
+
+    # centered finite difference in z-direction
+    dwdz = torch.gradient(w, dim=1, spacing=dz)[0]
+
+    # Mode: Finite Difference
+    if mode == "fd":
+        # finite difference in x, y, z
+        dudx = torch.gradient(u, dim=2, spacing=dx)[0]
+        dvdy = torch.gradient(v, dim=0, spacing=dy)[0]
+    # Mode: Spectral + Finite Difference
+    elif mode == "spec":
+        # spectral derivatives along periodic x/y, finite difference along non-periodic z
+        kx = 2.0 * torch.pi * torch.fft.fftfreq(nx, d=dx).view(1, 1, nx)
+        ky = 2.0 * torch.pi * torch.fft.fftfreq(ny, d=dy).view(ny, 1, 1)
+
+        u_hat = torch.fft.fftn(u, dim=(0, 2))
+        v_hat = torch.fft.fftn(v, dim=(0, 2))
+
+        dudx = torch.fft.ifftn(1j * kx * u_hat, dim=(0, 2)).real
+        dvdy = torch.fft.ifftn(1j * ky * v_hat, dim=(0, 2)).real
+
+    return dudx + dvdy + dwdz
