@@ -229,5 +229,6 @@ wandb
 models/
 artifacts
 figs
+figures
 notebooks/results
 data/*

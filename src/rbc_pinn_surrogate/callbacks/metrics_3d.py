@@ -1,3 +1,4 @@
+from typing import Literal, Tuple
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -8,6 +9,7 @@ from torch import Tensor
 from torch.nn.functional import mse_loss
 import torch
 import wandb
+from rbc_pinn_surrogate.data.dataset import Field
 
 
 class Metrics3DCallback(Callback):
@@ -72,68 +74,73 @@ def nrsse(pred: Tensor, target: Tensor) -> Tensor:
     return (num / denom).mean()
 
 
-def compute_q(state, T_mean_ref, profile=False):
-    T = state[0]
-    uz = state[3]
+def compute_q(state: Tensor, T_mean_ref: Tensor, profile: bool = False):
+    # state: [D,H,W]
+    T = state[Field.T]
+    w = state[Field.W]
     theta = T - T_mean_ref
-    q = uz * theta
+    q = w * theta
 
     if profile:
-        return q.mean(dim=(1, 2)).numpy()
+        return q.mean(dim=(0, 2)).numpy()
     else:
         return q.mean().numpy()
 
 
-def compute_profile_qprime_rms(state_seq, T_mean_ref):
-    # [T,H,W,D]
-    T = state_seq[0]
-    uz = state_seq[3]
+def compute_profile_qprime_rms(state_seq: Tensor, T_mean_ref: Tensor):
+    # [T,D,H,W]
+    T = state_seq[Field.T]
+    w = state_seq[Field.W]
 
     theta = T - T_mean_ref
-    q = uz * theta
+    q = w * theta
 
-    q_mean_th = q.mean(dim=(0, 2, 3), keepdim=True)
+    q_mean_th = q.mean(dim=(0, 1, 3), keepdim=True)
     q_prime = q - q_mean_th
 
-    profile = torch.sqrt(torch.mean(q_prime**2, dim=(0, 2, 3))).cpu().numpy()
+    profile = torch.sqrt(torch.mean(q_prime**2, dim=(0, 1, 3))).cpu().numpy()
     return profile  # shape (H,)
 
 
-def compute_qprime_z(state_seq, T_mean_ref, z):
-    # fields: [T, H, W, D]
-    T = state_seq[0]
-    uz = state_seq[3]
+def compute_qprime_z(state_seq: Tensor, T_mean_ref: Tensor, z: int):
+    # [T,D,H,W]
+    T = state_seq[Field.T]
+    w = state_seq[Field.W]
 
     theta = T - T_mean_ref
-    q = uz * theta  # [T, H, W, D]
+    q = w * theta
 
     # time–horizontal mean per height for q
-    q_mean_th = q.mean(dim=(0, 2, 3), keepdim=True)  # [1, H, 1, 1]
-    q_prime = q - q_mean_th  # [T, H, W, D]
+    q_mean_th = q.mean(dim=(0, 1, 3), keepdim=True)  # [1, 1, H, 1]
+    q_prime = q - q_mean_th
 
-    return q_prime[:, z, :, :].reshape(-1).detach().cpu().numpy()
+    return q_prime[:, :, z, :].reshape(-1).detach().cpu().numpy()
 
 
-def compute_histogram(qprime, xlim=(-1, 1)):
+def compute_histogram(qprime: Tensor, xlim=(-1, 1)):
     bins = 100
     hist, _ = np.histogram(qprime, bins=bins, range=xlim, density=True)
     return hist
 
 
-def compute_kinetic_energy(state):
-    ux = state[1]
-    uy = state[2]
-    uz = state[3]
+def compute_kinetic_energy(state: Tensor):
+    u = state[Field.U]
+    v = state[Field.V]
+    w = state[Field.W]
 
-    ke = 0.5 * (ux**2 + uy**2 + uz**2)
+    ke = 0.5 * (u**2 + v**2 + w**2)
     return ke.mean()
 
 
-def compute_divergence(state, domain_size, mode="fd"):
+def compute_divergence(
+    state: Tensor,
+    domain_size: Tuple[float, float, float],
+    mode: Literal["fd", "spec"] = "fd",
+):
     # state in [C, D, H, W]
-    u = state[1]
-    v = state[2]
-    w = state[3]
+    u = state[Field.U]
+    v = state[Field.V]
+    w = state[Field.W]
 
     # grid spacings inferred from tensor shape and physical lengths (Lx, Ly, Lz)
     Lx, Ly, Lz = domain_size

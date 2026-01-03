@@ -3,6 +3,16 @@ import h5py
 import torch
 from torch import Tensor
 from torch.utils.data import Dataset
+from enum import IntEnum
+
+
+class Field(IntEnum):
+    T = 0
+    U = 1
+    V = 2
+    W = 3
+    P_HY = 4
+    P_NHY = 5
 
 
 class RBCDataset(Dataset[Tensor]):

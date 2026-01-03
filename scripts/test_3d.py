@@ -7,6 +7,8 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 import wandb
 import torch
+from torch import Tensor
+
 from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import FNO3DModule, LRAN3DModule
 from rbc_pinn_surrogate.utils.vis_3d import animation_3d, plot_paper
@@ -64,8 +66,8 @@ def main(config: DictConfig):
         # compute predictions and denormalize data
         with torch.no_grad():
             y_hat = model.predict(x.to(device), y.shape[2]).cpu()
-        pred = denorm(y_hat)
-        target = denorm(y)
+        pred: Tensor = denorm(y_hat)
+        target: Tensor = denorm(y)
 
         # 1) Sequence Metrics NRSSE and RMSE
         seq_len = pred.shape[2]
@@ -148,7 +150,7 @@ def main(config: DictConfig):
             )
 
         # 6) PDF over q' at selected heights
-        H = pred[0].shape[2]  # HEIGHT dimension in [C,T,H,W,D]
+        H = pred[0].shape[3]  # HEIGHT dimension in [C,T,D,H,W]
         zs = [H // 6, H // 2, (5 * H) // 6]
         # lazy-init aggregator once we know H and zs
         if hist_qp is None:
