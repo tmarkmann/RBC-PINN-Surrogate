@@ -47,4 +47,7 @@ trainer:
   accelerator: auto
   detect_anomaly: false
 
+tags:
+  - train
+
 task_name: 3d_ae

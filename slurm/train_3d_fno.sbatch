@@ -4,7 +4,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
 #SBATCH --time=2-00:00:00
-#SBATCH --array=0-2%3
+#SBATCH --array=0-4%5
 #SBATCH --output=/homes/%u/RBC-PINN-Surrogate/logs/slurm/%x_%A_%a.out
 #SBATCH --mail-type=FAIL
 
@@ -14,4 +14,4 @@ conda activate rbcpinn
 cd ~/RBC-PINN-Surrogate
 
 # Directly use task ID as seed
-srun uv run python scripts/train_3d_fno.py seed=$SLURM_ARRAY_TASK_ID experiment/fno=fno_sr_4
+srun uv run python scripts/train_3d_fno.py seed=$SLURM_ARRAY_TASK_ID experiment/fno=fno_ld

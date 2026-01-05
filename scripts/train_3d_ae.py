@@ -41,6 +41,7 @@ def main(config: DictConfig):
         save_dir=output_dir,
         log_model=False,
         config=config,
+        tags=config["tags"]
     )
 
     # callbacks
@@ -51,8 +52,7 @@ def main(config: DictConfig):
         EarlyStopping(
             monitor="val/loss",
             mode="min",
-            patience=20,
-            min_delta=1e-5,
+            patience=15,
         ),
         ModelCheckpoint(
             dirpath=f"{output_dir}/checkpoints/",

@@ -38,10 +38,14 @@ model:
   lambda_hid: 5
   lr_operator: 0.0001
   lr_autoencoder: 0.001
+  train_autoencoder: true
 
 trainer:
   max_epochs: 500
   accelerator: auto
   detect_anomaly: false
+
+tags:
+  - train
 
 task_name: 3d_lran

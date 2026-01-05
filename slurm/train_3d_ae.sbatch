@@ -18,4 +18,4 @@ conda activate rbcpinn
 cd ~/RBC-PINN-Surrogate
 
 # Run training with this RA
-srun uv run python scripts/train_3d_ae.py seed=$SLURM_ARRAY_TASK_ID options=gpucluster experiment/ae=paper
+srun uv run python scripts/train_3d_ae.py seed=$SLURM_ARRAY_TASK_ID options=gpucluster experiment/ae=ae_ld

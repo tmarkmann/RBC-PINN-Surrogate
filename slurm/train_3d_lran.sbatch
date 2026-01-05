@@ -13,4 +13,4 @@ source ~/miniforge3/etc/profile.d/conda.sh
 conda activate rbcpinn
 
 cd ~/RBC-PINN-Surrogate
-srun uv run python scripts/train_3d_lran.py seed=$SLURM_ARRAY_TASK_ID experiment/lran=paper
+srun uv run python scripts/train_3d_lran.py seed=$SLURM_ARRAY_TASK_ID experiment/lran=lran_ld

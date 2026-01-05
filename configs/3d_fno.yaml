@@ -14,7 +14,7 @@ data:
   start: 200    # t=100
   end: 600     # t=300
   train_length: 10
-  train_shift: 6
+  train_shift: 5
   test_length: 100
   test_shift: 50
   stride: 1
@@ -44,5 +44,8 @@ trainer:
   max_epochs: 500
   accelerator: auto
   detect_anomaly: false
+
+tags:
+  - train
 
 task_name: 3d_fno

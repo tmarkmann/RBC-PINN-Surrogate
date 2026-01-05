@@ -42,6 +42,7 @@ def main(config: DictConfig):
         save_dir=output_dir,
         log_model=False,
         config=config,
+        tags=config["tags"],
     )
 
     # callbacks
@@ -52,7 +53,6 @@ def main(config: DictConfig):
             monitor="val/loss",
             mode="min",
             patience=15,
-            min_delta=1e-5,
         ),
         Metrics3DCallback(),
         ModelCheckpoint(

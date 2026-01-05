@@ -27,6 +27,7 @@ class LRAN3DModule(pl.LightningModule):
         # Optimizer params
         lr_operator: float,
         lr_autoencoder: float,
+        train_autoencoder: bool = True,
         # Misc
         denormalize: Callable = None,
     ) -> None:
@@ -39,6 +40,9 @@ class LRAN3DModule(pl.LightningModule):
         # Autoencoder
         ckpt = torch.load(ae_ckpt, map_location=self.device)
         self.autoencoder = Autoencoder3D.from_checkpoint(ckpt)
+        self.autoencoder.requires_grad_(train_autoencoder)
+        if not train_autoencoder:
+            self.autoencoder.eval()
 
         # Get latent spatial dimensions
         with torch.no_grad():
@@ -186,15 +190,17 @@ class LRAN3DModule(pl.LightningModule):
         return self.model_step(x, y, stage="test")
 
     def configure_optimizers(self) -> Dict[str, Any]:
+        autoencoder_params = [
+            self.encoder_linear.parameters(),
+            self.decoder_linear.parameters(),
+        ]
+        if self.hparams.train_autoencoder:
+            autoencoder_params.append(self.autoencoder.parameters())
+
         optimizer = torch.optim.Adam(
             params=[
-                # autoencoder weights
                 {
-                    "params": chain(
-                        self.autoencoder.parameters(),
-                        self.encoder_linear.parameters(),
-                        self.decoder_linear.parameters(),
-                    ),
+                    "params": chain(*autoencoder_params),
                     "lr": self.hparams.lr_autoencoder,
                 },
                 # operator weights
@@ -205,3 +211,9 @@ class LRAN3DModule(pl.LightningModule):
             ],
         )
         return {"optimizer": optimizer}
+
+    def train(self, mode: bool = True):
+        super().train(mode)
+        if not self.hparams.train_autoencoder:
+            self.autoencoder.eval()
+        return self
