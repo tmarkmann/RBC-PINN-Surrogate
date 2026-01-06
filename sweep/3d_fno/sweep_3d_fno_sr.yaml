@@ -7,12 +7,20 @@ metric:
   name: val/loss
 
 parameters:
+  # fixed
+  data.data_dir:
+    value: /vol/cfd/rbc/3D-ld
+  data.start:
+    value: 500
+  data.end:
+    value: 1000
+
+  # sweep
   seed:
     values: [0, 1, 2]
   data.downsample_factor:
-    values: [1, 2, 4, 8, 16]
-  data.data_dir:
-    value: /vol/cfd/rbc/3D-ld
+    values: [1, 2, 4, 8]
+  
 
 command:
   - ${env}
