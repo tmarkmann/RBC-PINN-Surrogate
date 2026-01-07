@@ -32,7 +32,6 @@ class SequenceMetricsCallback(Callback):
 
     def on_test_end(self, trainer, pl_module) -> None:
         df = self.get_dataframe()
-        print(df)
         im1 = self.plot_metrics(df, "rmse")
         im2 = self.plot_metrics(df, "nrsse")
 

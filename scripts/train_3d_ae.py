@@ -41,7 +41,7 @@ def main(config: DictConfig):
         save_dir=output_dir,
         log_model=False,
         config=config,
-        tags=config["tags"]
+        tags=config["tags"],
     )
 
     # callbacks

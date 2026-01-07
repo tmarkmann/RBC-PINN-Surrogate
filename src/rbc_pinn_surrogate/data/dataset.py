@@ -6,13 +6,21 @@ from torch.utils.data import Dataset
 from enum import IntEnum
 
 
-class Field(IntEnum):
+class Field3D(IntEnum):
     T = 0
     U = 1
     V = 2
     W = 3
     P_HY = 4
     P_NHY = 5
+
+
+class Field2D(IntEnum):
+    T = 0
+    U = 1
+    W = 2
+    P_HY = 3
+    P_NHY = 4
 
 
 class RBCDataset(Dataset[Tensor]):
