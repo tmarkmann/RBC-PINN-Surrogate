@@ -63,17 +63,66 @@ def get_sweep_results(sweep, method):
                 df.to_csv(f"{outdir}/ra{ra}-{seed}.csv", index=False)
 
 
+def get_results(project, method, tag):
+    # set your entity and project
+    api = wandb.Api()
+    runs = api.runs(project, filters={"tags": {"$in": [tag]}})
+
+    root = ROOT + "/results"
+    os.makedirs(root, exist_ok=True)
+
+    # Artifact types to download
+    names = [
+        "Metrics",
+        "Profiles",
+    ]
+
+    # Download
+    for run in runs:
+        ra = run.config["data"]["ra"]
+        seed = run.config["seed"]
+        run_root = f"{root}/artifacts/{run.id}"
+
+        for artifact in run.logged_artifacts():
+            for name in names:
+                if artifact.type == "run_table" and f"Table-{name}" in artifact.name:
+                    # get artifact and paths
+                    table_dir = artifact.download(root=run_root)
+                    table_path = f"{table_dir}/test/Table-{name}.table.json"
+                    table_type = name.lower()
+
+                    # convert json to pd
+                    with open(table_path) as file:
+                        json_dict = json.load(file)
+                    df = pd.DataFrame(json_dict["data"], columns=json_dict["columns"])
+
+                    # write as csv
+                    outdir = f"{root}/{method}/{table_type}"
+                    os.makedirs(outdir, exist_ok=True)
+                    df.to_csv(f"{outdir}/ra{ra}-{seed}.csv", index=False)
+
+
 # Download Result runs
-# sweeps = [
-#     "sail-project/RBC-2D-FNO/fifkw3tu",
-#     "sail-project/RBC-2D-FNO/jg6h5fco",
-#     "sail-project/RBC-2D-LRAN/mzly1064",
-# ]
-# methods = [
-#     "2d-fno2d",
-#     "2d-fno3d",
-#     "2d-lran",
-# ]
+projects = [
+    "sail-project/RBC-2D-FNO",
+    #"sail-project/RBC-2D-LRAN",
+]
+sweeps = [
+    "sail-project/RBC-2D-FNO/fifkw3tu",
+    "sail-project/RBC-2D-FNO/jg6h5fco",
+    "sail-project/RBC-2D-LRAN/mzly1064",
+]
+methods = [
+    #"2d-fno2d",
+    "2d-fno3d",
+    #"2d-lran",
+]
+
+# Download test runs
+# for project, method in zip(projects, methods):
+#     get_results(project, method, "revision_test")
+
+# # Download Result sweep runs
 # for sweep, method in zip(sweeps, methods):
 #    get_sweep_results(sweep, method)
 

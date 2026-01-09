@@ -18,7 +18,7 @@ def get_superres_results(project, method):
 
     # Download
     for run in runs:
-        sr = run.config["sr"]
+        sr = run.config.get("sr", 1)
         seed = run.config["seed"]
         for artifact in run.logged_artifacts():
             if artifact.type == "run_table" and "Table-Metrics" in artifact.name:
@@ -76,18 +76,26 @@ def get_results(project, method, tag):
                     # write as csv
                     outdir = f"{root}/{method}/{table_type}"
                     os.makedirs(outdir, exist_ok=True)
-                    df.to_csv(f"{outdir}/ra{ra}-{seed}.csv", index=False)
+
+                    outfile = f"{outdir}/ra{ra}-{seed}.csv"
+                    if os.path.exists(outfile):
+                        print(f"Warning: Overwriting existing file {outfile}")
+                    df.to_csv(outfile, index=False)
 
 
 # Download Result runs
 sweeps = [
     "sail-project/RBC-3D-FNO",
     "sail-project/RBC-3D-LRAN",
-    "sail-project/RBC-3D-LSTM",
+    #"sail-project/RBC-3D-LSTM",
 ]
-methods = ["3d-fno", "3d-lran", "3d-lstm"]
-for sweep, method in zip(sweeps, methods):
-    get_results(sweep, method, tag="revision_test")
+methods = [
+    "3d-fno",
+    "3d-lran",
+    #"3d-lstm",
+]
+# for sweep, method in zip(sweeps, methods):
+#     get_results(sweep, method, tag="revision_test")
 
 # Download Superres runs
-# get_superres_results("sail-project/RBC-3D-FNO", "3d-fno-superres")
+get_superres_results("sail-project/RBC-3D-FNO", "3d-fno-superres")
