@@ -53,31 +53,34 @@ def main(config: DictConfig):
         # compute fine prediction
         with torch.no_grad():
             pred_fine = model.predict(x.to(device), y.shape[2]).cpu()
-        # pred_fine: Tensor = denorm(pred_fine)
+        pred_fine: Tensor = denorm(pred_fine)
         pred_fine_ds = pred_fine[:, :, :, ::2, ::2]
 
         # compute coarse prediction
         with torch.no_grad():
             pred_coarse = model.predict(xcoarse.to(device), ycoarse.shape[2]).cpu()
-        # pred_coarse: Tensor = denorm(pred_coarse)
+        pred_coarse: Tensor = denorm(pred_coarse)
 
         # 1) Sequence Metrics NRSSE and RMSE
         seq_len = pred_fine.shape[2]
         losses = []
         for t in range(seq_len):
             # metrics per sample and time step
+            nrsse = metrics.nrsse(pred_fine_ds[:, :, t], pred_coarse[:, :, t])
             loss = F.mse_loss(pred_fine_ds[:, :, t], pred_coarse[:, :, t])
             losses.append(
                 {
                     "batch_idx": batch,
                     "step": t,
                     "loss": loss.item(),
+                    "nrsse": nrsse.item(),
                 }
             )
 
     # overall metrics
     df = pd.DataFrame(losses)
     loss = df["loss"].mean()
+    nrsse = df["nrsse"].mean()
 
     # plots
     im = plot_metric(df, "loss")
@@ -85,6 +88,7 @@ def main(config: DictConfig):
     wandb.log(
         {
             "test/loss": loss,
+            "test/nrsse": nrsse,
             "test/Plot": im,
             "test/Table": wandb.Table(dataframe=df),
         }

@@ -15,11 +15,11 @@ checkpoint: ${paths.model_dir}/2d_${model}/ra${data.ra}-${seed}.ckpt
 data:
   data_dir: data/2D
   ra: 3000000
-  batch_size: 8
+  batch_size: 32
   start: 200
-  end: 500
+  end: 600
   train_steps: 15
-  test_steps: 25
+  test_steps: 100
   train_shift: 5
   test_shift: 50
   stride: 1
@@ -30,7 +30,7 @@ data:
   nr_episodes_test: null
   # Data efficiency settings
   num_workers: 2
-  pin_memory: True
+  pin_memory: False
   persistent_workers: True
   pressure: False
   normalize: True

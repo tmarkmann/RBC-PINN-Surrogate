@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=3d_fno_sr
+#SBATCH --job-name=fno_sr
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
@@ -12,4 +12,4 @@ source ~/miniforge3/etc/profile.d/conda.sh
 conda activate rbcpinn
 
 cd ~/RBC-PINN-Surrogate
-srun uv run python scripts/test_3d_sr.py experiment/test=fno_ld seed=${SLURM_ARRAY_TASK_ID}
+srun uv run python scripts/test_2d_sr.py experiment/test=2d seed=${SLURM_ARRAY_TASK_ID}
