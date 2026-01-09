@@ -4,6 +4,7 @@ data:
   data_dir: /vol/cfd/rbc/3D-ld
   start: 500
   end: 1000
+  downsample_factor: 1
 
 tags:
   - train

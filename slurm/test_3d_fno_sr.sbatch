@@ -12,4 +12,4 @@ source ~/miniforge3/etc/profile.d/conda.sh
 conda activate rbcpinn
 
 cd ~/RBC-PINN-Surrogate
-srun uv run python scripts/test_3d.py experiment/fno=fno_sr sr=4 seed=${SLURM_ARRAY_TASK_ID}
+srun uv run python scripts/test_3d.py experiment/test=fno_sr sr=8 seed=${SLURM_ARRAY_TASK_ID}

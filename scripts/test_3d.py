@@ -211,7 +211,7 @@ def main(config: DictConfig):
                 }
             )
 
-        # 9) conservation of momentum
+        # 10) reynolds stresses
         pass
 
     # log metrics

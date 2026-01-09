@@ -2,8 +2,11 @@ defaults:
   - paths: default
   - hydra: default
   - _self_
+  - experiment/test: null
 
-task_name: 3d_test
+task_name: 2d_test
+tags: 
+  - test
 
 model: fno # fno or lran
 seed: 0
@@ -11,7 +14,7 @@ checkpoint: ${paths.model_dir}/2d_${model}/ra${data.ra}-${seed}.ckpt
 
 data:
   data_dir: data/2D
-  ra: 1000000
+  ra: 3000000
   batch_size: 8
   start: 200
   end: 500
@@ -20,7 +23,8 @@ data:
   train_shift: 5
   test_shift: 50
   stride: 1
-  downsample_factor: 1
+  train_downsample: 1
+  test_downsample: 1
   nr_episodes_train: null # this means all of them
   nr_episodes_val: null
   nr_episodes_test: null

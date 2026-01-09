@@ -9,7 +9,7 @@ from torch import Tensor
 from torch.nn.functional import mse_loss
 import torch
 import wandb
-from rbc_pinn_surrogate.data.dataset import Field
+from rbc_pinn_surrogate.data.dataset import Field3D
 
 
 class Metrics3DCallback(Callback):
@@ -75,9 +75,9 @@ def nrsse(pred: Tensor, target: Tensor) -> Tensor:
 
 
 def compute_q(state: Tensor, T_mean_ref: Tensor, profile: bool = False):
-    # state: [D,H,W]
-    T = state[Field.T]
-    w = state[Field.W]
+    # state: [C,D,H,W]
+    T = state[Field3D.T]
+    w = state[Field3D.W]
     theta = T - T_mean_ref
     q = w * theta
 
@@ -88,9 +88,9 @@ def compute_q(state: Tensor, T_mean_ref: Tensor, profile: bool = False):
 
 
 def compute_profile_qprime_rms(state_seq: Tensor, T_mean_ref: Tensor):
-    # [T,D,H,W]
-    T = state_seq[Field.T]
-    w = state_seq[Field.W]
+    # state: [C,T,D,H,W]
+    T = state_seq[Field3D.T]
+    w = state_seq[Field3D.W]
 
     theta = T - T_mean_ref
     q = w * theta
@@ -103,9 +103,9 @@ def compute_profile_qprime_rms(state_seq: Tensor, T_mean_ref: Tensor):
 
 
 def compute_qprime_z(state_seq: Tensor, T_mean_ref: Tensor, z: int):
-    # [T,D,H,W]
-    T = state_seq[Field.T]
-    w = state_seq[Field.W]
+    # state: [C,T,D,H,W]
+    T = state_seq[Field3D.T]
+    w = state_seq[Field3D.W]
 
     theta = T - T_mean_ref
     q = w * theta
@@ -124,9 +124,10 @@ def compute_histogram(qprime: Tensor, xlim=(-1, 1)):
 
 
 def compute_kinetic_energy(state: Tensor):
-    u = state[Field.U]
-    v = state[Field.V]
-    w = state[Field.W]
+    # state: [C,D,H,W]
+    u = state[Field3D.U]
+    v = state[Field3D.V]
+    w = state[Field3D.W]
 
     ke = 0.5 * (u**2 + v**2 + w**2)
     return ke.mean()
@@ -137,10 +138,10 @@ def compute_divergence(
     domain_size: Tuple[float, float, float],
     mode: Literal["fd", "spec"] = "fd",
 ):
-    # state in [C, D, H, W]
-    u = state[Field.U]
-    v = state[Field.V]
-    w = state[Field.W]
+    # state in [C,D,H,W]
+    u = state[Field3D.U]
+    v = state[Field3D.V]
+    w = state[Field3D.W]
 
     # grid spacings inferred from tensor shape and physical lengths (Lx, Ly, Lz)
     Lx, Ly, Lz = domain_size

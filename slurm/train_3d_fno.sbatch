@@ -4,7 +4,7 @@
 #SBATCH --gres=gpu:1
 #SBATCH --mem=32G
 #SBATCH --time=2-00:00:00
-#SBATCH --array=0-4%5
+#SBATCH --array=0-2%3
 #SBATCH --output=/homes/%u/RBC-PINN-Surrogate/logs/slurm/%x_%A_%a.out
 #SBATCH --mail-type=FAIL
 
