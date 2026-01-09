@@ -105,7 +105,7 @@ def get_results(project, method, tag):
 # Download Result runs
 projects = [
     "sail-project/RBC-2D-FNO",
-    #"sail-project/RBC-2D-LRAN",
+    # "sail-project/RBC-2D-LRAN",
 ]
 sweeps = [
     "sail-project/RBC-2D-FNO/fifkw3tu",
@@ -113,9 +113,9 @@ sweeps = [
     "sail-project/RBC-2D-LRAN/mzly1064",
 ]
 methods = [
-    #"2d-fno2d",
+    # "2d-fno2d",
     "2d-fno3d",
-    #"2d-lran",
+    # "2d-lran",
 ]
 
 # Download test runs

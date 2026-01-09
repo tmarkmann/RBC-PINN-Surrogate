@@ -9,12 +9,12 @@ import torch
 from torch import Tensor
 from torch.nn import functional as F
 
-from rbc_pinn_surrogate.data import RBCDatamodule3D
-from rbc_pinn_surrogate.model import FNO3DModule
-import rbc_pinn_surrogate.callbacks.metrics_3d as metrics
+from rbc_pinn_surrogate.data import RBCDatamodule2D
+from rbc_pinn_surrogate.model import FNO2DModule
+import rbc_pinn_surrogate.callbacks.metrics_2d as metrics
 
 
-@hydra.main(version_base="1.3", config_path="../configs", config_name="3d_test")
+@hydra.main(version_base="1.3", config_path="../configs", config_name="2d_test")
 def main(config: DictConfig):
     # device
     device = best_device()
@@ -24,18 +24,18 @@ def main(config: DictConfig):
     output_dir = config["paths"]["output_dir"]
 
     # data
-    dm = RBCDatamodule3D(**config["data"])
+    dm = RBCDatamodule2D(**config["data"])
     dm.setup("test")
     denorm = dm.datasets["test"].denormalize_batch
 
     # model
-    model = FNO3DModule.load_from_checkpoint(config["checkpoint"])
+    model = FNO2DModule.load_from_checkpoint(config["checkpoint"])
     model.to(device)
     model.eval()
 
     # wandb run
     wandb.init(
-        project=f"RBC-3D-{str(config['model']).capitalize()}",
+        project=f"RBC-2D-{str(config['model']).capitalize()}",
         config=config,
         dir=output_dir,
         tags=["test", "sr-cons"],
@@ -44,8 +44,8 @@ def main(config: DictConfig):
     # loop
     for batch, (x, y) in enumerate(tqdm(dm.test_dataloader(), desc="Testing")):
         # fine and coarse data
-        xcoarse = x[:, :, :, ::2, ::2, ::2]
-        ycoarse = y[:, :, :, ::2, ::2, ::2]
+        xcoarse = x[:, :, :, ::2, ::2]
+        ycoarse = y[:, :, :, ::2, ::2]
 
         # print shapes
         print(f"x: {x.shape}, xcoarse: {xcoarse.shape}")
@@ -54,7 +54,7 @@ def main(config: DictConfig):
         with torch.no_grad():
             pred_fine = model.predict(x.to(device), y.shape[2]).cpu()
         # pred_fine: Tensor = denorm(pred_fine)
-        pred_fine_ds = pred_fine[:, :, :, ::2, ::2, ::2]
+        pred_fine_ds = pred_fine[:, :, :, ::2, ::2]
 
         # compute coarse prediction
         with torch.no_grad():
