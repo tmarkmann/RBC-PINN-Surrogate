@@ -114,8 +114,8 @@ class LRAN2DModule(pl.LightningModule):
 
         return {
             "loss": loss,
-            "y": x,
-            "y_hat": x_hat,
+            "ground_truth": x,
+            "prediction": x_hat,
         }
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
