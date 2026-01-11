@@ -69,14 +69,6 @@ def main(config: DictConfig):
         pred: Tensor = denorm(y_hat)
         target: Tensor = denorm(y)
 
-        # check for NaNs
-        if torch.isnan(target).any():
-            print(f"NaNs in target for batch {batch}")
-            continue
-        if torch.isnan(pred).any():
-            print(f"NaNs in predictions for batch {batch}")
-            continue
-
         # 1) Sequence Metrics NRSSE and RMSE
         seq_len = pred.shape[2]
         for t in range(seq_len):

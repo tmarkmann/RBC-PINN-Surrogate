@@ -120,9 +120,9 @@ methods = [
     "3d-lran",
     # "3d-lstm",
 ]
-# for sweep, method in zip(sweeps, methods):
-#     get_results(sweep, method, tag="revision_test")
+for sweep, method in zip(sweeps, methods):
+    get_results(sweep, method, tag="revision_test")
 
 # Download Superres runs
-get_superres_results("sail-project/RBC-3D-FNO", "3d-fno-superres")
-get_sr_cons_results("sail-project/RBC-3D-FNO", "3d-fno-superres")
+# get_superres_results("sail-project/RBC-3D-FNO", "3d-fno-superres")
+# get_sr_cons_results("sail-project/RBC-3D-FNO", "3d-fno-superres")
