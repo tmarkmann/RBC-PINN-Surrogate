@@ -10,6 +10,10 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.figure import Figure
 import numpy as np
+import logging
+
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+logging.getLogger("matplotlib.animation").setLevel(logging.WARNING)
 
 
 class Visualizer(ABC):

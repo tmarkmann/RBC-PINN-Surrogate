@@ -3,7 +3,10 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from typing import Literal
 import os
-from tqdm.auto import tqdm
+import logging
+
+logging.getLogger("matplotlib").setLevel(logging.WARNING)
+logging.getLogger("matplotlib.animation").setLevel(logging.WARNING)
 
 
 def set_size(width_pt=455, fraction=1, aspect=0.62):
@@ -290,7 +293,7 @@ def animation_3d(
 
     last_frame = 0
 
-    def frame_updater(frame, pbar):
+    def frame_updater(frame):
         """Computes the next frame of the animation."""
         nonlocal gt, pred, diff, frame_idx, last_frame
         nonlocal orig_faces, pred_faces, diff_faces
@@ -344,23 +347,20 @@ def animation_3d(
             ax2.view_init(elev=elev, azim=azim)
             ax3.view_init(elev=elev, azim=azim)
 
-        pbar.update(1)
-
         return orig_faces + pred_faces + diff_faces
 
-    with tqdm(total=time_length, desc=f"animating {feature}", unit="frames") as pbar:
-        anim = animation.FuncAnimation(
-            fig,
-            frame_updater,
-            frames=time_length,
-            interval=1000 / fps,
-            blit=True,
-            fargs=(pbar,),
-        )
+    # create matplotlib animation
+    anim = animation.FuncAnimation(
+        fig,
+        frame_updater,
+        frames=time_length,
+        interval=1000 / fps,
+        blit=True,
+    )
+    os.makedirs(anim_dir, exist_ok=True)
+    out = os.path.join(anim_dir, anim_name)
+    anim.save(out, dpi=500)
 
-        os.makedirs(anim_dir, exist_ok=True)
-        out = os.path.join(anim_dir, anim_name)
-        anim.save(out, dpi=500)
     plt.close()
     return out
 

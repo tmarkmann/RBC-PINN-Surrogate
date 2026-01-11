@@ -28,11 +28,7 @@ def main(config: DictConfig):
     dm.setup("fit")
 
     # model
-    denormalize = dm.datasets["train"].denormalize_batch
-    model = FNO3DModule(
-        denormalize=denormalize,
-        **config["model"],
-    )
+    model = FNO3DModule(**config["model"])
 
     # logger
     logger = WandbLogger(

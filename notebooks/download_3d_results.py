@@ -34,6 +34,7 @@ def get_superres_results(project, method):
                 os.makedirs(outdir, exist_ok=True)
                 df.to_csv(f"{outdir}/sr{sr}-{seed}.csv", index=False)
 
+
 def get_sr_cons_results(project, method):
     # set your entity and project
     api = wandb.Api()
@@ -58,6 +59,7 @@ def get_sr_cons_results(project, method):
                 outdir = f"{root}/{method}"
                 os.makedirs(outdir, exist_ok=True)
                 df.to_csv(f"{outdir}/sr-cons-{seed}.csv", index=False)
+
 
 def get_results(project, method, tag):
     # set your entity and project

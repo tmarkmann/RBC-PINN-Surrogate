@@ -1,5 +1,5 @@
 from itertools import chain
-from typing import Any, Dict, Callable
+from typing import Any, Dict
 
 import lightning.pytorch as pl
 import torch.nn as nn
@@ -28,8 +28,6 @@ class LRAN3DModule(pl.LightningModule):
         lr_operator: float,
         lr_autoencoder: float,
         train_autoencoder: bool = True,
-        # Misc
-        denormalize: Callable = None,
     ) -> None:
         super().__init__()
         self.save_hyperparameters(ignore=["denormalize"])
@@ -68,37 +66,30 @@ class LRAN3DModule(pl.LightningModule):
         # Loss
         self.loss = mse_loss
 
-        # Denormalize
-        self.denormalize = denormalize
-
-    def forward(self, x: Tensor) -> Tensor:
-        # Encode input
-        g = self.encode(x)
-        g_next = self.operator(g)
-        x_hat = self.decode(g_next)
-        return x_hat
+    def forward(self, g: Tensor) -> Tensor:
+        return self.operator(g)
 
     def encode(self, x: Tensor) -> Tensor:
         z = self.autoencoder.encode(x)
-        g = self.encoder_linear(z)
-        return g
+        return self.encoder_linear(z)
 
     def decode(self, g: Tensor) -> Tensor:
         z = self.decoder_linear(g)
-        x_hat = self.autoencoder.decode(z)
-        return x_hat
+        return self.autoencoder.decode(z)
 
     def predict(self, input: Tensor, length) -> Tensor:
         self.eval()
         with torch.no_grad():
-            pred = []
+            # encode input to latent space
+            g = self.encode(input.squeeze(dim=2))
+
             # autoregressive model steps
-            out = input.squeeze(dim=2).to(self.device)
+            pred = []
             for _ in range(length):
-                out = self.forward(out)
-                if self.denormalize is not None:
-                    out = self.denormalize(out.detach().cpu())
-                pred.append(out)
+                g = self.forward(g)
+                x_hat = self.decode(g)
+                pred.append(x_hat)
+
             return torch.stack(pred, dim=2)
 
     def model_step(

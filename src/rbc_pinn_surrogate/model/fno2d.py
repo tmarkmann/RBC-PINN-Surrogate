@@ -148,7 +148,7 @@ class FNO2DModule(L.LightningModule):
     def predict(self, input: Tensor, length: int) -> Tensor:
         with torch.inference_mode():
             if self.dim == "2d":
-                y_hat = self.multi_step_2d(input.squeeze(2), length)
+                y_hat = self.multi_step_2d(input[:, :, -1].squeeze(2), length)
             else:
                 y_hat = self.multi_step_3d(input, length)
 

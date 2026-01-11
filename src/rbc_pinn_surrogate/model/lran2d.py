@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple, Callable
+from typing import Any, Dict, Callable
 
 import lightning.pytorch as pl
 import torch.nn as nn
@@ -57,11 +57,29 @@ class LRAN2DModule(pl.LightningModule):
         # Debugging
         self.example_input_array = torch.zeros(1, input_channel, 64, 96)
 
-    def forward(self, x: Tensor) -> Tuple[Tensor, Tensor, Tensor]:
-        g = self.autoencoder.encode(x)
-        g_next = self.operator(g)
-        x_hat = self.autoencoder.decode(g_next)
-        return x_hat, g_next, g
+    def forward(self, g: Tensor) -> Tensor:
+        return self.operator(g)
+
+    def encode(self, x: Tensor) -> Tensor:
+        return self.autoencoder.encode(x)
+
+    def decode(self, g: Tensor) -> Tensor:
+        return self.autoencoder.decode(g)
+
+    def predict(self, input: Tensor, length) -> Tensor:
+        self.eval()
+        with torch.no_grad():
+            # encode input to latent space
+            g = self.encode(input[:, :, -1].squeeze(dim=2))
+
+            # autoregressive model steps
+            pred = []
+            for _ in range(length):
+                g = self.forward(g)
+                x_hat = self.decode(g)
+                pred.append(x_hat)
+
+            return torch.stack(pred, dim=2)
 
     def model_step(self, x: Tensor, stage: str) -> Dict[str, Tensor]:
         seq_length = x.shape[2]
@@ -69,16 +87,16 @@ class LRAN2DModule(pl.LightningModule):
         # Get ground truth for observables
         with torch.no_grad():
             for tau in range(0, seq_length):
-                g.append(self.autoencoder.encode(x[:, :, tau]).detach())
+                g.append(self.encode(x[:, :, tau]).detach())
 
         # Prediction
         g0 = g[0].detach()
         g_hat.append(g0)
-        x_hat.append(self.autoencoder.decode(g0))
+        x_hat.append(self.decode(g0))
         # Predict sequence
         for tau in range(1, seq_length):
-            g_hat.append(self.operator(g_hat[tau - 1]))
-            x_hat.append(self.autoencoder.decode(g_hat[tau]))
+            g_hat.append(self.forward(g_hat[tau - 1]))
+            x_hat.append(self.decode(g_hat[tau]))
         # To tensor
         g = torch.stack(g, dim=1)
         g_hat = torch.stack(g_hat, dim=1)

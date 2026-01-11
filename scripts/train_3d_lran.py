@@ -29,11 +29,7 @@ def main(config: DictConfig):
     dm.setup("fit")
 
     # model
-    denormalize = dm.datasets["train"].denormalize_batch
-    model = LRAN3DModule(
-        denormalize=denormalize,
-        **config["model"],
-    )
+    model = LRAN3DModule(**config["model"])
 
     # logger
     logger = WandbLogger(

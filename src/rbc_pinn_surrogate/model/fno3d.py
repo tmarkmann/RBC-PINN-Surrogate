@@ -1,4 +1,4 @@
-from typing import Dict, Callable
+from typing import Dict
 import torch
 from torch import Tensor
 import lightning as L
@@ -20,7 +20,6 @@ class FNO3DModule(L.LightningModule):
         lifting_channels: int = 16,
         projection_channels: int = 16,
         n_layers: int = 2,
-        denormalize: Callable = None,
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["denormalize"])
@@ -41,24 +40,16 @@ class FNO3DModule(L.LightningModule):
         # Loss Function
         self.loss = no.H1Loss(d=3)
 
-        # Denormalize
-        self.denormalize = denormalize
-
     def forward(self, x):
         return self.model(x)
-
-    # TODO vereinheitlichen
 
     def predict(self, input: Tensor, length) -> Tensor:
         with torch.no_grad():
             pred = []
-            # autoregressive model steps
             out = input.squeeze(dim=2)
+            # autoregressive model steps
             for _ in range(length):
-                out = self.forward(out)
-                if self.denormalize is not None:
-                    out = self.denormalize(out.detach().cpu())
-                pred.append(out)
+                pred.append(self.forward(out))
             return torch.stack(pred, dim=2)
 
     def model_step(
