@@ -1,9 +1,10 @@
-from typing import Any, Dict, Callable, Optional, Tuple
+from typing import Any, Dict, Tuple
 import torch
 from torch import Tensor
 import lightning as L
 
 from rbc_pinn_surrogate.model.components.unet import UNet
+import rbc_pinn_surrogate.callbacks.metrics_3d as metrics
 
 
 class UNet3DModule(L.LightningModule):
@@ -14,11 +15,9 @@ class UNet3DModule(L.LightningModule):
         padding: Tuple[str, ...] = ("circular", "zeros", "circular"),
         in_channels: int = 4,
         out_channels: int = 4,
-        denormalize: Optional[Callable[[Tensor], Tensor]] = None,
     ):
         super().__init__()
-        self.save_hyperparameters(ignore=["denormalize"])
-        self.denormalize = denormalize
+        self.save_hyperparameters()
 
         # Model
         self.model = UNet(
@@ -28,6 +27,7 @@ class UNet3DModule(L.LightningModule):
             padding=padding,
             nl=torch.nn.GELU(),
         )
+        self.model.to(self.device)
 
         self.loss = torch.nn.MSELoss()
 
@@ -59,12 +59,21 @@ class UNet3DModule(L.LightningModule):
         loss = self.loss(y_hat, y)
         self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
 
-        # denormalize for logging
-        if self.denormalize is not None:
-            y_hat = self.denormalize(y_hat)
-            y = self.denormalize(y)
+        # time metrics
+        lrmse, lnrsse = [], []
+        for idx in range(y.shape[2]):
+            lrmse.append(metrics.rmse(y_hat[:, :, idx], y[:, :, idx]))
+            lnrsse.append(metrics.nrsse(y_hat[:, :, idx], y[:, :, idx]))
+        rmse = torch.stack(lrmse).detach().cpu()
+        nrsse = torch.stack(lnrsse).detach().cpu()
+        self.log(f"{stage}/RMSE", rmse.mean(), logger=True)
+        self.log(f"{stage}/NRSSE", nrsse.mean(), logger=True)
 
-        return {"loss": loss}
+        return {
+            "loss": loss,
+            "rmse": rmse,
+            "nrsse": nrsse,
+        }
 
     def training_step(
         self, batch: Tuple[Tensor, Tensor], batch_idx: int

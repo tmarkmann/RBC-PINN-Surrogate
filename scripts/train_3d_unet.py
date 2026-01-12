@@ -27,8 +27,7 @@ def main(config: DictConfig):
     dm.setup("fit")
 
     # model
-    denormalize = dm.datasets["train"].denormalize_batch
-    model = UNet3DModule(**config["model"], denormalize=denormalize)
+    model = UNet3DModule(**config["model"])
 
     # logger
     logger = WandbLogger(
@@ -52,8 +51,7 @@ def main(config: DictConfig):
         ModelCheckpoint(
             dirpath=f"{output_dir}/checkpoints/",
             save_top_k=1,
-            save_weights_only=True,
-            monitor="val/RMSE",
+            monitor="val/loss",
             mode="min",
         ),
         ClearMemoryCallback(),
