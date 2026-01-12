@@ -31,10 +31,10 @@ data:
 
 model:
   lr: 0.001
-  features: [32, 64]
+  features: [32, 64, 128, 256]
 
 trainer:
-  max_epochs: 75
+  max_epochs: 30
   accelerator: auto
   detect_anomaly: false
 

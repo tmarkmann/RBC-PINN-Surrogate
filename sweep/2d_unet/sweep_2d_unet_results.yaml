@@ -1,0 +1,21 @@
+program: scripts/train_2d_unet.py
+name: LRAN_Results
+
+method: grid
+metric:
+  goal: minimize
+  name: val/loss
+
+parameters:
+  seed:
+    values: [0, 1, 2, 3, 4]
+  data.ra:
+    values: [300_000, 1_000_000, 3_000_000, 10_000_000]
+  data.data_dir:
+    value: /vol/cfd/rbc/2D
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}
