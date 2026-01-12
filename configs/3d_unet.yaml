@@ -1,0 +1,43 @@
+defaults:
+  - _self_
+  - paths: default
+  - hydra: default
+  - options: null
+  - experiment/unet: null
+
+seed: 42
+
+data:
+  data_dir: data/3D
+  ra: 2500
+  batch_size: 8
+  start: 200 # t=100
+  end: 600 # t=300
+  train_length: 10
+  train_shift: 5
+  test_length: 100
+  test_shift: 50
+  stride: 1
+  downsample_factor: 1
+  nr_episodes_train: null
+  nr_episodes_val: null
+  nr_episodes_test: null
+  # Data efficiency settings
+  num_workers: 2
+  pin_memory: True
+  persistent_workers: True
+  pressure: False
+
+model:
+  lr: 0.001
+  features: [32, 64, 128]
+
+trainer:
+  max_epochs: 30
+  accelerator: auto
+  detect_anomaly: false
+
+tags:
+  - train
+
+task_name: 3d_unet

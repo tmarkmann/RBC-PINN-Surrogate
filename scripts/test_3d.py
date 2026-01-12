@@ -10,7 +10,7 @@ import torch
 from torch import Tensor
 
 from rbc_pinn_surrogate.data import RBCDatamodule3D
-from rbc_pinn_surrogate.model import FNO3DModule, LRAN3DModule
+from rbc_pinn_surrogate.model import FNO3DModule, LRAN3DModule, UNet3DModule
 from rbc_pinn_surrogate.utils.vis_3d import animation_3d, plot_paper
 import rbc_pinn_surrogate.callbacks.metrics_3d as metrics
 
@@ -43,6 +43,8 @@ def main(config: DictConfig):
         model = FNO3DModule.load_from_checkpoint(config["checkpoint"])
     elif config["model"] == "lran":
         model = LRAN3DModule.load_from_checkpoint(config["checkpoint"])
+    elif config["model"] == "unet":
+        model = UNet3DModule.load_from_checkpoint(config["checkpoint"])
     model.to(device)
     model.eval()
 

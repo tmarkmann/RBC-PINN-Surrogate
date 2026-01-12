@@ -1,0 +1,40 @@
+program: scripts/train_3d_unet.py
+name: UNet
+
+method: bayes
+metric:
+  goal: minimize
+  name: val/NRSSE
+
+parameters:
+  # fixed
+  data.data_dir:
+    value: /vol/cfd/rbc/3D-ld
+  data.start:
+    value: 500
+  data.end:
+    value: 1000
+
+  # sweep
+  seed:
+    values: [0, 1, 2]
+  data.train_length:
+    values: [1, 2, 4, 8, 12, 16]
+  model.lr:
+    values: [0.0001, 0.0003, 0.001, 0.003]
+  model.features:
+    values:
+      - [16, 32]
+      - [32, 64]
+      - [64, 128]
+      - [16, 32, 64]
+      - [32, 64, 128]
+      - [64, 128, 256]
+      - [16, 32, 64, 128]
+      - [32, 64, 128, 256]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}
