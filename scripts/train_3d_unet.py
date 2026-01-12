@@ -54,7 +54,6 @@ def main(config: DictConfig):
             monitor="val/loss",
             mode="min",
         ),
-        ClearMemoryCallback(),
     ]
 
     # trainer

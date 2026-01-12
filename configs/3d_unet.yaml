@@ -30,7 +30,7 @@ data:
 
 model:
   lr: 0.001
-  features: [32, 64, 128]
+  features: [32, 64]
 
 trainer:
   max_epochs: 30

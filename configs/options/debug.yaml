@@ -4,11 +4,13 @@ trainer:
   max_epochs: 1
   accelerator: cpu
   detect_anomaly: true
+  log_every_n_steps: 2
 
 data:
+  batch_size: 16
   num_workers: 0
   pin_memory: False
   persistent_workers: False
-  nr_episodes_train: 5
-  nr_episodes_val: 5
-  nr_episodes_test: 2
+  nr_episodes_train: 1
+  nr_episodes_val: 1
+  nr_episodes_test: 1
