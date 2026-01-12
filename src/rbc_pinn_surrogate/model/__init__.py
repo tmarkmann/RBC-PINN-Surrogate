@@ -6,6 +6,7 @@ from .lran2d import LRAN2DModule
 from .lran3d import LRAN3DModule
 from .ae2d import Autoencoder2DModule
 from .ae3d import Autoencoder3DModule
+from .unet2d import UNet2DModule
 
 __all__ = [
     "FNO2DModule",
@@ -16,4 +17,5 @@ __all__ = [
     "LRAN3DModule",
     "Autoencoder2DModule",
     "Autoencoder3DModule",
+    "UNet2DModule",
 ]

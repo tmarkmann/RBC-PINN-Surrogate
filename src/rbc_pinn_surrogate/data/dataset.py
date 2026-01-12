@@ -190,8 +190,12 @@ class RBCDataset2D(RBCDataset):
         # normalization
         self.means = self.means[: self.nr_channels]
         self.stds = self.stds[: self.nr_channels]
-        self.means = torch.as_tensor(self.means).view(self.nr_channels, 1, 1, 1)
-        self.stds = torch.as_tensor(self.stds).view(self.nr_channels, 1, 1, 1)
+        self.means = torch.as_tensor(self.means, dtype=torch.float32).view(
+            self.nr_channels, 1, 1, 1
+        )
+        self.stds = torch.as_tensor(self.stds, dtype=torch.float32).view(
+            self.nr_channels, 1, 1, 1
+        )
 
 
 class RBCDataset3D(RBCDataset):
