@@ -1,7 +1,8 @@
 import copy
 import torch
+import torch.nn.functional as F
 import torch.nn as nn
-from rbc_pinn_surrogate.utils import padding
+#from rbc_pinn_surrogate.utils import padding
 
 
 class MaxPool(nn.Module):
@@ -85,13 +86,24 @@ class ResNetBlock(nn.Module):
         self.conv = cls(in_channels, out_channels, kernel_size=1)
         self.padding = padding
         self.dims = dims
+        self._pads = []
+        for pm, dim in zip(self.padding, range(self.dims)):
+            pad = [0] * (2 * self.dims)
+            pad_idx = 2 * (self.dims - 1 - dim)
+            pad[pad_idx] = 2
+            pad[pad_idx + 1] = 2
+            mode = "constant" if pm == "zeros" else pm
+            self._pads.append((pad, mode))
 
     def forward(self, x):
-        x1, x2 = x.clone(), x.clone()
-        for pm, dim in zip(self.padding, range(self.dims)):
-            x1 = padding.pad(x1, dim=2 + dim, extent=2, padding_mode=pm)
+        x1 = x
+        for pad, mode in self._pads:
+            if mode == "constant":
+                x1 = F.pad(x1, pad, mode=mode, value=0)
+            else:
+                x1 = F.pad(x1, pad, mode=mode)
 
-        y = self.conv(x2)
+        y = self.conv(x)
         z = self.dc(x1)
 
         return y + z

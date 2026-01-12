@@ -10,7 +10,7 @@ from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig, OmegaConf
 from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import UNet3DModule
-from rbc_pinn_surrogate.callbacks import ClearMemoryCallback, Metrics3DCallback
+from rbc_pinn_surrogate.callbacks import Metrics3DCallback
 
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="3d_unet")
