@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple, Callable
+from typing import Any, Dict, List, Tuple, Callable
 
 import torch
 import torch.nn as nn
@@ -15,7 +15,7 @@ class Autoencoder2DModule(LightningModule):
         self,
         latent_dimension: int,
         input_channel: int,
-        base_filters: int,
+        channels: List[int],
         kernel_size: int,
         lr: float,
         inv_transform: Callable = None,
@@ -26,7 +26,7 @@ class Autoencoder2DModule(LightningModule):
         # model
         self.activation = nn.GELU
         self.autoencoder = Autoencoder2D(
-            latent_dimension, input_channel, base_filters, kernel_size, self.activation
+            latent_dimension, input_channel, channels, kernel_size, self.activation
         )
 
         # Denormalize
@@ -40,18 +40,18 @@ class Autoencoder2DModule(LightningModule):
         x_hat, _ = self.autoencoder(x)
         return x_hat
 
-    def model_step(self, x: Tensor, stage: str) -> Tuple[Tensor, Tensor, Tensor]:
-        # check input dimensions
-        assert x.shape[2] == 1, "Expect sequence length of 1 for autoencoder training"
+    def model_step(self, input: Tensor, stage: str) -> Tuple[Tensor, Tensor, Tensor]:
+        # model forward (make sure only one time step)
+        x = input[:,:,-1]
+        x_hat = self.forward(x)
 
-        # model forward
-        x_hat = self.forward(x.squeeze(dim=2))
+        # dim expand for callbacks and denormalization
+        x = x.unsqueeze(dim=2)
         x_hat = x_hat.unsqueeze(dim=2)
 
         # compute loss
         loss = mse_loss(x_hat, x)
         self.log(f"{stage}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
-        self.log(f"{stage}/RMSE", torch.sqrt(loss), on_step=False, on_epoch=True)
 
         # Apply inverse transform
         if self.denormalize is not None:
@@ -61,8 +61,8 @@ class Autoencoder2DModule(LightningModule):
 
         return {
             "loss": loss,
-            "y_hat": x_hat,
-            "y": x,
+            "prediction": x_hat,
+            "ground_truth": x,
         }
 
     def training_step(self, batch, batch_idx):

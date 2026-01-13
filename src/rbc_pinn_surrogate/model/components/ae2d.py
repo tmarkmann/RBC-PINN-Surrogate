@@ -1,4 +1,5 @@
-from typing import Tuple
+from typing import List, Tuple
+from collections import OrderedDict
 
 import torch.nn as nn
 from torch import Tensor
@@ -9,27 +10,19 @@ class Autoencoder2D(nn.Module):
         self,
         latent_dimension: int,
         input_channel: int,
-        base_filters: int,
+        channels: List[int],
         kernel_size: int,
         activation: nn.Module,
     ):
-        """Initialize an `Autoencoder`.
-
-        Args:
-            latent_dimension (int): The latent dimension of the autoencoder.
-            input_channel (int): The number of channels of the input.
-            base_filters (int): The number of filters used in the first layer of the encoder.
-            activation (torch.nn.Module): The activation function usde in encoder and decoder.
-        """
         super().__init__()
         self.latent_dimension = latent_dimension
         self.input_channel = input_channel
-        self.base_filters = base_filters
+        self.channels = channels
         self.kernel_size = kernel_size
 
         # Build models
-        self.encoder = _Encoder(input_channel, base_filters, kernel_size, activation)
-        self.decoder = _Decoder(input_channel, base_filters, kernel_size, activation)
+        self.encoder = _Encoder(input_channel, channels, kernel_size, activation)
+        self.decoder = _Decoder(input_channel, channels, kernel_size, activation)
 
         # linear layers
         self.encoder_linear = nn.Linear(self.encoder.out_dim, latent_dimension)
@@ -74,39 +67,14 @@ class Autoencoder2D(nn.Module):
                 param.requires_grad = False
 
     def forward(self, x: Tensor) -> Tuple[Tensor, Tensor]:
-        """Perform a forward pass through the model consisting of encoding and decoding the input.
-
-        Args:
-            x (Tensor): A tensor x of size (b,c,h,w).
-
-        Returns:
-            - x_hat (Tensor): Reconstructed image of size (b,c,h,w).
-            - z (Tensor): Latent variable z if size (b, l).
-        """
         z = self.encode(x)
         x_hat = self.decode(z)
         return x_hat, z
 
     def encode(self, x: Tensor) -> Tensor:
-        """Encodes the input image to latent space.
-
-        Args:
-            x (Tensor): A tensor x of size (b,c,h,w).
-
-        Returns:
-            z (Tensor): Latent variable z if size (b, l).
-        """
         return self.encoder_linear(self.encoder(x))
 
     def decode(self, z: Tensor) -> Tensor:
-        """Decodes latent variable to image.
-
-        Args:
-            z (Tensor): Latent variable z if size (b, l).
-
-        Returns:
-            x_hat (Tensor): A tensor x of size (b,c,h,w)
-        """
         return self.decoder(self.decoder_linear(z))
 
 
@@ -114,30 +82,28 @@ class _Encoder(nn.Module):
     def __init__(
         self,
         input_channel: int,
-        base_filters: int,
+        channels: List[int],
         kernel_size: int,
         activation: nn.Module,
     ) -> None:
         super().__init__()
 
-        # Parameters
-        hid = base_filters
-        k = kernel_size
-        self.out_dim = 2 * 3 * 4 * hid
+        # Build net
+        layers = OrderedDict()
+        for index, out_channels in enumerate(channels):
+            layers[f"conv_{index}"] = nn.Conv2d(
+                in_channels=input_channel if index == 0 else channels[index - 1],
+                out_channels=out_channels,
+                kernel_size=kernel_size,
+                padding=kernel_size//2,
+            )
+            layers[f"activation_{index}"] = activation()
+            layers[f"pool_{index}"] = nn.MaxPool2d(kernel_size=(2, 2))
+        layers["flatten"] = nn.Flatten()
+        self.net = nn.Sequential(layers)
 
-        self.net = nn.Sequential(
-            nn.Conv2d(input_channel, hid, kernel_size=k, padding=2, stride=2),
-            activation(),
-            nn.Conv2d(hid, 2 * hid, kernel_size=k, padding=2, stride=2),
-            activation(),
-            nn.Conv2d(2 * hid, 2 * hid, kernel_size=k, padding=2, stride=2),
-            activation(),
-            nn.Conv2d(2 * hid, 4 * hid, kernel_size=k, padding=2, stride=2),
-            activation(),
-            nn.Conv2d(4 * hid, 4 * hid, kernel_size=k, padding=2, stride=2),
-            activation(),
-            nn.Flatten(),
-        )
+        # output dimension
+        self.out_dim = (96 * 64 * channels[-1]) // (4 ** len(channels))
 
     def forward(self, x) -> Tensor:
         return self.net(x)
@@ -147,37 +113,38 @@ class _Decoder(nn.Module):
     def __init__(
         self,
         input_channel: int,
-        base_filters: int,
+        channels: List[int],
         kernel_size: int,
         activation: nn.Module,
     ) -> None:
         super().__init__()
 
-        # Parameters
-        hid = base_filters
-        k = kernel_size
+        # Build net
+        layers = OrderedDict()
+        for index, out_channels in enumerate(reversed(channels)):
+            layers[f"deconv_{index}"] = nn.ConvTranspose2d(
+                in_channels=channels[-index - 1] if index == 0 else channels[-index],
+                out_channels=out_channels,
+                kernel_size=kernel_size,
+                stride=2,
+                padding=2,
+                output_padding=1,
+            )
+            layers[f"activation_{index}"] = activation()
 
-        # Model
-        self.net = nn.Sequential(
-            nn.ConvTranspose2d(
-                4 * hid, 4 * hid, k, padding=2, stride=2, output_padding=1
-            ),
-            activation(),
-            nn.ConvTranspose2d(
-                4 * hid, 2 * hid, k, padding=2, stride=2, output_padding=1
-            ),
-            activation(),
-            nn.ConvTranspose2d(
-                2 * hid, 2 * hid, k, padding=2, stride=2, output_padding=1
-            ),
-            activation(),
-            nn.ConvTranspose2d(2 * hid, hid, k, padding=2, stride=2, output_padding=1),
-            activation(),
-            nn.ConvTranspose2d(
-                hid, input_channel, k, padding=2, stride=2, output_padding=1
-            ),
+        layers["final_deconv"] = nn.ConvTranspose2d(
+            in_channels=channels[0],
+            out_channels=input_channel,
+            kernel_size=kernel_size,
+            stride=1,
+            padding=kernel_size // 2,
         )
+        self.net = nn.Sequential(layers)
+
+        # determine latent size
+        self.xs = 96 // (2 ** len(channels))
+        self.ys = 64 // (2 ** len(channels))
 
     def forward(self, x) -> Tensor:
-        x = x.reshape(x.shape[0], -1, 2, 3)
+        x = x.reshape(x.shape[0], -1, self.ys, self.xs)
         return self.net(x)
