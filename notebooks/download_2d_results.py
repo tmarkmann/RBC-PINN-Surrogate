@@ -111,20 +111,22 @@ sweeps = [
     "sail-project/RBC-2D-FNO/fifkw3tu",
     "sail-project/RBC-2D-FNO/jg6h5fco",
     "sail-project/RBC-2D-LRAN/mzly1064",
+    "sail-project/RBC-2D-UNET/29mooea6",
 ]
 methods = [
-    # "2d-fno2d",
+    "2d-fno2d",
     "2d-fno3d",
     "2d-lran",
+    "2d-unet",
 ]
 
 # Download test runs
-for project, method in zip(projects, methods):
-    get_results(project, method, "revision_test")
+# for project, method in zip(projects, methods):
+#     get_results(project, method, "revision_test")
 
 # # Download Result sweep runs
-# for sweep, method in zip(sweeps, methods):
-#    get_sweep_results(sweep, method)
+for sweep, method in zip(sweeps, methods):
+    get_sweep_results(sweep, method)
 
 # Download Superres runs
 # get_superres_results("sail-project/RBC-2D-FNO/g4damf96", "2d-fno-superres")

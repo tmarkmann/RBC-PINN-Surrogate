@@ -12,6 +12,7 @@ from rbc_pinn_surrogate.data import RBCDatamodule2D
 from rbc_pinn_surrogate.model import Autoencoder2DModule
 from rbc_pinn_surrogate.callbacks import (
     Examples2DCallback,
+    Metrics2DCallback,
 )
 
 
@@ -38,6 +39,7 @@ def main(config: DictConfig):
         project="RBC-2D-AE",
         save_dir=output_dir,
         log_model=False,
+        config=config,
     )
 
     # callbacks
@@ -49,6 +51,10 @@ def main(config: DictConfig):
             mode="min",
             patience=8,
         ),
+        Metrics2DCallback(
+            key_groundtruth="ground_truth",
+            key_prediction="prediction",
+        ),
         Examples2DCallback(
             train_freq=20,
         ),
@@ -56,7 +62,7 @@ def main(config: DictConfig):
             dirpath=f"{output_dir}/checkpoints/",
             save_top_k=1,
             save_weights_only=True,
-            monitor="val/RMSE",
+            monitor="val/loss",
             mode="min",
         ),
     ]

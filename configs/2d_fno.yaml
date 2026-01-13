@@ -7,7 +7,7 @@ defaults:
 seed: 42
 
 data:
-  data_dir: data/2D
+  data_dir: ${paths.data_dir}/2D
   ra: 1000000
   batch_size: 32
   start: 200
@@ -19,7 +19,7 @@ data:
   stride: 1
   train_downsample: 1
   test_downsample: 1
-  nr_episodes_train: null # this means all of them
+  nr_episodes_train: null
   nr_episodes_val: null
   nr_episodes_test: null
   # Data efficiency settings
@@ -30,10 +30,10 @@ data:
   normalize: True
 
 model:
-  dim: 3d # options: 2d, 3d
+  dim: 2d # options: 2d, 3d
   loss: H1
-  lr: 3e-3
-  weight_decay: 1e-3
+  lr: 0.001
+  weight_decay: 0.001
   n_modes_time: 16
   n_modes_space: 16
   hidden_channels: 32
@@ -44,7 +44,7 @@ model:
   n_layers: 4
 
 trainer:
-  max_epochs: 75
+  max_epochs: 50
   accelerator: auto
   detect_anomaly: false
 

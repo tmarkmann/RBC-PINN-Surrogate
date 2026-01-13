@@ -1,4 +1,4 @@
 # @package _global_
 
-data:
-  data_dir: /vol/cfd/rbc/3D
+paths:
+  data_dir: /vol/cfd/rbc/

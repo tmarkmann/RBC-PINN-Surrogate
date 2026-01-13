@@ -27,7 +27,7 @@ class UNet3DModule(L.LightningModule):
             padding=padding,
             nl=torch.nn.GELU(),
         )
-        
+
         self.loss = torch.nn.MSELoss()
 
     def forward(self, x: Tensor) -> Tensor:

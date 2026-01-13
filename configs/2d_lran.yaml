@@ -1,13 +1,14 @@
 defaults:
+  - _self_
   - paths: default
   - hydra: default
-  - _self_
+  - options: null
 
 seed: 42
 
 data:
-  data_dir: data/2D
-  ra: 3000000
+  data_dir: ${paths.data_dir}/2D
+  ra: 1000000
   batch_size: 32
   start: 200
   end: 600
@@ -18,12 +19,12 @@ data:
   stride: 1
   train_downsample: 1
   test_downsample: 1
-  nr_episodes_train: null # this means all of them
+  nr_episodes_train: null
   nr_episodes_val: null
   nr_episodes_test: null
   # Data efficiency settings
   num_workers: 2
-  pin_memory: True
+  pin_memory: False
   persistent_workers: True
   pressure: False
   normalize: True

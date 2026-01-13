@@ -41,6 +41,7 @@ def main(config: DictConfig):
         project="RBC-2D-UNET",
         save_dir=output_dir,
         log_model=False,
+        config=config,
     )
 
     # callbacks
@@ -67,7 +68,7 @@ def main(config: DictConfig):
             dirpath=f"{output_dir}/checkpoints/",
             save_top_k=1,
             save_weights_only=True,
-            monitor="val/RMSE",
+            monitor="val/loss",
             mode="min",
         ),
         ClearMemoryCallback(),
@@ -78,7 +79,6 @@ def main(config: DictConfig):
         **config["trainer"],
         logger=logger,
         default_root_dir=output_dir,
-        log_every_n_steps=10,
         callbacks=callbacks,
     )
 
