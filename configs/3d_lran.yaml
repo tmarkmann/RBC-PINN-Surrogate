@@ -1,38 +1,17 @@
 defaults:
-  - _self_
   - paths: default
   - hydra: default
+  - data: 3d
   - options: null
+  - _self_
   - experiment/lran: null
 
 seed: 42
 
-data:
-  data_dir: data/3D
-  ra: 2500
-  pressure: False
-  normalize: True
-  batch_size: 8
-  # Data slicing settings
-  start: 200 # t=300
-  end: 600 # t=500
-  train_length: 8
-  train_shift: 4
-  test_length: 100
-  test_shift: 50
-  stride: 1
-  nr_episodes_train: 50
-  nr_episodes_val: 20
-  nr_episodes_test: 20
-  # Data efficiency settings
-  num_workers: 2
-  pin_memory: True
-  persistent_workers: True
-
 model:
-  ae_ckpt: ${paths.model_dir}/3d_ae/ra${data.ra}.ckpt
+  ae_ckpt: ${paths.model_dir}/3d_ae/ld/ra${data.ra}.ckpt
   input_size: [4, 48, 32, 48]
-  latent_dimension: 256
+  latent_dimension: 1024
   lambda_id: 1
   lambda_fwd: 1
   lambda_hid: 5

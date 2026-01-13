@@ -1,14 +1,13 @@
 import hydra
-from omegaconf import DictConfig, OmegaConf
 import lightning as L
-from lightning.pytorch.loggers import WandbLogger
 from lightning.pytorch.callbacks import (
     EarlyStopping,
     RichModelSummary,
     RichProgressBar,
     ModelCheckpoint,
 )
-
+from lightning.pytorch.loggers import WandbLogger
+from omegaconf import DictConfig, OmegaConf
 from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import FNO3DModule
 from rbc_pinn_surrogate.callbacks import Metrics3DCallback
@@ -20,8 +19,8 @@ def main(config: DictConfig):
     config = OmegaConf.to_container(config, resolve=True)
     output_dir = config["paths"]["output_dir"]
 
-    # set seed for reproducability
-    L.seed_everything(config["seed"])
+    # seed
+    L.seed_everything(config["seed"], workers=True)
 
     # data
     dm = RBCDatamodule3D(**config["data"])
@@ -47,12 +46,13 @@ def main(config: DictConfig):
         EarlyStopping(
             monitor="val/loss",
             mode="min",
-            patience=15,
+            patience=8,
         ),
         Metrics3DCallback(),
         ModelCheckpoint(
             dirpath=f"{output_dir}/checkpoints/",
             save_top_k=1,
+            save_weights_only=True,
             monitor="val/loss",
             mode="min",
         ),

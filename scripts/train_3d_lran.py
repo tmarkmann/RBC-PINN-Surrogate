@@ -10,9 +10,7 @@ from lightning.pytorch.loggers import WandbLogger
 from omegaconf import DictConfig, OmegaConf
 from rbc_pinn_surrogate.data import RBCDatamodule3D
 from rbc_pinn_surrogate.model import LRAN3DModule
-from rbc_pinn_surrogate.callbacks import (
-    Metrics3DCallback,
-)
+from rbc_pinn_surrogate.callbacks import Metrics3DCallback
 
 
 @hydra.main(version_base="1.3", config_path="../configs", config_name="3d_lran")
@@ -48,7 +46,7 @@ def main(config: DictConfig):
         EarlyStopping(
             monitor="val/loss",
             mode="min",
-            patience=15,
+            patience=8,
         ),
         Metrics3DCallback(),
         ModelCheckpoint(

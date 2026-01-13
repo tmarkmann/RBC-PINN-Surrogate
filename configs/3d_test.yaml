@@ -1,35 +1,15 @@
 defaults:
   - paths: default
   - hydra: default
+  - data: 3d
+  - options: null
   - _self_
   - experiment/test: null
 
-task_name: 3d_test
-tags: 
-  - test
-
-model: lran # fno or lran
+model: lran # fno, lran, unet
 seed: 0
-checkpoint: ${paths.model_dir}/3d_${model}/ra${data.ra}-${seed}.ckpt
+checkpoint: ${paths.model_dir}/3d_${model}/ld/ra${data.ra}-${seed}.ckpt
 
-data:
-  data_dir: data/3D
-  ra: 2500
-  pressure: False
-  normalize: True
-  batch_size: 4
-  start: 200 # t=100
-  end: 600 # t=300
-  train_length: 10
-  train_shift: 5
-  test_length: 100
-  test_shift: 50
-  stride: 1
-  downsample_factor: 1
-  nr_episodes_train: null # this means all of them
-  nr_episodes_val: null
-  nr_episodes_test: null
-  # Data efficiency settings
-  num_workers: 2
-  pin_memory: True
-  persistent_workers: True
+tags:
+  - test
+task_name: 3d_test

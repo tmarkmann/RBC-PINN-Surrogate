@@ -1,4 +1,5 @@
 #!/bin/bash
+
 #SBATCH --job-name=3d_unet
 #SBATCH --partition=gpu
 #SBATCH --gres=gpu:1
@@ -12,6 +13,4 @@ source ~/miniforge3/etc/profile.d/conda.sh
 conda activate rbcpinn
 
 cd ~/RBC-PINN-Surrogate
-
-# Directly use task ID as seed
-srun uv run python scripts/train_3d_unet.py seed=$SLURM_ARRAY_TASK_ID experiment/unet=unet_ld
+srun uv run python scripts/train_3d_unet.py seed=$SLURM_ARRAY_TASK_ID options=gpucluster

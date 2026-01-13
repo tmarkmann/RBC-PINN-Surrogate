@@ -35,6 +35,7 @@ def main(config: DictConfig):
         project="RBC-3D-UNET",
         save_dir=output_dir,
         log_model=False,
+        config=config,
         tags=config["tags"],
     )
 
@@ -45,12 +46,13 @@ def main(config: DictConfig):
         EarlyStopping(
             monitor="val/loss",
             mode="min",
-            patience=15,
+            patience=8,
         ),
         Metrics3DCallback(),
         ModelCheckpoint(
             dirpath=f"{output_dir}/checkpoints/",
             save_top_k=1,
+            save_weights_only=True,
             monitor="val/loss",
             mode="min",
         ),
