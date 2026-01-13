@@ -95,7 +95,7 @@ class _Encoder(nn.Module):
                 in_channels=input_channel if index == 0 else channels[index - 1],
                 out_channels=out_channels,
                 kernel_size=kernel_size,
-                padding=kernel_size//2,
+                padding=kernel_size // 2,
             )
             layers[f"activation_{index}"] = activation()
             layers[f"pool_{index}"] = nn.MaxPool2d(kernel_size=(2, 2))

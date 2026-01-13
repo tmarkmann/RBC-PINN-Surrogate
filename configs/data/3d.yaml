@@ -10,7 +10,7 @@ normalize: True
 # Data Sequence settings
 start: 500  # t=250
 end: 1000   # t=500
-train_length: 10
+train_length: 8
 train_shift: 5
 test_length: 100
 test_shift: 50

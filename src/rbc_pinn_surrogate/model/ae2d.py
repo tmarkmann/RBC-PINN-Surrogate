@@ -42,7 +42,7 @@ class Autoencoder2DModule(LightningModule):
 
     def model_step(self, input: Tensor, stage: str) -> Tuple[Tensor, Tensor, Tensor]:
         # model forward (make sure only one time step)
-        x = input[:,:,-1]
+        x = input[:, :, -1]
         x_hat = self.forward(x)
 
         # dim expand for callbacks and denormalization

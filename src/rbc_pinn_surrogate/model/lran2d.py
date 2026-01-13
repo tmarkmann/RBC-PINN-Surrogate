@@ -6,7 +6,6 @@ import torch
 from torch import Tensor
 
 from rbc_pinn_surrogate.model.components import Autoencoder2D, KoopmanOperator
-from rbc_pinn_surrogate.metrics import NormalizedSumSquaredError
 
 
 class LRAN2DModule(pl.LightningModule):
@@ -19,7 +18,6 @@ class LRAN2DModule(pl.LightningModule):
         kernel_size: int,
         ae_ckpt: str,
         # Loss params
-        loss: str,
         lambda_id: float,
         lambda_fwd: float,
         lambda_hid: float,
@@ -44,12 +42,7 @@ class LRAN2DModule(pl.LightningModule):
         self.operator = KoopmanOperator(latent_dimension)
 
         # Loss
-        if loss == "r-mse":
-            self.loss = NormalizedSumSquaredError()
-        elif loss == "mse":
-            self.loss = torch.nn.functional.mse_loss
-        else:
-            raise ValueError(f"Loss {loss} not supported")
+        self.loss = torch.nn.functional.mse_loss
 
         # Denormalize
         self.denormalize = inv_transform

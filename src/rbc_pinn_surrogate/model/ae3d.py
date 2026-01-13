@@ -65,7 +65,7 @@ class Autoencoder3DModule(LightningModule):
         self, x: Tensor, stage: str, examples: bool = False
     ) -> Tuple[Tensor, Tensor, Tensor]:
         # model forward (make sure only one time step)
-        x_hat = self.forward(x[:,:,-1])
+        x_hat = self.forward(x[:, :, -1])
         x_hat = x_hat.unsqueeze(dim=2)
 
         # compute loss

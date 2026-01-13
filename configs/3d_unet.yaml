@@ -9,8 +9,8 @@ defaults:
 seed: 42
 
 model:
-  lr: 0.001
-  features: [32, 64]
+  lr: 0.0001
+  features: [32,64,128]
 
 trainer:
   max_epochs: 100
