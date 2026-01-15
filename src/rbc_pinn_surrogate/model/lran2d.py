@@ -1,4 +1,4 @@
-from typing import Any, Dict, Callable
+from typing import Any, Dict, Callable, List
 
 import lightning.pytorch as pl
 import torch.nn as nn
@@ -14,7 +14,7 @@ class LRAN2DModule(pl.LightningModule):
         # Autoencoder params
         latent_dimension: int,
         input_channel: int,
-        base_filters: int,
+        channels: List[int],
         kernel_size: int,
         ae_ckpt: str,
         # Loss params
@@ -33,7 +33,7 @@ class LRAN2DModule(pl.LightningModule):
         # Model
         activation = nn.GELU
         self.autoencoder = Autoencoder2D(
-            latent_dimension, input_channel, base_filters, kernel_size, activation
+            latent_dimension, input_channel, channels, kernel_size, activation
         )
         if ae_ckpt is not None:
             ckpt = torch.load(ae_ckpt, map_location="cpu", weights_only=True)
@@ -50,7 +50,13 @@ class LRAN2DModule(pl.LightningModule):
         # Debugging
         self.example_input_array = torch.zeros(1, input_channel, 64, 96)
 
-    def forward(self, g: Tensor) -> Tensor:
+    def forward(self, x: Tensor) -> Tensor:
+        g = self.encode(x)
+        g_next = self.evolve(g)
+        x_next = self.decode(g_next)
+        return x_next
+
+    def evolve(self, g: Tensor) -> Tensor:
         return self.operator(g)
 
     def encode(self, x: Tensor) -> Tensor:
@@ -68,7 +74,7 @@ class LRAN2DModule(pl.LightningModule):
             # autoregressive model steps
             pred = []
             for _ in range(length):
-                g = self.forward(g)
+                g = self.evolve(g)
                 x_hat = self.decode(g)
                 pred.append(x_hat)
 
@@ -88,7 +94,7 @@ class LRAN2DModule(pl.LightningModule):
         x_hat.append(self.decode(g0))
         # Predict sequence
         for tau in range(1, seq_length):
-            g_hat.append(self.forward(g_hat[tau - 1]))
+            g_hat.append(self.evolve(g_hat[tau - 1]))
             x_hat.append(self.decode(g_hat[tau]))
         # To tensor
         g = torch.stack(g, dim=1)

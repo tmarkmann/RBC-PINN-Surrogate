@@ -37,8 +37,8 @@ class Autoencoder2D(nn.Module):
         assert self.input_channel == params["input_channel"], (
             f"'input_channel' does not match. ({self.input_channel} != {params['input_channel']})"
         )
-        assert self.base_filters == params["base_filters"], (
-            f"'base_filters' does not match. ({self.base_filters} != {params['base_filters']})"
+        assert self.channels == params["channels"], (
+            f"'channels' does not match. ({self.channels} != {params['channels']})"
         )
         assert self.kernel_size == params["kernel_size"], (
             f"'kernel_size' does not match. ({self.kernel_size} != {params['kernel_size']})"
