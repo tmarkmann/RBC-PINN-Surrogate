@@ -57,7 +57,7 @@ def main(config: DictConfig):
             key_prediction="prediction",
         ),
         Examples2DCallback(
-            train_freq=20,
+            freq=20,
         ),
         SequenceMetricsCallback(
             key_groundtruth="ground_truth",

@@ -59,7 +59,7 @@ def main(config: DictConfig):
             patience=7,
         ),
         Examples2DCallback(
-            train_freq=20,
+            freq=20,
         ),
         Metrics2DCallback(
             name="metrics",

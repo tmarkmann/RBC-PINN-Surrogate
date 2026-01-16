@@ -55,7 +55,7 @@ def main(config: DictConfig):
             patience=20,
             min_delta=1e-5,
         ),
-        Examples2DCallback(train_freq=10),
+        Examples2DCallback(freq=10),
         Metrics2DCallback(key_groundtruth="ground_truth", key_prediction="prediction"),
     ]
 

@@ -18,6 +18,14 @@ class Metrics3DCallback(Callback):
     ):
         self.data = []
 
+    # Set up w&b metrics
+    def on_train_start(self, trainer, pl_module):
+        if isinstance(trainer.logger, WandbLogger):
+            for stage in ["train", "val", "test"]:
+                wandb.define_metric(f"{stage}/loss", summary="min")
+                wandb.define_metric(f"{stage}/RMSE", summary="min")
+                wandb.define_metric(f"{stage}/NRSSE", summary="min")
+
     # Testing callbacks
     def on_test_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0

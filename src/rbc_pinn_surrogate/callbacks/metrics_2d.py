@@ -1,10 +1,12 @@
 from typing import Dict, Tuple
 
 from lightning.pytorch.callbacks import Callback
+from lightning.pytorch.loggers import WandbLogger, Logger
 import numpy as np
-from torch import Tensor
 import torch
+from torch import Tensor
 from torch.nn.functional import mse_loss
+import wandb
 
 from rbc_pinn_surrogate.data.dataset import Field2D
 
@@ -18,29 +20,42 @@ class Metrics2DCallback(Callback):
         self.key_gt = key_groundtruth
         self.key_pred = key_prediction
 
+    # Set up w&b metrics
+    def on_train_start(self, trainer, pl_module):
+        if isinstance(trainer.logger, WandbLogger):
+            for stage in ["train", "val", "test"]:
+                wandb.define_metric(f"{stage}/loss", summary="min")
+                wandb.define_metric(f"{stage}/RMSE", summary="min")
+                wandb.define_metric(f"{stage}/NRSSE", summary="min")
+
     # Training callbacks
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx) -> None:
-        self.log_metrics(outputs, stage="train")
+        self.log_metrics(outputs, stage="train", logger=trainer.logger)
 
     # Validation callbacks
     def on_validation_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ) -> None:
-        self.log_metrics(outputs, stage="val")
+        self.log_metrics(outputs, stage="val", logger=trainer.logger)
 
     # Testing callbacks
     def on_test_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ) -> None:
-        self.log_metrics(outputs, stage="test")
+        self.log_metrics(outputs, stage="test", logger=trainer.logger)
 
     # Helper function
-    def log_metrics(self, output: Dict[str, Tensor], stage: str):
+    def log_metrics(self, output: Dict[str, Tensor], stage: str, logger: Logger):
         gt = output[self.key_gt].detach().cpu()
         pred = output[self.key_pred].detach().cpu()
 
-        self.log(f"{stage}/RMSE", rmse(pred, gt))
-        self.log(f"{stage}/NRSSE", nrsse(pred, gt))
+        if isinstance(logger, WandbLogger):
+            logger.log_metrics(
+                {
+                    f"{stage}/RMSE": rmse(pred, gt),
+                    f"{stage}/NRSSE": nrsse(pred, gt),
+                }
+            )
 
 
 def rmse(preds: Tensor, target: Tensor) -> Tensor:

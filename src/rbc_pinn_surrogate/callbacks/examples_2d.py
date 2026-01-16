@@ -7,20 +7,22 @@ from rbc_pinn_surrogate.utils.vis_2d import sequence2video
 
 
 class Examples2DCallback(Callback):
-    def __init__(self, train_freq: int = 5):
-        self.train_freq = train_freq
+    def __init__(self, freq: int = 5):
+        self.freq = freq
 
         logger = logging.getLogger("matplotlib.animation")
         logger.setLevel(logging.ERROR)
 
     # Training callbacks
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
-        if batch_idx == 0 and trainer.current_epoch % self.train_freq == 0:
+        epoch = trainer.current_epoch
+        if batch_idx == 0 and epoch % self.freq == 0 and epoch > 0:
             with torch.no_grad():
                 self.log_output(outputs, 0, "train", trainer.logger)
 
     def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx):
-        if batch_idx == 0 and trainer.current_epoch % self.train_freq == 0:
+        epoch = trainer.current_epoch
+        if batch_idx == 0 and epoch % self.freq == 0 and epoch > 0:
             with torch.no_grad():
                 self.log_output(outputs, 0, "val", trainer.logger)
 

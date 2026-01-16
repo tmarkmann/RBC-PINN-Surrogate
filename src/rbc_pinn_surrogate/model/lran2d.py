@@ -80,31 +80,37 @@ class LRAN2DModule(pl.LightningModule):
 
             return torch.stack(pred, dim=2)
 
-    def model_step(self, x: Tensor, stage: str) -> Dict[str, Tensor]:
-        seq_length = x.shape[2]
-        g, g_hat, x_hat = [], [], []
+    def model_step(self, x: Tensor, y: Tensor, stage: str) -> Dict[str, Tensor]:
+        # x.shape [B, C, T, H, W], y.shape [B, C, T, H, W]
+        x = x[:, :, -1]  # use only last input frame
+        horizon = y.shape[2]
+        g, g_hat, y_hat = [], [], []
+
         # Get ground truth for observables
         with torch.no_grad():
-            for tau in range(0, seq_length):
-                g.append(self.encode(x[:, :, tau]).detach())
+            g0 = self.encode(x)
+            for tau in range(0, horizon):
+                g.append(self.encode(y[:, :, tau]).detach())
 
-        # Prediction
-        g0 = g[0].detach()
-        g_hat.append(g0)
-        x_hat.append(self.decode(g0))
-        # Predict sequence
-        for tau in range(1, seq_length):
-            g_hat.append(self.evolve(g_hat[tau - 1]))
-            x_hat.append(self.decode(g_hat[tau]))
-        # To tensor
+        # reconstruction and first step
+        x_hat = self.decode(g0)
+        g_hat.append(self.evolve(g0))
+
+        # Predict target sequence
+        for tau in range(0, horizon - 1):
+            y_hat.append(self.decode(g_hat[tau]))
+            g_hat.append(self.evolve(g_hat[tau]))
+        y_hat.append(self.decode(g_hat[-1]))
+
+        # To tensors
         g = torch.stack(g, dim=1)
         g_hat = torch.stack(g_hat, dim=1)
-        x_hat = torch.stack(x_hat, dim=2)
+        y_hat = torch.stack(y_hat, dim=2)
 
         # Loss
-        reconstruction = self.loss(x_hat[:, :, :1], x[:, :, :1])
-        forward = self.loss(x_hat[:, :, 1:], x[:, :, 1:])
-        hidden = self.loss(g_hat[:, 1:], g[:, 1:])
+        reconstruction = self.loss(x_hat, x)
+        forward = self.loss(y_hat, y)
+        hidden = self.loss(g_hat, g)
         loss = (
             self.hparams.lambda_id * reconstruction
             + self.hparams.lambda_fwd * forward
@@ -112,40 +118,38 @@ class LRAN2DModule(pl.LightningModule):
         )
 
         # Log
-        self.log(f"{stage}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
         self.log_dict(
             {
+                f"{stage}/loss": loss,
                 f"{stage}/loss/reconstruction": reconstruction,
                 f"{stage}/loss/forward": forward,
                 f"{stage}/loss/hidden": hidden,
-            },
-            on_step=False,
-            on_epoch=True,
+            }
         )
 
         # Apply inverse transform
         if self.denormalize is not None:
             with torch.no_grad():
-                x = self.denormalize(x.detach())
-                x_hat = self.denormalize(x_hat.detach())
+                y = self.denormalize(y.detach())
+                y_hat = self.denormalize(y_hat.detach())
 
         return {
             "loss": loss,
-            "ground_truth": x,
-            "prediction": x_hat,
+            "ground_truth": y,
+            "prediction": y_hat,
         }
 
     def training_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
-        _, y = batch
-        return self.model_step(y, stage="train")
+        x, y = batch
+        return self.model_step(x, y, stage="train")
 
     def validation_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
-        _, y = batch
-        return self.model_step(y, stage="val")
+        x, y = batch
+        return self.model_step(x, y, stage="val")
 
     def test_step(self, batch: Tensor, batch_idx: int) -> Dict[str, Tensor]:
-        _, y = batch
-        return self.model_step(y, stage="test")
+        x, y = batch
+        return self.model_step(x, y, stage="test")
 
     def configure_optimizers(self) -> Dict[str, Any]:
         optimizer = torch.optim.Adam(

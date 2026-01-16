@@ -56,7 +56,7 @@ def main(config: DictConfig):
             key_prediction="prediction",
         ),
         Examples2DCallback(
-            train_freq=20,
+            freq=20,
         ),
         ModelCheckpoint(
             dirpath=f"{output_dir}/checkpoints/",

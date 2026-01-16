@@ -1,0 +1,17 @@
+program: scripts/train_2d_ae.py
+name: Autoencoder
+method: grid
+
+parameters:
+  options:
+    value: gpucluster
+  seed:
+    values: [0, 1, 2]
+  data.ra:
+    values: [300_000, 1_000_000, 3_000_000, 10_000_000]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}
