@@ -3,13 +3,15 @@ from rbc_pinn_surrogate.utils.vis_3d import animation_3d
 
 
 class Example3DCallback(Callback):
-    def __init__(self, dir: str):
+    def __init__(self, dir: str, freq: int = 5):
         self.dir = dir
+        self.freq = freq
 
     def on_validation_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ):
-        if batch_idx % 10 == 0:
+        epoch = trainer.current_epoch
+        if batch_idx == 0 and epoch % self.freq == 0 and epoch > 0:
             vid = self.get_example_anim(outputs, batch_idx)
             trainer.logger.log_video(
                 "val/videos",

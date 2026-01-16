@@ -8,7 +8,7 @@ defaults:
 
 model: lran # fno, lran, unet
 seed: 0
-checkpoint: ${paths.model_dir}/3d_${model}/ld/ra${data.ra}-${seed}.ckpt
+checkpoint: ${paths.model_dir}/3d_${model}/ra${data.ra}-${seed}.ckpt
 
 tags:
   - test

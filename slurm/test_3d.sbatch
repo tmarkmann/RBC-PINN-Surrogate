@@ -12,4 +12,4 @@ source ~/miniforge3/etc/profile.d/conda.sh
 conda activate rbcpinn
 
 cd ~/RBC-PINN-Surrogate
-srun uv run python scripts/test_3d.py seed=${SLURM_ARRAY_TASK_ID} experiment/test=lran_ld
+srun uv run python scripts/test_3d.py seed=${SLURM_ARRAY_TASK_ID} model=fno options=gpucluster

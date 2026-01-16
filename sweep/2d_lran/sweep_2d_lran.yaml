@@ -1,43 +1,33 @@
 program: scripts/train_2d_lran.py
-name: LRAN_Base_Sweep
+name: LRAN
 
 method: bayes
 metric:
   goal: minimize
-  name: val/RMSE
+  name: val/NRSSE
 
 parameters:
-  seed:
-    values: [0, 1, 2]
   data.ra:
-    value: 1_000_000
-  data.data_dir:
-    value: /vol/cfd/rbc/2D
+    value: 3_000_000
+  options:
+    value: gpucluster
+  trainer.max_epochs:
+    value: 30
 
   data.train_steps:
-    values: [5, 10, 15, 20]
-  data.train_shift:
-    values: [5, 10]
-  data.batch_size:
-    values: [32, 64]
-
-  model.latent_dimension:
-    values: [32, 64, 96, 128]
-  model.base_filters:
-    values: [32, 64, 96]
+    values: [5, 10, 15, 20, 25]
 
   model.lr_operator:
     values: [0.0001, 0.0003, 0.001, 0.003]
   model.lr_autoencoder:
     values: [0.0001, 0.0003, 0.001, 0.003]
-  model.lambda_id:
-    values: [0.01, 0.1, 1.0, 10.0]
-  model.lambda_fwd:
-    values: [0.01, 0.1, 1.0, 10.0]
-  model.lambda_hid:
-    values: [0.01, 0.1, 1.0, 10.0]
-  
 
+  model.lambda_id:
+    values: [0, 0.5, 1.0]
+  model.lambda_fwd:
+    values: [0, 0.5, 1.0]
+  model.lambda_hid:
+    values: [0, 10.0, 100, 1000]
 
 command:
   - ${env}

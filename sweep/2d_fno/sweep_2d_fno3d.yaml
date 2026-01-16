@@ -1,0 +1,40 @@
+program: scripts/train_2d_fno.py
+name: FNO3D
+
+method: bayes
+metric:
+  goal: minimize
+  name: val/NRSSE
+
+parameters:
+  data.ra:
+    value: 3_000_000
+  options:
+    value: gpucluster
+  trainer.max_epochs:
+    value: 20
+  model.dim:
+    value: 3d
+
+  data.train_steps:
+    values: [5, 10, 15, 20]
+  model.hidden_channels:
+    values: [16, 24, 32, 40, 48]
+  model.lr:
+    values: [0.0001, 0.0003, 0.001, 0.003]
+  model.n_modes_time:
+    values: [8, 16, 24, 32]
+  model.n_modes_space:
+    values: [8, 16, 24, 32]
+  model.lifting_channels:
+    values: [8, 16, 24, 32]
+  model.projection_channels:
+    values: [8, 16, 24, 32]
+  model.n_layers:
+    values: [4, 6, 8]
+
+command:
+  - ${env}
+  - python
+  - ${program}
+  - ${args_no_hyphens}
