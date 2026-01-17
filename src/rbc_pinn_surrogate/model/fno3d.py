@@ -11,77 +11,89 @@ class FNO3DModule(L.LightningModule):
     def __init__(
         self,
         lr: float = 1e-3,
-        n_modes_width: int = 16,
-        n_modes_height: int = 16,
-        n_modes_depth: int = 16,
+        weight_decay: float = 1e-4,
+        n_modes_xy: int = 16,
+        n_modes_z: int = 16,
         hidden_channels: int = 16,
         in_channels: int = 3,
         out_channels: int = 3,
-        lifting_channels: int = 16,
-        projection_channels: int = 16,
+        channels: int = 16,
         n_layers: int = 2,
+        loss: str = "h1",
     ):
         super().__init__()
         self.save_hyperparameters(ignore=["denormalize"])
 
         # Model parameters
         self.model = no.models.TFNO3d(
-            n_modes_width=n_modes_width,
-            n_modes_height=n_modes_height,
-            n_modes_depth=n_modes_depth,
+            n_modes_depth=n_modes_xy,
+            n_modes_height=n_modes_z,
+            n_modes_width=n_modes_xy,
             hidden_channels=hidden_channels,
             in_channels=in_channels,
             out_channels=out_channels,
-            lifting_channels=lifting_channels,
-            projection_channels=projection_channels,
+            lifting_channels=channels,
+            projection_channels=channels,
             n_layers=n_layers,
         )
 
         # Loss Function
-        self.loss = no.H1Loss(d=3)
+        if loss == "l2":
+            self.loss = torch.nn.MSELoss()
+        elif loss == "h1":
+            self.loss = no.H1Loss(d=3)
+        else:
+            raise ValueError(f"Unknown loss function: {loss}")
 
     def forward(self, x):
         return self.model(x)
 
     def predict(self, input: Tensor, length) -> Tensor:
         with torch.no_grad():
-            pred = []
-            out = input.squeeze(dim=2)
-            # autoregressive model steps
-            for _ in range(length):
-                pred.append(self.forward(out))
-            return torch.stack(pred, dim=2)
+            return self.multi_step(input.squeeze(dim=2), length)
+
+    def multi_step(self, x: Tensor, length: int) -> Tensor:
+        # x has shape [B, C, D, H, W]
+        xt = x
+        # preds has shape [length, B, C, D, H, W]
+        preds = x.new_empty(length, *x.shape)
+
+        # autoregressive prediction
+        for t in range(length):
+            y_next = self.forward(xt)
+            preds[t] = y_next
+            xt = y_next
+
+        # return [B, C, T, D, H, W]
+        return preds.permute(1, 2, 0, 3, 4, 5)
 
     def model_step(
         self, input: Tensor, target: Tensor, stage: str
     ) -> Dict[str, Tensor]:
-        loss = []
-        rmse_ts = []
-        nrsse_ts = []
         # autoregressive model steps
-        out = input.squeeze(dim=2)
-        for idx in range(target.shape[2]):
-            out = self.forward(out)
-            loss.append(self.loss(out, target[:, :, idx]))
-            # metrics in size (T,)
-            rmse_ts.append(metrics.rmse(out, target[:, :, idx]))
-            nrsse_ts.append(metrics.nrsse(out, target[:, :, idx]))
+        preds = self.multi_step(input.squeeze(dim=2), target.shape[2])
+        horizon = target.shape[2]
 
-            # for autograd
-            # out = out.detach()
+        # compute loss per time step, then reduce for optimization
+        loss_per_step = torch.stack(
+            [self.loss(preds[:, :, t], target[:, :, t]) for t in range(horizon)]
+        )
+        loss = loss_per_step.mean()
+        self.log(f"{stage}/loss", loss, on_step=False, on_epoch=True, prog_bar=True)
 
-        # log
-        loss = torch.stack(loss).mean()
-        rmse = torch.stack(rmse_ts).detach().cpu()
-        nrsse = torch.stack(nrsse_ts).detach().cpu()
-        self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
-        self.log(f"{stage}/RMSE", rmse.mean(), prog_bar=True, logger=True)
-        self.log(f"{stage}/NRSSE", nrsse.mean(), prog_bar=True, logger=True)
+        # compute sequence metrics
+        rmse = torch.stack(
+            [metrics.rmse(preds[:, :, t], target[:, :, t]) for t in range(horizon)]
+        )
+        nrsse = torch.stack(
+            [metrics.nrsse(preds[:, :, t], target[:, :, t]) for t in range(horizon)]
+        )
 
         return {
             "loss": loss,
-            "rmse": rmse,
-            "nrsse": nrsse,
+            "loss_per_step": loss_per_step.detach().cpu(),
+            "rmse": rmse.detach().cpu(),
+            "nrsse": nrsse.detach().cpu(),
         }
 
     def training_step(self, batch, batch_idx):
@@ -98,9 +110,11 @@ class FNO3DModule(L.LightningModule):
             return self.model_step(x, y, stage="test")
 
     def configure_optimizers(self):
-        optimizer = torch.optim.Adam(
+        wd = getattr(self.hparams, "weight_decay", 0.0)
+        optimizer = torch.optim.AdamW(
             self.model.parameters(),
             lr=self.hparams.lr,
+            weight_decay=wd,
         )
         scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             optimizer,

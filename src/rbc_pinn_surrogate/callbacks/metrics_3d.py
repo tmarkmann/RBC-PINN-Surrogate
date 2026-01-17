@@ -18,21 +18,17 @@ class Metrics3DCallback(Callback):
     ):
         self.data = []
 
-    # Set up w&b metrics
-    def on_train_start(self, trainer, pl_module):
-        if isinstance(trainer.logger, WandbLogger):
-            for stage in ["train", "val", "test"]:
-                wandb.define_metric(f"{stage}/loss", summary="min")
-                wandb.define_metric(f"{stage}/RMSE", summary="min")
-                wandb.define_metric(f"{stage}/NRSSE", summary="min")
-
     # Testing callbacks
     def on_test_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ) -> None:
         # get metrics in size (T)
-        rmse = outputs["rmse"].numpy()
-        nrsse = outputs["nrsse"].numpy()
+        rmse = outputs["rmse"]
+        nrsse = outputs["nrsse"]
+
+        # plot mean metrics
+        self.log("test/RMSE", rmse.mean())
+        self.log("test/NRSSE", nrsse.mean())
 
         # save in df format
         for t in range(rmse.shape[0]):
@@ -40,8 +36,8 @@ class Metrics3DCallback(Callback):
                 {
                     "batch_idx": batch_idx,
                     "step": t,
-                    "rmse": rmse[t],
-                    "nrsse": nrsse[t],
+                    "rmse": rmse[t].item(),
+                    "nrsse": nrsse[t].item(),
                 }
             )
 
@@ -75,9 +71,21 @@ def rmse(pred: Tensor, target: Tensor) -> Tensor:
 
 
 def nrsse(pred: Tensor, target: Tensor) -> Tensor:
+    if len(target.shape) == 4:
+        # state: [C,D,H,W]
+        spatial_dims = [1, 2, 3]
+    elif len(target.shape) == 5:
+        # state: [B,C,D,H,W]
+        spatial_dims = [0, 2, 3, 4]
+    elif len(target.shape) == 6:
+        # state: [B,C,T,D,H,W]
+        spatial_dims = [0, 2, 3, 4, 5]
+    else:
+        raise ValueError(f"Unsupported tensor shape: {target.shape}")
+
     eps = torch.finfo(pred.dtype).eps
-    num = torch.linalg.vector_norm(pred - target, dim=[0, 2, 3, 4])
-    denom = torch.linalg.vector_norm(target, dim=[0, 2, 3, 4]) + eps
+    num = torch.linalg.vector_norm(pred - target, dim=spatial_dims)
+    denom = torch.linalg.vector_norm(target, dim=spatial_dims) + eps
     # return mean across channels for scalar metric
     return (num / denom).mean()
 

@@ -7,13 +7,16 @@ defaults:
 
 seed: 42
 
+data:
+  train_steps: 20
+
 model:
   dim: 2d # options: 2d, 3d
   loss: H1
   lr: 0.001
   weight_decay: 0.001
-  n_modes_time: 16
   n_modes_space: 16
+  n_modes_time: 12    # only 3d
   hidden_channels: 32
   in_channels: 3
   out_channels: 3

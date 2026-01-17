@@ -61,17 +61,13 @@ class UNet3DModule(L.LightningModule):
         # time metrics
         lrmse, lnrsse = [], []
         for idx in range(y.shape[2]):
-            lrmse.append(metrics.rmse(y_hat[:, :, idx], y[:, :, idx]))
-            lnrsse.append(metrics.nrsse(y_hat[:, :, idx], y[:, :, idx]))
-        rmse = torch.stack(lrmse).detach().cpu()
-        nrsse = torch.stack(lnrsse).detach().cpu()
-        self.log(f"{stage}/RMSE", rmse.mean(), logger=True)
-        self.log(f"{stage}/NRSSE", nrsse.mean(), logger=True)
+            lrmse.append(metrics.rmse(y_hat[:, :, idx], y[:, :, idx]).item())
+            lnrsse.append(metrics.nrsse(y_hat[:, :, idx], y[:, :, idx]).item())
 
         return {
             "loss": loss,
-            "rmse": rmse,
-            "nrsse": nrsse,
+            "rmse": lrmse,
+            "nrsse": lnrsse,
         }
 
     def training_step(

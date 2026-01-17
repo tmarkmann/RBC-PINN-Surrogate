@@ -22,8 +22,6 @@ parameters:
     values: [16, 24, 32, 40, 48]
   model.lr:
     values: [0.0001, 0.0003, 0.001, 0.003]
-  model.n_modes_time:
-    values: [8, 16, 24, 32]
   model.n_modes_space:
     values: [8, 16, 24, 32]
   model.lifting_channels:

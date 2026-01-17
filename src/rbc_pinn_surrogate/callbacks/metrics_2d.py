@@ -1,12 +1,10 @@
 from typing import Dict, Tuple
 
 from lightning.pytorch.callbacks import Callback
-from lightning.pytorch.loggers import WandbLogger, Logger
 import numpy as np
 import torch
 from torch import Tensor
 from torch.nn.functional import mse_loss
-import wandb
 
 from rbc_pinn_surrogate.data.dataset import Field2D
 
@@ -20,42 +18,29 @@ class Metrics2DCallback(Callback):
         self.key_gt = key_groundtruth
         self.key_pred = key_prediction
 
-    # Set up w&b metrics
-    def on_train_start(self, trainer, pl_module):
-        if isinstance(trainer.logger, WandbLogger):
-            for stage in ["train", "val", "test"]:
-                wandb.define_metric(f"{stage}/loss", summary="min")
-                wandb.define_metric(f"{stage}/RMSE", summary="min")
-                wandb.define_metric(f"{stage}/NRSSE", summary="min")
-
     # Training callbacks
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx) -> None:
-        self.log_metrics(outputs, stage="train", logger=trainer.logger)
+        self.log_metrics(outputs, stage="train")
 
     # Validation callbacks
     def on_validation_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ) -> None:
-        self.log_metrics(outputs, stage="val", logger=trainer.logger)
+        self.log_metrics(outputs, stage="val")
 
     # Testing callbacks
     def on_test_batch_end(
         self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx=0
     ) -> None:
-        self.log_metrics(outputs, stage="test", logger=trainer.logger)
+        self.log_metrics(outputs, stage="test")
 
     # Helper function
-    def log_metrics(self, output: Dict[str, Tensor], stage: str, logger: Logger):
+    def log_metrics(self, output: Dict[str, Tensor], stage: str):
         gt = output[self.key_gt].detach().cpu()
         pred = output[self.key_pred].detach().cpu()
 
-        if isinstance(logger, WandbLogger):
-            logger.log_metrics(
-                {
-                    f"{stage}/RMSE": rmse(pred, gt),
-                    f"{stage}/NRSSE": nrsse(pred, gt),
-                }
-            )
+        self.log(f"{stage}/RMSE", rmse(pred, gt), logger=True)
+        self.log(f"{stage}/NRSSE", nrsse(pred, gt), logger=True)
 
 
 def rmse(preds: Tensor, target: Tensor) -> Tensor:
@@ -63,10 +48,22 @@ def rmse(preds: Tensor, target: Tensor) -> Tensor:
 
 
 def nrsse(pred: Tensor, target: Tensor) -> Tensor:
+    if len(pred.shape) == 3:
+        # shape [C,H,W]
+        spatial_dims = [1, 2]
+    elif len(pred.shape) == 4:
+        # shape [B,C,H,W]
+        spatial_dims = [0, 2, 3]
+    elif len(pred.shape) == 5:
+        # shape [B,C,T,H,W]
+        spatial_dims = [0, 2, 3, 4]
+    else:
+        raise ValueError("Input tensors must be 3D, 4D or 5D.")
+
     # state: [C,H,W]
     eps = torch.finfo(pred.dtype).eps
-    num = torch.linalg.vector_norm(pred - target, dim=[1, 2])
-    denom = torch.linalg.vector_norm(target, dim=[1, 2]) + eps
+    num = torch.linalg.vector_norm(pred - target, dim=spatial_dims)
+    denom = torch.linalg.vector_norm(target, dim=spatial_dims) + eps
     return (num / denom).mean()
 
 

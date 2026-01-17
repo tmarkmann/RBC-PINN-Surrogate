@@ -7,6 +7,9 @@ defaults:
 
 seed: 42
 
+data:
+  train_steps: 15
+
 model:
   lr: 0.0001
   features: [32, 64, 128]

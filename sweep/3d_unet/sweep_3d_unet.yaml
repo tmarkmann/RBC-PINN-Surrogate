@@ -8,12 +8,8 @@ metric:
 
 parameters:
   # fixed
-  data.data_dir:
-    value: /vol/cfd/rbc/3D-ld
-  data.start:
-    value: 500
-  data.end:
-    value: 1000
+  options:
+    value: gpucluster
 
   # sweep
   seed:

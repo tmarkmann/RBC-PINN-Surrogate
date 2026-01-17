@@ -112,9 +112,11 @@ class FNO2DModule(L.LightningModule):
         else:
             y_hat = self.multi_step_3d(x, length)
 
-        # stack predictions and loss
-        loss = self.loss(y_hat, y)
-        self.log(f"{stage}/loss", loss, prog_bar=True, logger=True)
+        # compute loss per time step (H1 loss is spatial)
+        loss = torch.stack(
+            [self.loss(y_hat[:, :, t], y[:, :, t]) for t in range(length)]
+        ).mean()
+        self.log(f"{stage}/loss", loss, prog_bar=True)
 
         # denormalize for logging
         if self.denormalize is not None:

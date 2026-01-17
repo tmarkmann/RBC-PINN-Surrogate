@@ -2,18 +2,15 @@ program: scripts/train_2d_fno.py
 name: FNO2D_Results
 
 method: grid
-metric:
-  goal: minimize
-  name: val/loss
 
 parameters:
+  options:
+    value: gpucluster
   seed:
-    values: [0, 1, 2, 3, 4]
+    values: [0, 1, 2]
   data.ra:
     values: [300_000, 1_000_000, 3_000_000, 10_000_000]
-  data.data_dir:
-    value: /vol/cfd/rbc/2D
-  model.type:
+  model.dim:
     value: 2d
 
 command:
